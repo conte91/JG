@@ -1,5 +1,5 @@
-PROJECT('Amazon Picking Challenge')
+PROJECT("Amazon Picking Challenge")
 
 
-include('ProjectList.cmake')
+include("ProjectList.cmake")
 
