@@ -5,8 +5,8 @@ namespace Camera{
 
     private:
       typedef cv::Mat Matrix;
-      Matrix& _depth;
-      Matrix& _rgb;
+      Matrix _depth;
+      Matrix _rgb;
 
     public:
       Image(const cv::Mat& depth, const cv::Mat& rgb);
@@ -15,5 +15,5 @@ namespace Camera{
       const Matrix& getDepthMap();
       const Matrix& getRGB();
 
-  }
+  };
 }
