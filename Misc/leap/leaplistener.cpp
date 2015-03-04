@@ -1,3 +1,5 @@
+#include <cv.hpp>
+#include <highgui.h>
 #include "leaplistener.h"
 
 
@@ -48,8 +50,7 @@ void leapListener::onFrame( const Leap::Controller &controller)
     }
 
 
-    cv::imshow("depth", opencvImg);
-    cv::imshow("filter", resetImg);
+    cv::imshow("Image show", opencvImg);
     cv::waitKey(30);
 
     std::cout <<"Image Information"<<image.width()<<std::endl;

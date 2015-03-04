@@ -1,6 +1,8 @@
 PROJECT("Amazon Picking Challenge")
 
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 INCLUDE_DIRECTORIES("include")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 include("ProjectList.cmake")
 

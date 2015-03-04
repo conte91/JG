@@ -1,8 +1,11 @@
-#include <highgui/highgui.hpp>
+#include <highgui.h>
+#include <Leap.h>
 #include "leaplistener.h"
 
 int main(int argc, char *argv[])
 {
+
+    cv::namedWindow("Image show");
 
     leapListener listener;
     Leap::Controller controller;
@@ -10,9 +13,7 @@ int main(int argc, char *argv[])
     controller.addListener( listener );
 
     Leap::Controller::PolicyFlag addImagePolicy;
-    addImagePolicy = ( Leap::Controller::PolicyFlag )
-            ( Leap::Controller::PolicyFlag::POLICY_IMAGES |
-             controller.policyFlags());
+    //addImagePolicy = ( Leap::Controller::PolicyFlag::POLICY_IMAGES | controller.policyFlags());
 
     controller.setPolicyFlags( addImagePolicy );
     std::cout << "Press Enter to quit..." << std::endl;
@@ -20,5 +21,5 @@ int main(int argc, char *argv[])
 
     controller.removeListener( listener );
 
-    return app.exec();
+    return 0;
 }

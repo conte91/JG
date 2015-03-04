@@ -1,8 +1,6 @@
-#ifndef LEAPLISTENER_H
-#define LEAPLISTENER_H
+#pragma once
 
-#include "Leap.h"
-#include <opencv2/opencv.hpp>
+#include <Leap.h>
 
 class leapListener : public Leap::Listener
 {
@@ -21,4 +19,3 @@ public:
 private:
 };
 
-#endif // LEAPLISTENER_H
