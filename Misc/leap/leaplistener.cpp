@@ -1,6 +1,7 @@
 #include <cv.hpp>
 #include <highgui.h>
 #include "leaplistener.h"
+#include <algorithm>
 
 
 void leapListener::onInit( const Leap::Controller &controller)
@@ -32,28 +33,22 @@ void leapListener::onFrame( const Leap::Controller &controller)
 
     const Leap::Frame frame = controller.frame();
     Leap::ImageList images = frame.images();
+    std::cout << "# of images: " << images.count() << "\n";
+    std::cout << "# of fingers: " << frame.fingers().count()  << "\n";
+    std::cout << "Bytes per image: " << images[1].bytesPerPixel() << "\n";
 
-    Leap::Image image = images[0];
-    cv::Mat opencvImg = cv::Mat( image.height(), image.width(), CV_8UC1 );
-    opencvImg.data = (unsigned char*)image.data();
+    const Leap::Image& image = images[0];
 
-    cv::Mat resetImg = cv::Mat( image.height(), image.width(), CV_8UC1 );
-    for( int i = 0; i < opencvImg.rows; i++){
-        for( int j = 0; j < opencvImg.cols; j++){
-            if( opencvImg.data[i*opencvImg.cols + j] < 100 ){
-                resetImg.data[i*opencvImg.cols + j] = 0;
-            }
-            else{
-                resetImg.data[i*opencvImg.cols + j] = 255;
-            }
-        }
+    if(image.height()>0 && image.width()>0){
+      cv::Mat opencvImg = cv::Mat( image.height(), image.width(), CV_8UC1 );
+      opencvImg.data = (unsigned char*)image.data();
+
+       cv::imshow("Image show", opencvImg);
+       std::cout <<"Image Information"<<image.width()<<std::endl;
     }
 
-
-    cv::imshow("Image show", opencvImg);
     cv::waitKey(30);
 
-    std::cout <<"Image Information"<<image.width()<<std::endl;
 }
 
 void leapListener::onFocusGained( const Leap::Controller &controller)

@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     controller.addListener( listener );
 
     Leap::Controller::PolicyFlag addImagePolicy;
-    //addImagePolicy = ( Leap::Controller::PolicyFlag::POLICY_IMAGES | controller.policyFlags());
+    addImagePolicy = (Leap::Controller::PolicyFlag) ((int) Leap::Controller::POLICY_IMAGES | (int) Leap::Controller::POLICY_BACKGROUND_FRAMES | (int) controller.policyFlags());
 
     controller.setPolicyFlags( addImagePolicy );
     std::cout << "Press Enter to quit..." << std::endl;
