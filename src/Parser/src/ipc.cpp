@@ -10,7 +10,7 @@ using namespace std;
 class RobotData {
     public:
         static RobotData& getInstance() {
-            static RobotData    instance; // Guaranteed to be destroyed.
+            static RobotData instance; // Guaranteed to be destroyed.
             return instance;
         }
         struct VideoImage {
@@ -38,24 +38,6 @@ class RobotData {
         int stop() {
             return 0;
         }
-        /*
-         * void start();      void stop();
-         * const Image& getLastFrame();
-         * LeapCamera(const std::string& id="LEAP");
-         *
-         * start()
-         * stop()
-         * con start() inizia ad acquisire immagini
-         * con stop() finisce
-         * (cioè si ferma, ma può riprendere con start())
-         * e poi ha getLastImage() che ritorna l'ultimo frame letto
-         * (fake)
-         * di tipo Image
-         * che si costruisce con due cv::Mat
-         * una per il depth e una per l'RGB
-         * end
-         * posso pushare sul tuo repo?
-         */
 
     private:
         struct Bin {
@@ -64,15 +46,16 @@ class RobotData {
         struct Shelf {
             Bin bins[12];
         } shelf;
-        //RobotData() {};                   // Constructor? (the {} brackets) are needed here.
+        RobotData() {};
+        ~RobotData() {};
+        void operator=(RobotData const&); // Don't implement
+        RobotData(RobotData const&);              // Don't Implement
 
         // C++ 03
         // ========
         // Dont forget to declare these two. You want to make sure they
         // are unacceptable otherwise you may accidentally get copies of
         // your singleton appearing.
-        //RobotData(RobotData const&);              // Don't Implement
-        //void operator=(RobotData const&); // Don't implement
 
         // C++ 11
         // =======
@@ -84,11 +67,13 @@ class RobotData {
 
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-BOOST_PYTHON_MODULE(apcRobot)
+BOOST_PYTHON_MODULE(libapcRobot)
 {
     namespace python = boost::python;
     {
-        python::class_<RobotData>("RobotData")
+        python::class_<RobotData, boost::noncopyable>("RobotData", python::no_init)
+            .def("getInstance",&RobotData::getInstance,python::return_value_policy<python::reference_existing_object>() )
+            .staticmethod("getInstance")
             .def("getBinItem",&RobotData::getBinItem)
             .def("setBinItem",&RobotData::setBinItem)
             .def("start",&RobotData::start)
