@@ -48,6 +48,7 @@ typedef struct
 }delta_position_t;
 
 
+/** TODO EXTRN==#define EXTRN extern? .-. */
 EXTRN ORL_joint_value current_joints[MAX_NUM_ARMS];
 EXTRN ORL_cartesian_position current_position[MAX_NUM_ARMS];
 

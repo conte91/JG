@@ -234,6 +234,10 @@ void loopConsole (void)
           )
         {
           /* TODO: non compila in c++
+           * Fixable by adding an extern function, declared with the C calling conventions (extern "C"), into a separate c file, which returns getch()
+           * Also, man getch points to getch for ncurses -> #include?
+           * Is it fgetc(stdin)?
+           *
            * a_3 = getch();
            */
           a_3 = 'Q';
