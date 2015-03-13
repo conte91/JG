@@ -1,27 +1,14 @@
 #pragma once
-
-namespace C5G {
-  struct Pose{
-    /* In meters */
-    double x;
-    double y;
-    double z;
-
-    /* In radians */
-    double alpha;
-    double beta;
-    double gamma;
-  }
-
+namespace C5G{
   class C5G{
 
-    void Init();
-    void Standby();
-    void MoveCartesian(const Pose& p);
-    void SetZero();
-    void SetPosition(const Pose& p);
-    void MoveCartesianGlobal(const Pose& p);
-    void MoveAdditive();
+    void init();
+    void standby();
+    void moveCartesian(const Pose& p);
+    void setZero();
+    void setPosition(const Pose& p);
+    void moveCartesianGlobal(const Pose& p);
+    void moveAdditive();
 
-  }
+  };
 }

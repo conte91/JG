@@ -6,12 +6,14 @@ void MoveCartesian(const Pose& p){
   target_pos.a=p.alpha;
   target_pos.e=p.beta;
   target_pos.r=p.gamma;
+  Log::out << "Moving to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
+
 }
 
 void init(){
 /* ORL_joint_value sx_jnt_pos_cal,sx_jnt_pos_test,sx_jnt_out_test;
   int si_sts[3];*/
-
+#if 0
   int si_arm, res, si_i, period;
   ORL_cartesian_position sx_base, sx_tool, sx_uframe;
 
@@ -141,4 +143,6 @@ void init(){
   sleep(2);
 
   initialize_Control_position();
+#endif
+  Log::out << "Init called" << std::endl;
 }
