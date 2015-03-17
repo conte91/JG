@@ -13,6 +13,6 @@ namespace C5G {
     double gamma;
 
     /** Basic operations */
-    Pose operator+(const Pose& o);
+    Pose operator+(const Pose& o) const;
   };
 }
