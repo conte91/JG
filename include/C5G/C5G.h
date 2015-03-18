@@ -1,4 +1,6 @@
 #pragma once
+#include <boost/thread.hpp>
+#include "Pose.h"
 namespace C5G{
   class C5G{
 
