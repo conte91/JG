@@ -1,4 +1,5 @@
 find_package(OpenCV REQUIRED)
+message("OpenCV LIBRARIES: ${OpenCV_LIBRARIES}")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
