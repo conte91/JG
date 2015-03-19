@@ -6,8 +6,8 @@ namespace APC {
   using C5G::Pose;
 
   const Pose Shelf::POSE={0, 0, 1, 0, 0, 0};
-  const double Shelf::HEIGHT=0.2;
-  const double Shelf::WIDTH=0.2;
+  const double Shelf::HEIGHT=3;
+  const double Shelf::WIDTH=3;
   const double Shelf::BIN_HEIGHT=0.2;
   const double Shelf::BIN_WIDTH=0.2;
   const double Shelf::BIN_DEPTH=0.2;
