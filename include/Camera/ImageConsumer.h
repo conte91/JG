@@ -11,7 +11,7 @@ namespace Camera{
       ImageConsumer(boost::shared_ptr<const ImageProvider> provider, const std::string& ID="");
 
       virtual ~ImageConsumer()=0;
-      virtual void Update()=0;
+      virtual void update()=0;
       virtual void setProvider(boost::shared_ptr<const ImageProvider> provider);
   };
 
