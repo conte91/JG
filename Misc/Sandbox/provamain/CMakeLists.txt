@@ -1,2 +1,7 @@
+find_package(Boost COMPONENTS system thread REQUIRED)
+
 add_executable(provamain main.cpp ScanBins.cpp)
-target_link_libraries(provamain apc c5g)
+include_directories(${Boost_INCLUDE_DIRS})
+target_link_libraries(provamain apc camera c5g c5g_misc
+  #    log
+  ${Boost_LIBRARIES})

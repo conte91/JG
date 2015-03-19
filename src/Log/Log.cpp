@@ -1,4 +1,5 @@
 #include <iostream>
 namespace Log{
-  std::ostream& Log=std::cout;
+  std::ostream& out::out=std::cout;
+  std::operator<<(std
 }

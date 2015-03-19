@@ -1,5 +1,8 @@
 #include <iostream>
+#error "DO NOT INCLUDE THIS FILE (IT IS BULLSHIT FOR NOW)."
 
 namespace Log{
-  extern std::ostream& out;
+  typedef out std::ostream;
+
+
 }

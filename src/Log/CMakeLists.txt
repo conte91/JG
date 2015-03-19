@@ -1,1 +1,1 @@
-add_library(log Log.cpp)
+#add_library(log Log.cpp)

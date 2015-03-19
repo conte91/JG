@@ -8,4 +8,3 @@ ELSE(NOT(DEFINED NO_EORL))
 ENDIF(NOT(DEFINED NO_EORL))
 
 add_library(c5g_misc Pose.cpp)
-target_link_libraries(c5g c5g_misc)

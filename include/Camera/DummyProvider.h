@@ -4,6 +4,6 @@
 namespace Camera{
   class DummyProvider : public ImageProvider {
     public:
-      DummyProvider(const std::string& ID);
+      DummyProvider(const std::string& ID="DummyProvider");
   };
 }

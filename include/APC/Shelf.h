@@ -13,6 +13,8 @@ namespace APC{
       static const Pose POSE;
       static const double BIN_HEIGHT;
       static const double BIN_WIDTH;
+      static const double HEIGHT;
+      static const double WIDTH;
       static const double BIN_DEPTH;
       static const double SECURITY_DISTANCE;
       static const Pose BIN0;
