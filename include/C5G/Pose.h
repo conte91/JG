@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+
 
 namespace C5G {
   struct Pose{
@@ -16,3 +18,5 @@ namespace C5G {
     Pose operator+(const Pose& o) const;
   };
 }
+
+std::ostream& operator<< (std::ostream& os, const C5G::Pose& x);
