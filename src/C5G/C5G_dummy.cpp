@@ -6,14 +6,11 @@
 
 namespace C5G{
   void C5G::moveCartesian(const Pose& p){
-    ORL_cartesian_position  target_pos;
-    target_pos.x=p.x;
-    target_pos.y=p.y;
-    target_pos.z=p.z;
-    target_pos.a=p.alpha;
-    target_pos.e=p.beta;
-    target_pos.r=p.gamma;
-    Log::out << "Moving to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
+    Log::out << "Relative movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
+  }
+
+  void C5G::moveCartesianGlobal(const Pose& p){
+    Log::out << "Global movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }
 
   void C5G::init(){
