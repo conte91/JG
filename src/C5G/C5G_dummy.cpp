@@ -1,6 +1,7 @@
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
 #include <C5G/C5G.h>
+#include <C5G/Grasp.h>
 
 namespace C5G{
   void C5G::moveCartesian(const Pose& p){
@@ -28,5 +29,15 @@ namespace C5G{
     std::cout << "Goodbye..\n";
     boost::this_thread::sleep_for(boost::chrono::seconds(1));
     std::cout << "Goodbye.\n";
+  }
+  void C5G::setGripping(double strength){
+    std::cout << "Closing the plier with strength " << strength << "\n";
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
+  }
+  void C5G::executeGrasp(const Grasp& g){
+    moveCartesian(g.approach);
+    moveCartesian(g.grasp);
+    setGripping(g.force);
+    moveCartesian(g.approach);
   }
 }
