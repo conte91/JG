@@ -10,13 +10,9 @@ namespace InterProcessCommunication{
     class RobotData {
         public:
             static RobotData& getInstance();
-            struct VideoImage {
-                cv::Mat rgb;
-                cv::Mat depth;
-            };
             std::string getBinItem(int row, int column, int item);
             void setBinItem(int row,int column,int item,const std::string& val);
-            static VideoImage getImageFrame();
+            static Image getImageFrame();
             int start();
             int stop();
         private:

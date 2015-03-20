@@ -4,6 +4,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#include <Camera/Image.h>
 
 using namespace std;
 
@@ -13,10 +14,6 @@ class RobotData {
             static RobotData instance; // Guaranteed to be destroyed.
             return instance;
         }
-        struct VideoImage {
-            cv::Mat rgb;
-            cv::Mat depth;
-        } videoFrame;
         std::string getBinItem(int row, int column, int item){
             return this->shelf.bins[(row*4)+column].object[item];
         }
@@ -24,8 +21,9 @@ class RobotData {
             this->shelf.bins[(row*4)+column].object[item] = val;
         }
         //cv::Mat (const cv::Mat& orgImage)
-        static VideoImage getImageFrame(){
-            VideoImage frame;
+        static Camera::Image getImageFrame(){
+            using Camera::Image;
+            Image frame;
             frame.rgb = cv::imread("a.jpg");
             frame.depth = cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE);
             cv::imshow("rgb",cv::imread("a.jpg"));
@@ -67,7 +65,7 @@ class RobotData {
 
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-BOOST_PYTHON_MODULE(libapcRobot)
+BOOST_PYTHON_MODULE(ApcRobot)
 {
     namespace python = boost::python;
     {
