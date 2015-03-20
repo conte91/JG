@@ -1,10 +1,13 @@
 #pragma once
 #include <string>
 #include "Pose.h"
+namespace C5G{
 
-struct Grasp{
-  std::string object;
-  C5G::Pose approach;
-  C5G::Pose grasp;
-  double force;
-};
+  struct Grasp{
+    std::string object;
+    Pose approach;
+    Pose grasp;
+    double force;
+  };
+
+}

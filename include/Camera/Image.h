@@ -1,19 +1,12 @@
 #pragma once
+#include <opencv2/core/core.hpp>
 
 namespace Camera{
-  class Image{
-
-    private:
+  struct Image{
       typedef cv::Mat Matrix;
-      Matrix _depth;
-      Matrix _rgb;
-
-    public:
-      Image(const cv::Mat& depth, const cv::Mat& rgb);
-      ~Image();
-
-      const Matrix& getDepthMap();
-      const Matrix& getRGB();
-
+      Matrix depth;
+      Matrix rgb;
+      Image(const Matrix& d, const Matrix& r);
+      Image();
   };
 }
