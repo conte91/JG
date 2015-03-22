@@ -22,6 +22,7 @@ namespace InterProcessCommunication{
         private:
             struct Bin {
                 std::string object[5];
+                bool dirty;
             };
             struct Shelf {
                 Bin bins[12];

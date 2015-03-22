@@ -4,6 +4,9 @@
 #include <C5G/Grasp.h>
 
 namespace C5G{
+  void C5G::setZero(){
+    std::cout << "I'm now at zero.\n";
+  }
   void C5G::moveCartesian(const Pose& p){
     std::cout << "Relative movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }

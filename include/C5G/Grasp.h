@@ -7,6 +7,7 @@ namespace C5G{
     std::string object;
     Pose approach;
     Pose grasp;
+    double score;
     double force;
   };
 

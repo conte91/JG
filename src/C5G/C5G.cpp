@@ -4,6 +4,10 @@
 #include <eORL.h>
 
 namespace C5G{
+
+  void C5G::setZero(){
+    std::cout << "I'm now at zero.\n";
+  }
   void C5G::moveCartesianGlobal(const Pose& p){
     ORL_cartesian_position  target_pos;
     target_pos.x=p.x;

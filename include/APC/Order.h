@@ -8,12 +8,13 @@ namespace APC{
     std::string object;
     int bin[2];
     C5G::Grasp grasp;
-    double score;
+    static const double MIN_SCORE_WE_CAN_MANAGE;
   };
 
   bool operator<(const Order& left, const Order& right);
 
   typedef std::priority_queue<Order> OrderStatus;
+
 
 }
 
