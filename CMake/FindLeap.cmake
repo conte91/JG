@@ -1,7 +1,7 @@
 FIND_PATH(Leap_INCLUDE_DIRS NAMES "Leap.h" "LeapMath.h" PATHS ENV Leap_INCLUDE_DIR DOC "The Leap motion SDK include directory")
 message("Leap_INCLUDE_DIRS: ${Leap_INCLUDE_DIRS}; Leap_LIBRARIES: ${Leap_LIBRARIES}")
 message("PREFIX: ${CMAKE_PREFIX_PATH}")
-FIND_LIBRARY(Leap_LIBRARIES NAMES Leap PATHS /usr/lib32/Leap /lib32/Leap /usr/lib/Leap /lib/Leap /opt/Leap/ ${CMAKE_PREFIX_PATH}/Leap ENV Leap_LIB_DIR DOC "The Leap motion library (libLeap.so)")
+FIND_LIBRARY(Leap_LIBRARIES NAMES Leap PATHS /usr/lib/Leap /lib/Leap /opt/Leap/ ${CMAKE_PREFIX_PATH}/Leap ENV Leap_LIB_DIR DOC "The Leap motion library (libLeap.so)")
 
 SET(Leap_FOUND FALSE)
 
