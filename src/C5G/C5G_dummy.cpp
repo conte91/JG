@@ -5,11 +5,13 @@
 namespace C5G{
   void C5G::moveCartesian(const Pose& p){
     std::cout << "Relative movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
+    boost::this_thread::sleep_for(boost::chrono::seconds(1));
   }
 
   const Pose C5G::safePose={0.3, 0, 0.7, 0, 0, 0};
   void C5G::moveCartesianGlobal(const Pose& p){
     std::cout << "Global movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
+    boost::this_thread::sleep_for(boost::chrono::seconds(1));
   }
 
   void C5G::init(){
