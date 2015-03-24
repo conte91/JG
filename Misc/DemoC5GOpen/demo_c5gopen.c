@@ -2,6 +2,7 @@
 #include "demo_c5gopen.h"
 
 
+static char DEFAULT_STRING_IP_CNTRL[]="172.22.178.102";
 int  main (int argc, char **argv)
 {
 /*  ORL_joint_value sx_jnt_pos_cal,sx_jnt_pos_test,sx_jnt_out_test;
@@ -9,6 +10,18 @@ int  main (int argc, char **argv)
 
   int si_arm, res, si_i, period;
   ORL_cartesian_position sx_base, sx_tool, sx_uframe;
+  STRING_IP_CNTRL=NULL;
+  for (si_i = 1; si_i < argc;si_i++)
+  {
+ 	if(!strcmp(argv[si_i], "-S")){
+		si_i++;
+		STRING_IP_CNTRL=argv[si_i];
+	}
+  }
+  if(STRING_IP_CNTRL==NULL){
+    fprintf(stderr, "You SHOULD specify a server with -S. Using default of %s\n", DEFAULT_STRING_IP_CNTRL);
+    STRING_IP_CNTRL=DEFAULT_STRING_IP_CNTRL;
+  }
 
   printf("Connection to %s: %s.c5g\n",STRING_IP_CNTRL, STRING_SYS_ID);
 

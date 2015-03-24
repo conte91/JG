@@ -45,9 +45,9 @@ namespace C5G{
     std::cout << "Goodbye.\n";
   }
 
-  void C5G::executeGrasp(Grasp& g){
+  void C5G::executeGrasp(const Grasp& g){
     std::cout << "Executing grasp for object " << g.object << "\n";
-    moveCartesianGlobal(Shelf.getBinSafePose(
+    //moveCartesianGlobal(Shelf.getBinSafePose(
 
   }
 
