@@ -1,4 +1,5 @@
 #include <APC/UpdateBins.h>
+#include <APC/Grasper.h>
 #include <Parser/RobotData.h>
 
 namespace APC{
@@ -29,10 +30,11 @@ namespace APC{
          * updateGiorgio()
          */
           /** We moved things, lets'a update the bin content */
-          x.grasp=getBestGrasp(x.object, x.bin[0], x.bin[1]);
+          x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
       }
       neworder.push(x);
     }
     order=neworder;
+  }
 
 }
