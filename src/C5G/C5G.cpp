@@ -44,4 +44,15 @@ namespace C5G{
     boost::this_thread::sleep_for(boost::chrono::seconds(1));
     std::cout << "Goodbye.\n";
   }
+
+  void C5G::executeGrasp(const Grasp& g){
+    std::cout << "Executing grasp for object " << g.object << "\n";
+    //moveCartesianGlobal(Shelf.getBinSafePose(
+
+  }
+
+  void C5G::setGripping(double strength){
+    std::cout << "Closing the plier with strength " << strength << "\n";
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
+  }
 }
