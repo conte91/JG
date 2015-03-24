@@ -3,18 +3,40 @@
 #include <C5G/C5G.h>
 #include <C5G/userCallback.h>
 #include <eORL.h>
+#include <sstream>
 
 namespace C5G{
-  void C5G::moveCartesianGlobal(const Pose& p){
+
+  static ORL_cartesian_position pose2ORL(const Pose& p){
+    static const double RAD_TO_DEG=57.2957795130824;
     ORL_cartesian_position  target_pos;
-    target_pos.x=p.x;
-    target_pos.y=p.y;
-    target_pos.z=p.z;
-    target_pos.a=p.alpha;
-    target_pos.e=p.beta;
-    target_pos.r=p.gamma;
-    std::cout << "Global movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
+    target_pos.unit_type = ORL_CART_POSITION;
+    target_pos.x=p.x*1000;
+    target_pos.y=p.y*1000;
+    target_pos.z=p.z*1000;
+    target_pos.a=p.alpha*RAD_TO_DEG;
+    target_pos.e=p.beta*RAD_TO_DEG;
+    target_pos.r=p.gamma*RAD_TO_DEG;
   }
+
+  void C5G::moveCartesianGlobal(const Pose& p){
+    ORL_cartesian_position  target_pos=pose2ORL(p);
+    ORL_joint_value         target_jnt, temp_joints;
+
+    if( ORL_inverse_kinematics(&target_pos, &temp_joints, ORL_SILENT, ORL_CNTRL01, ORL_ARM1) != 0 )
+    {
+      throw std::string("--! Inverse Kinematics fails! Check joint values...\n");
+    }
+    ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, 1 /* CARTESIAN */, &target_pos, NULL, ORL_SILENT, ORL_CNTRL01, ORL_ARM1);
+    mask_moving_arms = mask_moving_arms | (1<<ORL_ARM1);
+    flag_RunningMove[ORL_ARM1] = true;
+    std::cout << "--> Move acquired.\n";
+
+    std::cout << "Global movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
+    while(flag_RunningMove[ORL_ARM1]);
+    std::cout << "Movement ended.\n";
+  }
+
   /** TODO CHECK THIS!*/
   const Pose C5G::safePose={0.3, 0, 0.7, 0, 0, 0};
   void C5G::moveCartesian(const Pose& p){

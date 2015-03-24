@@ -1,9 +1,150 @@
 #define GLOBAL_VAR_EXTERN
 #include <C5G/userCallback.h>
+#include <stdio.h>
+#include <string.h>
 
+int initialize_Control_position ( void )
+{
+  int si_arm, res;
+  long sm_out_maskjnt;
+  ORL_System_Variable orl_sys_var;
+  char s_modality[40];
+  int modality;
+
+  res = ORLOPEN_GetPowerlinkState(ORL_VERBOSE);
+
+  if (res == PWL_ACTIVE)
+  {
+    for (si_arm= 0;si_arm<MAX_NUM_ARMS;si_arm++)
+    {
+      sm_out_maskjnt = ORLOPEN_GetOpenMask        ( ORL_SILENT,ORL_CNTRL01, si_arm );
+      modality = ORLOPEN_GetModeMasterAx(ORL_SILENT, ORL_CNTRL01, si_arm);
+      ORLOPEN_sync_position(&current_joints[si_arm], ORL_SILENT, ORL_CNTRL01, si_arm);
+      ORL_direct_kinematics(&current_position[si_arm],&current_joints[si_arm],ORL_SILENT, ORL_CNTRL01,si_arm);
+      sprintf((char *)orl_sys_var.sysvar_name,"$ARM_DATA[%d].ARM_OVR",si_arm+1);
+      orl_sys_var.ctype = ORL_INT;
+      orl_sys_var.iv = 20;
+      ORL_set_data(orl_sys_var, ORL_SILENT, ORL_CNTRL01);
+    }
+    return 1;
+
+  }
+  return 0;
+}
+
+
+void apply_delta_position(delta_position_t * px_Delta_position, float override )
+{
+  px_Delta_position->real.unit_type = ORL_CART_POSITION;
+  if (    ( (px_Delta_position->real.x < px_Delta_position->ideal.x) && (px_Delta_position->speed.x > 0))
+      ||  ( (px_Delta_position->real.x > px_Delta_position->ideal.x) && (px_Delta_position->speed.x < 0)) )
+    px_Delta_position->real.x += px_Delta_position->speed.x*override;
+  if (    ( (px_Delta_position->real.y < px_Delta_position->ideal.y) && (px_Delta_position->speed.y > 0))
+      ||  ( (px_Delta_position->real.y > px_Delta_position->ideal.y) && (px_Delta_position->speed.y < 0)) )
+    px_Delta_position->real.y += px_Delta_position->speed.y*override;
+  if (    ( (px_Delta_position->real.z < px_Delta_position->ideal.z) && (px_Delta_position->speed.z > 0))
+      ||  ( (px_Delta_position->real.z > px_Delta_position->ideal.z) && (px_Delta_position->speed.z < 0)) )
+    px_Delta_position->real.z += px_Delta_position->speed.z*override;
+  if (    ( (px_Delta_position->real.a < px_Delta_position->ideal.a) && (px_Delta_position->speed.a > 0))
+      ||  ( (px_Delta_position->real.a > px_Delta_position->ideal.a) && (px_Delta_position->speed.a < 0)) )
+    px_Delta_position->real.a += px_Delta_position->speed.a*override;
+  if (    ( (px_Delta_position->real.e < px_Delta_position->ideal.e) && (px_Delta_position->speed.e > 0))
+      ||  ( (px_Delta_position->real.e > px_Delta_position->ideal.e) && (px_Delta_position->speed.e < 0)) )
+    px_Delta_position->real.e += px_Delta_position->speed.e*override;
+  if (    ( (px_Delta_position->real.r < px_Delta_position->ideal.r) && (px_Delta_position->speed.r > 0))
+      ||  ( (px_Delta_position->real.r > px_Delta_position->ideal.r) && (px_Delta_position->speed.r < 0)) )
+    px_Delta_position->real.r += px_Delta_position->speed.r*override;
+}
+
+int move_cal_Sys(int idx_cntrl, int idx_arm)
+{
+  ORL_joint_value target_jnt;
+  memset(&target_jnt,0x00,sizeof(ORL_joint_value));
+  int type_move = ORL_TRJNT;
+  int sl_d = ORLOPEN_RES_OK;
+
+  target_jnt.unit_type = ORL_POSITION_LINK_DEGREE;
+  target_jnt.value[ORL_AX1] = 0.0;
+  target_jnt.value[ORL_AX2] = 0.0;
+  target_jnt.value[ORL_AX3] = -90.0;
+  target_jnt.value[ORL_AX4] = 0.0;
+  target_jnt.value[ORL_AX5] = 90.0;
+  target_jnt.value[ORL_AX6] = 0.0;
+  target_jnt.value[ORL_AX7] = 0.0;
+
+  sl_d = ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, type_move, NULL, &target_jnt, ORL_SILENT, idx_cntrl, idx_arm);
+  mask_moving_arms = mask_moving_arms | (1<<idx_arm);
+  flag_RunningMove[idx_arm] = true;
+  printf("--> Move acquired.\n");
+
+  if (type_move == ORL_TRJNT)
+    printf("--> Corresponding PDL2 move line: MOVE ARM[%d] JOINT TO {%f, %f, %f, %f, %f, %f, %f}\n",idx_arm+1,target_jnt.value[ORL_AX1],target_jnt.value[ORL_AX2],target_jnt.value[ORL_AX3],target_jnt.value[ORL_AX4],target_jnt.value[ORL_AX5],target_jnt.value[ORL_AX6],target_jnt.value[ORL_AX7]);
+  else
+    printf("--> Corresponding PDL2 move line: MOVE ARM[%d] LINEAR TO {%f, %f, %f, %f, %f, %f, %f}\n",idx_arm+1,target_jnt.value[ORL_AX1],target_jnt.value[ORL_AX2],target_jnt.value[ORL_AX3],target_jnt.value[ORL_AX4],target_jnt.value[ORL_AX5],target_jnt.value[ORL_AX6],target_jnt.value[ORL_AX7]);
+
+  si_k[idx_arm] = 0;
+  printf("[MSG] Robot is about to move...\n");
+  return sl_d;
+
+}
+
+int move_Arm(ORL_joint_value* px_target_jnt,int type_move,int idx_cntrl, int idx_arm)
+{
+  int sl_d = ORLOPEN_RES_OK;
+
+  sl_d = ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, type_move, NULL, px_target_jnt, ORL_SILENT, idx_cntrl, idx_arm);
+  if ( sl_d != ORLOPEN_RES_OK)
+  {
+    printf("--> Errore prec %d\n",sl_d);
+    return sl_d;
+  }
+  mask_moving_arms = mask_moving_arms | (1<<idx_arm);
+  flag_RunningMove[idx_arm] = true;
+  printf("--> Move acquired.\n");
+
+  if (type_move == ORL_TRJNT)
+    printf("--> Corresponding PDL2 move line: MOVE ARM[%d] JOINT TO {%f, %f, %f, %f, %f, %f, %f}\n",idx_arm+1,px_target_jnt->value[ORL_AX1],px_target_jnt->value[ORL_AX2],px_target_jnt->value[ORL_AX3],px_target_jnt->value[ORL_AX4],px_target_jnt->value[ORL_AX5],px_target_jnt->value[ORL_AX6],px_target_jnt->value[ORL_AX7]);
+  else
+    printf("--> Corresponding PDL2 move line: MOVE ARM[%d] LINEAR TO {%f, %f, %f, %f, %f, %f, %f}\n",idx_arm+1,px_target_jnt->value[ORL_AX1],px_target_jnt->value[ORL_AX2],px_target_jnt->value[ORL_AX3],px_target_jnt->value[ORL_AX4],px_target_jnt->value[ORL_AX5],px_target_jnt->value[ORL_AX6],px_target_jnt->value[ORL_AX7]);
+
+  si_k[idx_arm] = 0;
+  printf("[MSG] Robot is about to move...\n");
+  return sl_d;
+
+}
+
+
+void decode_modality( int si_modality, char* string)
+{
+
+  switch(si_modality)
+  {
+    case CRCOPEN_LISTEN:
+      sprintf(string,"CRCOPEN_LISTEN");
+      break;
+    case CRCOPEN_POS_ABSOLUTE:
+      sprintf(string,"CRCOPEN_POS_ABSOLUTE");
+      break;
+    case CRCOPEN_POS_RELATIVE:
+      sprintf(string,"CRCOPEN_POS_RELATIVE");
+      break;
+    case CRCOPEN_POS_ADDITIVE:
+      sprintf(string,"CRCOPEN_POS_ADDITIVE");
+      break;
+    case CRCOPEN_POS_ADDITIVE_SB:
+      sprintf(string,"CRCOPEN_POS_ADDITIVE_SB");
+      break;
+    case CRCOPEN_POS_ADDITIVE_SBE:
+      sprintf(string,"CRCOPEN_POS_ADDITIVE_SBE");
+      break;
+    default:
+      sprintf(string,"--");
+      break;
+  }
+}
 int user_callback (int period)
 {
-  int res, si_arm;
+  int res;
   char flag_new_modality[MAX_NUM_ARMS];
   float override = 0.01 * period;
   double sine_amplitude, sine_freq;
@@ -12,158 +153,83 @@ int user_callback (int period)
   ORL_joint_value sx_jnt_pos;
   char s_modality[40];
 
-  for (si_arm=0;si_arm<MAX_NUM_ARMS;si_arm++)
+  int armIndex=0;
+
+  flag_new_modality[armIndex] = false;
+  modality_old[armIndex] = modality_active[armIndex];
+  modality_active[armIndex] = ORLOPEN_GetModeMasterAx(ORL_SILENT,ORL_CNTRL01, armIndex);
+  mask = ORLOPEN_GetOpenMask( ORL_SILENT,ORL_CNTRL01,armIndex );
+  if(modality_old[armIndex] != modality_active[armIndex])
   {
-    flag_new_modality[si_arm] = false;
-    modality_old[si_arm] = modality_active[si_arm];
-    modality_active[si_arm] = ORLOPEN_GetModeMasterAx(ORL_SILENT,ORL_CNTRL01, si_arm);
-    mask = ORLOPEN_GetOpenMask( ORL_SILENT,ORL_CNTRL01,si_arm );
-    if(modality_old[si_arm] != modality_active[si_arm])
-    {
-      flag_new_modality[si_arm] = true;
-      decode_modality( (unsigned int)modality_active[si_arm], s_modality);
-      printf("ARM %d Modality %d %s\n", si_arm+1,(unsigned int)modality_active[si_arm],s_modality);
-    }
-    else
-    {
-      flag_new_modality[si_arm] = false;
-    }
+    flag_new_modality[armIndex] = true;
+    decode_modality( (unsigned int)modality_active[armIndex], s_modality);
+    printf("ARM %d Modality %d %s\n", armIndex+1,(unsigned int)modality_active[armIndex],s_modality);
+  }
+  else
+  {
+    flag_new_modality[armIndex] = false;
+  }
 
-    if (flag_MoveKeyboard[si_arm] && ( (modality_active[si_arm] != CRCOPEN_POS_RELATIVE) && (modality_active[si_arm] != CRCOPEN_POS_ABSOLUTE)))
-    {
-      flag_MoveKeyboard[si_arm] = false;
-    }
-    switch (modality_active[si_arm])
-    {
-      case CRCOPEN_LISTEN:
-        ORLOPEN_sync_position(&current_joints[si_arm], ORL_SILENT, ORL_CNTRL01, si_arm);
-        ORL_direct_kinematics(&current_position[si_arm],&current_joints[si_arm],ORL_SILENT, ORL_CNTRL01,si_arm);
-        break;
-      case CRCOPEN_POS_ABSOLUTE:
-        if (cycle_active)
+  if (flag_MoveKeyboard[armIndex] && ( (modality_active[armIndex] != CRCOPEN_POS_RELATIVE) && (modality_active[armIndex] != CRCOPEN_POS_ABSOLUTE)))
+  {
+    flag_MoveKeyboard[armIndex] = false;
+  }
+  switch (modality_active[armIndex])
+  {
+    case CRCOPEN_LISTEN:
+      ORLOPEN_sync_position(&current_joints[armIndex], ORL_SILENT, ORL_CNTRL01, armIndex);
+      ORL_direct_kinematics(&current_position[armIndex],&current_joints[armIndex],ORL_SILENT, ORL_CNTRL01,armIndex);
+      break;
+    case CRCOPEN_POS_ABSOLUTE:
+      if (cycle_active)
+      {
+        if ((flag_new_modality[armIndex]) && (modality_active[armIndex] == CRCOPEN_POS_ABSOLUTE))
         {
-          if ((flag_new_modality[si_arm]) && (modality_active[si_arm] == CRCOPEN_POS_ABSOLUTE))
+          move_cal_Sys(ORL_CNTRL01, armIndex);
+        }
+      }
+
+      if (mask_moving_arms & (1<<armIndex))
+        res = ORL_get_next_interpolation_step (&sx_jnt_pos, ORL_SILENT, ORL_CNTRL01, armIndex);
+      else
+        res = -42;
+
+      if (res==0)
+      {
+        si_k[armIndex]++;
+        memcpy(&current_joints[armIndex],&sx_jnt_pos,sizeof(ORL_joint_value));
+      }
+      else
+      {
+        if (res==-42) /*no active move*/
+        {
+          flag_RunningMove[armIndex] = false;
+        }
+        else if (res==2) /*the movement has been finished*/
+        {
+          flag_RunningMove[armIndex] = false;
+          mask_moving_arms = mask_moving_arms & !(1<<armIndex);
+          printf("\n--------------------- END MOVE ARM_%d: %d step ----------------\n",armIndex+1,si_k[armIndex]);
+          si_k[armIndex]=0;
+          if (cycle_active)
           {
-            move_cal_Sys(ORL_CNTRL01, si_arm);
+            flag_ExitFromOpen[armIndex] = true;
           }
-        }
-
-        if (mask_moving_arms & (1<<si_arm))
-          res = ORL_get_next_interpolation_step (&sx_jnt_pos, ORL_SILENT, ORL_CNTRL01, si_arm);
-        else
-          res = -42;
-
-        if (res==0)
-        {
-          si_k[si_arm]++;
-          memcpy(&current_joints[si_arm],&sx_jnt_pos,sizeof(ORL_joint_value));
-          /*printf("[INTL] 0 %d step [%3d]: %f,%f,%f,%f,%f,%f,%f\n",ORL_ARM1+si_arm, si_k[si_arm], current_joints[si_arm].value[ORL_AX1],current_joints[si_arm].value[ORL_AX2],current_joints[si_arm].value[ORL_AX3],current_joints[si_arm].value[ORL_AX4],current_joints[si_arm].value[ORL_AX5],current_joints[si_arm].value[ORL_AX6],current_joints[si_arm].value[ORL_AX7]);*/
-        }
-        else
-        {
-          if (res==-42) /*no active move*/
-          {
-            flag_RunningMove[si_arm] = false;
-          }
-          else if (res==2) /*the movement has been finished*/
-          {
-            flag_RunningMove[si_arm] = false;
-            mask_moving_arms = mask_moving_arms & !(1<<si_arm);
-            printf("\n--------------------- END MOVE ARM_%d: %d step ----------------\n",si_arm+1,si_k[si_arm]);
-            si_k[si_arm]=0;
-            if (cycle_active)
-            {
-              flag_ExitFromOpen[si_arm] = true;
-            }
-
-          }
-          memcpy(&sx_jnt_pos,&current_joints[si_arm],sizeof(ORL_joint_value));
-          ORL_direct_kinematics(&current_position[si_arm],&current_joints[si_arm],ORL_SILENT, ORL_CNTRL01,si_arm);
-        }
-        ORLOPEN_set_absolute_pos_target_degree( &sx_jnt_pos, ORL_SILENT, ORL_CNTRL01, si_arm );
-        break;
-      case CRCOPEN_POS_RELATIVE:
-#if 0
-        if ((flag_new_modality[si_arm]) && (modality_active[si_arm] == CRCOPEN_POS_RELATIVE))
-        {
-          cnt_modality[si_arm] = - delay;
-          memset(&Delta_Position[si_arm].ideal,0x00,sizeof(ORL_cartesian_position));
-          memset(&Delta_Position[si_arm].real,0x00,sizeof(ORL_cartesian_position));
-          memset(&Delta_Position[si_arm].speed,0x00,sizeof(ORL_cartesian_position));
-        }
-        memset(&sx_jnt_pos,0x00,sizeof(ORL_joint_value));
-        if ( (si_arm == ORL_ARM1) || (si_arm == ORL_ARM2) )
-        {
-        }
-        else if (si_arm == ORL_ARM3)
-        {
-          sx_jnt_pos.unit_type = ORL_POSITION_MOTORROUNDS;
-          if (cnt_modality[si_arm] < 0)
-            sine_amplitude = 0.0;
-          else
-            sine_amplitude = function_triangle(cnt_modality[si_arm], 6.0, 20.0);
-          /*apply_delta_position(&Delta_Position[si_arm],override);
-            sx_jnt_pos.value[ORL_AX1] = Delta_Position[si_arm].real.x;*/
-          sx_jnt_pos.value[ORL_AX1] = function_sine(cnt_modality[si_arm],sine_amplitude,0.1);
-          cnt_modality[si_arm] += period;
-          ORLOPEN_set_relative_pos_target_mr(&sx_jnt_pos,&mask,ORL_SILENT, ORL_CNTRL01, si_arm);
-        }
-
-        if (cycle_active)
-        {
-          if ((sine_freq == 0.0) && (cnt_modality[si_arm] > 12500)/*5 seconds*/ /*durata_secondi/4.0*10000.0*/)
-            flag_ExitFromOpen[si_arm] = true;
-        }
-
-        break;
-
-      case CRCOPEN_POS_ADDITIVE:
-      case CRCOPEN_POS_ADDITIVE_SB:
-      case CRCOPEN_POS_ADDITIVE_SBE:
-        if ((flag_new_modality[si_arm]) && (modality_active[si_arm] == CRCOPEN_POS_ADDITIVE))
-        {
-          cnt_modality[si_arm] = - delay;
-          memset(&Delta_Position[si_arm].ideal,0x00,sizeof(ORL_cartesian_position));
-          memset(&Delta_Position[si_arm].real,0x00,sizeof(ORL_cartesian_position));
-          memset(&Delta_Position[si_arm].speed,0x00,sizeof(ORL_cartesian_position));
-        }
-        memset(&sx_jnt_pos,0x00,sizeof(ORL_joint_value));
-        if ( (si_arm == ORL_ARM1) || (si_arm == ORL_ARM2))
-        {
 
         }
-        else if (si_arm == ORL_ARM3)
-        {
-          sx_jnt_pos.unit_type = ORL_POSITION_MOTORROUNDS;
-          /*apply_delta_position(&Delta_Position[si_arm],override);
-            sx_jnt_pos.value[ORL_AX1] = Delta_Position[si_arm].real.x;*/
-          if (cnt_modality[si_arm] < 0)
-            sine_amplitude = 0.0;
-          else
-            sine_amplitude = function_triangle(cnt_modality[si_arm], 6.0, 20.0);
-          sx_jnt_pos.value[ORL_AX1] = function_sine(cnt_modality[si_arm],sine_amplitude,0.1);
-          cnt_modality[si_arm] += period;
-          ORLOPEN_set_additive_pos_target_mr(&sx_jnt_pos,&mask,ORL_SILENT, ORL_CNTRL01, si_arm);
-        }
+        memcpy(&sx_jnt_pos,&current_joints[armIndex],sizeof(ORL_joint_value));
+        ORL_direct_kinematics(&current_position[armIndex],&current_joints[armIndex],ORL_SILENT, ORL_CNTRL01,armIndex);
+      }
+      ORLOPEN_set_absolute_pos_target_degree( &sx_jnt_pos, ORL_SILENT, ORL_CNTRL01, armIndex );
+      break;
+    default:
+      break;
+  }
 
-        if (cycle_active)
-        {
-          if ((sine_freq == 0.0) && (cnt_modality[si_arm] > 12500)/*5 seconds*/ /*durata_secondi/4.0*10000.0*/)
-            flag_ExitFromOpen[si_arm] = true;
-        }
-
-        break;
-
-#endif
-      default:
-        break;
-    }
-
-    if (flag_ExitFromOpen[si_arm])
-    {
-      ORLOPEN_ExitFromOpen( ORL_SILENT,  ORL_CNTRL01, si_arm);
-      flag_ExitFromOpen[si_arm] = false;
-    }
+  if (flag_ExitFromOpen[armIndex])
+  {
+    ORLOPEN_ExitFromOpen( ORL_SILENT,  ORL_CNTRL01, armIndex);
+    flag_ExitFromOpen[armIndex] = false;
   }
   return ORLOPEN_RES_OK;
 }
