@@ -1,5 +1,5 @@
 #include <APC/UpdateBins.h>
-#include "../Parser/src/ipc.h"
+#include <Parser/RobotData.h>
 
 namespace APC{
   void updateBins(OrderStatus& order){
@@ -17,11 +17,17 @@ namespace APC{
 
     InterProcessCommunication::RobotData& r=InterProcessCommunication::RobotData::getInstance();
 
-    while(!order.is_empty()){
+    while(!order.empty()){
+      /** Take a new order and recompute it if needed; then put it again into the queueueue*/
       Order x=order.top();
       order.pop();
 
-      if(r.isDirty(x.bin[0], x.bin[1]){
+      if(r.isDirty(x.bin[0], x.bin[1])){
+        /**
+         * moveToBin(x.bin[0], x.bin[1])
+         * RobotData.bin[].photo=takePhoto();
+         * updateGiorgio()
+         */
           /** We moved things, lets'a update the bin content */
           x.grasp=getBestGrasp(x.object, x.bin[0], x.bin[1]);
       }

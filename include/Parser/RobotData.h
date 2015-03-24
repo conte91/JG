@@ -1,4 +1,5 @@
 #pragma once
+#include <Camera/Image.h>
 
 namespace InterProcessCommunication{
   class RobotData {
@@ -6,6 +7,7 @@ namespace InterProcessCommunication{
       static RobotData& getInstance();
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);
+      bool isDirty(int row, int column);
       static Camera::Image getImageFrame();
       int start();
       int stop();
@@ -13,12 +15,16 @@ namespace InterProcessCommunication{
       struct Bin {
         std::string object[5];
         bool dirty;
+        Camera::Image photo;
       };
       struct Shelf {
         Bin bins[12];
       };
 
       Shelf shelf;
+
+      /** Returns the index of the bin (into the internal array) corresponding to the (row, column) coordinate */
+      int xyToBin(int row, int column);
 
       RobotData();
       ~RobotData();

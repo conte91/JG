@@ -20,6 +20,15 @@ namespace InterProcessCommunication{
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
     this->shelf.bins[(row*4)+column].object[item] = val;
   }
+
+  int RobotData::xyToBin(int row, int column){
+    return (row*4)+column;
+  }
+
+  bool RobotData::isDirty(int row, int column){
+    return shelf.bin[xyToBin(row, column)].dirty;
+
+  }
   
   //cv::Mat (const cv::Mat& orgImage)
   Camera::Image RobotData::getImageFrame(){
