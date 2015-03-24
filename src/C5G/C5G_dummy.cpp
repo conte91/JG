@@ -13,8 +13,8 @@ namespace C5G{
     std::cout << "Global movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }
 
-  void C5G::init(){
-    std::cout << "Initing the system..\n";
+  void C5G::init(const std::string& ip, const std::string& sysID){
+    std::cout << "Initing the system..\nConnecting to IP address: " << ip << "\nSystem ID: " << sysID << "\n";
     boost::this_thread::sleep_for(boost::chrono::seconds(3));
     std::cout << "Done.\n";
   }
@@ -40,4 +40,8 @@ namespace C5G{
     setGripping(g.force);
     moveCartesian(g.approach);
   }
+  C5G::~C5G(){
+    standby();
+  }
 }
+
