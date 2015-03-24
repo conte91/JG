@@ -35,11 +35,9 @@ namespace InterProcessCommunication{
   int RobotData::start() {
     return 0;
   }
-
   int RobotData::stop() {
     return 0;
   }
-
   RobotData::RobotData() {};
   RobotData::~RobotData() {};
   void RobotData::operator=(RobotData const&) {}; // Don't implement
@@ -57,9 +55,8 @@ BOOST_PYTHON_MODULE(apcRobot)
       .staticmethod("getInstance")
       .def("getBinItem",&InterProcessCommunication::RobotData::getBinItem)
       .def("setBinItem",&InterProcessCommunication::RobotData::setBinItem)
-      .def("start",&InterProcessCommunication::RobotData::start)
-      .def("stop",&InterProcessCommunication::RobotData::stop)
       .def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
+      .def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
       ;
   }
 }
