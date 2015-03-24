@@ -15,8 +15,8 @@ namespace C5G{
     boost::this_thread::sleep_for(boost::chrono::seconds(1));
   }
 
-  void C5G::init(){
-    std::cout << "Initing the system..\n";
+  void C5G::init(const std::string& ip, const std::string& sysID){
+    std::cout << "Initing the system..\nConnecting to IP address: " << ip << "\nSystem ID: " << sysID << "\n";
     boost::this_thread::sleep_for(boost::chrono::seconds(3));
     std::cout << "Done.\n";
   }
@@ -42,4 +42,8 @@ namespace C5G{
     setGripping(g.force);
     moveCartesian(g.approach);
   }
+  C5G::~C5G(){
+    standby();
+  }
 }
+
