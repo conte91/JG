@@ -1,7 +1,8 @@
+#include <Parser/RobotData.h>
+
+#include <boost/python.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-
-#include <Parser/RobotData.h>
 
 BOOST_PYTHON_MODULE(apcRobot)
 {
