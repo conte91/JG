@@ -16,6 +16,7 @@ namespace C5G {
 
     /** Basic operations */
     Pose operator+(const Pose& o) const;
+    Pose(/* In meters */ double x, double y, double z, /* In radians */ double alpha, double beta, double gamma, /* Override default units */bool useMMDeg=false);
   };
 }
 

@@ -38,7 +38,7 @@ namespace C5G{
   }
 
   /** TODO CHECK THIS!*/
-  const Pose C5G::safePose={0.3, 0, 0.7, 0, 0, 0};
+  const Pose C5G::safePose(0.3, 0, 0.7, 0, 0, 0);
   void C5G::moveCartesian(const Pose& p){
     ORL_cartesian_position  target_pos;
     target_pos.x=p.x;
@@ -50,7 +50,8 @@ namespace C5G{
     std::cout << "Relative movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
   }
 
-  void C5G::init(const std::string& STRING_IP_CNTRL, const std::string& STRING_SYS_ID){
+  void C5G::init(){
+    const std::string& STRING_IP_CNTRL=_ip, STRING_SYS_ID=_sys_id;
     std::cout << "Initing the system..\n";
     int si_arm, res, si_i, period;
     ORL_cartesian_position sx_base, sx_tool, sx_uframe;
@@ -78,7 +79,6 @@ namespace C5G{
 
     if( (ORLOPEN_initialize_controller(STRING_IP_CNTRL.c_str(),STRING_SYS_ID.c_str(),ORL_SILENT,ORL_CNTRL01)) != 0 )
     {
-      std::cerr << "error ORL_initialize_robot\n" ;
       throw std::string("Error in ORL_initialize_robot\n");
     }
     else{
@@ -136,6 +136,14 @@ namespace C5G{
     std::cout << "Goodbye.\n";
   }
 
+  C5G::C5G(const std::string& ip, const std::string& sys_id, bool mustInit):
+    _ip(ip),
+    _sys_id(sys_id)
+  {
+    if(mustInit){
+      init();
+    }
+  }
   C5G::~C5G(){
     standby();
   }
