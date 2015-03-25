@@ -31,13 +31,6 @@ namespace InterProcessCommunication{
     cv::imshow("bw",cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE));
     return frame;
   }
-  
-  int RobotData::start() {
-    return 0;
-  }
-  int RobotData::stop() {
-    return 0;
-  }
   RobotData::RobotData() {};
   RobotData::~RobotData() {};
   void RobotData::operator=(RobotData const&) {}; // Don't implement
