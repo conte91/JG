@@ -10,6 +10,7 @@ namespace APC{
     int bin[2];
     C5G::Grasp grasp;
     static const double MIN_SCORE_WE_CAN_MANAGE;
+    Order(const std::string& object="none");
   };
 
   bool operator<(const Order& left, const Order& right);

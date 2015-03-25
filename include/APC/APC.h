@@ -6,7 +6,7 @@ namespace APC{
       APC();
       ~APC();
     public:
-      static int main();
+      static int main(int argc, char** argv);
   };
 }
 

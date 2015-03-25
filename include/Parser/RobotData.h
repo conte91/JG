@@ -7,7 +7,6 @@ namespace InterProcessCommunication{
       static RobotData& getInstance();
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);
-<<<<<<< HEAD
       bool isDirty(int row, int column);
       std::vector<std::string> getWorkOrder();
       void setWorkOrder(int row,int column,const std::string& itemName);

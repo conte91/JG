@@ -1,5 +1,5 @@
 #include <APC/APC.h>
 
-int main(){
-  return APC::APC::main();
+int main(int argc, char** argv){
+  return APC::APC::main(argc, argv);
 }

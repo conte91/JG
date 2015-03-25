@@ -13,20 +13,37 @@
 #include <Parser/RobotData.h>
 
 namespace APC{
-  int APC::main(){
+  int APC::main(int argc, char** argv){
     using C5G::Pose;
     using C5G::Grasp;
     using C5G::C5G;
-    C5G robot;
+    if(argc<3){
+      std::cerr << "Usage: " << argv[0] << " server profile\n";
+      std::cerr  << "Example: " << argv[0] << " 172.22.178.102 CNTRLC5G_2200102\n";
+      return -1;
+    }
+
+    std::string ip(argv[1]);
+    std::string profile(argv[2]);
+    C5G robot(ip, profile, false);
+    try{
+      robot.init();
+    }
+    catch(std::string ex){
+      std::cerr << ex << "\n";
+      return -2;
+    }
+
 
     boost::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
     Camera::DummyConsumer img(x); 
     ScanBins(robot, img);
 
     OrderStatus orderBin;
-    Parser::RobotData& rData=InterProcessCommunication::RobotData.getInstance();
-    for(rData.workOrder.iterator i=rData.workOrder.begin(); i!=rData.workOrder.end(); ++i){
-      orderBin.push_back(new order(i));
+    InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
+    std::vector<std::string> workOrder =rData.getWorkOrder();
+    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
+      orderBin.push(Order(*i));
     }
 
     try{
@@ -42,7 +59,7 @@ namespace APC{
         robot.moveCartesianGlobal(Shelf::getBinSafePose(x.bin[0], x.bin[1]));
         robot.setZero();
         robot.executeGrasp(todoGrasp);
-        Pose origin={0, 0, 0, 0, 0, 0};
+        Pose origin(0, 0, 0, 0, 0, 0);
         robot.moveCartesian(origin);
         /** TODO metterli bene */
         origin.z+=OrderBin::HEIGHT+0.1;

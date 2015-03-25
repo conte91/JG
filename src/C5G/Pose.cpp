@@ -24,8 +24,13 @@ namespace C5G{
     this->beta=beta;
     this->gamma=gamma;
   }
+
+  Pose::Pose(){
+  }
+
   Pose Pose::operator+(const Pose& o) const{
     /** TODO tmp */
     return Pose(x+o.x, y+o.y, z+o.z, alpha, beta, gamma /* TODO compute w/ angless */);
   }
+
 }
