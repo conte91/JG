@@ -2,6 +2,7 @@
 #define GLOBAL_VAR_EXTERN
 #include "demo_c5gopen.h"
 
+
 int user_callback (int period)
 {
   int res, si_arm;

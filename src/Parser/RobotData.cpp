@@ -1,4 +1,6 @@
 #include <boost/python.hpp>
+#include <vector>
+#include <string>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -30,6 +32,13 @@ namespace InterProcessCommunication{
 
   }
   
+  std::vector<std::string> RobotData::getWorkOrder(){
+    return this->workOrder;
+  }
+  void RobotData::setWorkOrder(int row, int column,const std::string& itemName){
+    this->workOrder[(row*4)+column] = itemName;
+  }
+
   //cv::Mat (const cv::Mat& orgImage)
   Camera::Image RobotData::getImageFrame(){
     using Camera::Image;
@@ -40,15 +49,6 @@ namespace InterProcessCommunication{
     cv::imshow("bw",cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE));
     return frame;
   }
-  
-  int RobotData::start() {
-    return 0;
-  }
-
-  int RobotData::stop() {
-    return 0;
-  }
-
   RobotData::RobotData() {};
   RobotData::~RobotData() {};
   void RobotData::operator=(RobotData const&) {}; // Don't implement
@@ -66,9 +66,10 @@ BOOST_PYTHON_MODULE(apcRobot)
       .staticmethod("getInstance")
       .def("getBinItem",&InterProcessCommunication::RobotData::getBinItem)
       .def("setBinItem",&InterProcessCommunication::RobotData::setBinItem)
-      .def("start",&InterProcessCommunication::RobotData::start)
-      .def("stop",&InterProcessCommunication::RobotData::stop)
+      .def("getWorkOrder",&InterProcessCommunication::RobotData::getWorkOrder)
+      .def("setworkOrder",&InterProcessCommunication::RobotData::setWorkOrder)
       .def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
+      .def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
       ;
   }
 }

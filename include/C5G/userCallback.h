@@ -1,15 +1,11 @@
+#pragma once
 
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <pthread.h>
+#include <eORL.h>
 
-#include "eORL.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef GLOBAL_VAR_EXTERN
 #define EXTRN  extern
@@ -28,9 +24,6 @@
 #else
 #define MAX_NUM_ARMS    1
 #endif
-
-#define STRING_SYS_ID          "CNTRLC5G_2200102"
-
 
 #define SINUSOIDE_MR            1
 #define SINUSOIDE_DEGREE        2
@@ -79,3 +72,7 @@ double amplitude_modulation(long long cnt, double peak, double time_peak);
 int move_cal_Sys(int idx_cntrl, int idx_arm);
 int move_Arm(ORL_joint_value* px_target_jnt,int type_move,int idx_cntrl, int idx_arm);
 void decode_modality( int si_modality, char* string);
+
+#ifdef __cplusplus
+}
+#endif

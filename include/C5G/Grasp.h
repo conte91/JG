@@ -8,7 +8,8 @@ namespace C5G{
     Pose approach;
     Pose grasp;
     double score;
-    double force;
+    double forceMin;
+    double forceMax;
   };
 
 }
