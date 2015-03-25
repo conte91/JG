@@ -5,11 +5,16 @@
 namespace C5G{
   class C5G{
 
+    private:
+      std::string _ip;
+      std::string _sys_id;
     public:
+      C5G(const std::string& ip, const std::string& sys_id, bool mustInit=true);
       ~C5G();
 
       static const Pose safePose;
-      void init(const std::string& ip, const std::string& sys_id);
+
+      void init();
       void standby();
       void moveCartesian(const Pose& p);
       void setZero();
