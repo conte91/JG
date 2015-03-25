@@ -2,42 +2,6 @@ import json
 import cv2
 import libApcRobot
 
-class RobotController(object):
-    def __init__(self,robotData,graspInfo):
-        self.robotData = robotData
-        self.graspPosesScores = graspInfo['graspPosesScores']
-
-    def goToBin(self,binName):
-        binNumber = 'A' - binName[4]
-        print("moving to bin ",binNumber)
-
-    def findBestGraph(graspPoseLeft):
-        best = max(self.graspPosesScores[graspPoseLeft])
-        score = self.graspPosesScores[best]
-        return best,score
-
-
-    def findCollisions(bodies,graspPoses):
-        return
-
-    def calculateScore(visionFrame,graspInfo):
-        bigNumber = 1000
-        graspPosesLeft = graspInfo['graspPosesLeft']
-        results = {}
-        for graspPoseLeft in graspPosesLeft:
-            best,score = findBestGrasp(graspPoseLeft)
-            results[graspPoseLeft] = (score,best)
-
-
-
-    def pickItem(self,itemName):
-        visionFrame = robotData.getLastFrame()
-        (xyz,rpy) = getPose(visionFrame)
-        grippingInfos = getGrippinPositions(itemName)
-        for grippingInfo in grippingInfos:
-            calculateScore(vsionFrame,grippingInfo)
-
-
 if __name__ != "__main__":
     print("can't import me")
 

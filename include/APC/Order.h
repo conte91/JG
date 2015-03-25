@@ -3,6 +3,7 @@
 #include <queue>
 #include <C5G/Grasp.h>
 
+//possibility to complete an order
 namespace APC{
   struct Order{
     std::string object;
