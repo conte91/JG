@@ -147,8 +147,6 @@ int user_callback (int period)
   int res;
   char flag_new_modality[MAX_NUM_ARMS];
   float override = 0.01 * period;
-  double sine_amplitude, sine_freq;
-  long delay = (long)(0.2/4.0*10000.0);/* 0.2 sec*/
   long mask;
   ORL_joint_value sx_jnt_pos;
   char s_modality[40];
@@ -228,6 +226,7 @@ int user_callback (int period)
 
   if (flag_ExitFromOpen[armIndex])
   {
+    printf("Exiting from OPEN\n");
     ORLOPEN_ExitFromOpen( ORL_SILENT,  ORL_CNTRL01, armIndex);
     flag_ExitFromOpen[armIndex] = false;
   }

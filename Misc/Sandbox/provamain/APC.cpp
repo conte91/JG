@@ -61,9 +61,7 @@ namespace APC{
         robot.executeGrasp(todoGrasp);
         Pose origin(0, 0, 0, 0, 0, 0);
         robot.moveCartesian(origin);
-        /** TODO metterli bene */
-        origin.z+=OrderBin::HEIGHT+0.1;
-        robot.moveCartesianGlobal(OrderBin::POSE+origin);
+        robot.moveCartesianGlobal(OrderBin::POSE+Pose(0, 0, OrderBin::HEIGHT+0.1, 0, 0, 0));
         robot.setGripping(0);
       }
     }

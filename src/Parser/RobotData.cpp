@@ -26,6 +26,10 @@ namespace InterProcessCommunication{
     return (row*4)+column;
   }
 
+  void RobotData::setDirty(int row, int column){
+    shelf.bins[xyToBin(row, column)].dirty;
+  }
+
   bool RobotData::isDirty(int row, int column){
     return shelf.bins[xyToBin(row, column)].dirty;
 
