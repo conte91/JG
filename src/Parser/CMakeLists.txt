@@ -3,7 +3,7 @@ FIND_PACKAGE(PythonLibs REQUIRED)
 
 FIND_PACKAGE(OpenCV REQUIRED)
 
-FIND_PACKAGE(Boost COMPONENTS python system OPTIONAL)
+FIND_PACKAGE(Boost COMPONENTS python system )
 IF(NOT ${Boost_FOUND})
   MESSAGE("Couldn't find Boost/python: going on searching for python3..\n")
   FIND_PACKAGE(Boost COMPONENTS python3 system REQUIRED)

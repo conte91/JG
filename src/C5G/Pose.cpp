@@ -7,6 +7,16 @@ std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
 
 namespace C5G{
 
+  Pose::Pose()
+  {
+    this->x=0;
+    this->y=0;
+    this->z=0;
+    this->alpha=0;
+    this->beta=0;
+    this->gamma=0;
+  }
+
   Pose::Pose(/* In meters */ double x, double y, double z, /* In radians */ double alpha, double beta, double gamma, /* Override default units */bool useMMDeg){
     static const double RAD_TO_DEG=57.2957795130824;
     if(useMMDeg){

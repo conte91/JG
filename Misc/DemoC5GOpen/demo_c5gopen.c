@@ -3,6 +3,7 @@
 
 
 static char DEFAULT_STRING_IP_CNTRL[]="172.22.178.102";
+static char DEFAULT_STRING_SYS_ID[]="CNTRLC5G_2200230";
 int  main (int argc, char **argv)
 {
 /*  ORL_joint_value sx_jnt_pos_cal,sx_jnt_pos_test,sx_jnt_out_test;
@@ -13,14 +14,26 @@ int  main (int argc, char **argv)
   STRING_IP_CNTRL=NULL;
   for (si_i = 1; si_i < argc;si_i++)
   {
- 	if(!strcmp(argv[si_i], "-S")){
-		si_i++;
-		STRING_IP_CNTRL=argv[si_i];
-	}
+    if(!strcmp(argv[si_i], "-S")){
+      si_i++;
+      STRING_IP_CNTRL=argv[si_i];
+    }
+  }
+  for (si_i = 1; si_i < argc;si_i++)
+  {
+    if(!strcmp(argv[si_i], "-P")){
+      si_i++;
+      STRING_SYS_ID=argv[si_i];
+    }
   }
   if(STRING_IP_CNTRL==NULL){
     fprintf(stderr, "You SHOULD specify a server with -S. Using default of %s\n", DEFAULT_STRING_IP_CNTRL);
     STRING_IP_CNTRL=DEFAULT_STRING_IP_CNTRL;
+  }
+
+  if(STRING_SYS_ID==NULL){
+    fprintf(stderr, "You SHOULD specify a server with -P. Using default of %s\n", DEFAULT_STRING_SYS_ID);
+    STRING_SYS_ID=DEFAULT_STRING_SYS_ID;
   }
 
   printf("Connection to %s: %s.c5g\n",STRING_IP_CNTRL, STRING_SYS_ID);

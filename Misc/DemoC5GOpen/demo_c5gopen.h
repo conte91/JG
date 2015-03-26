@@ -29,9 +29,6 @@
 #define MAX_NUM_ARMS    1
 #endif
 
-#define STRING_SYS_ID          "CNTRLC5G_2200102"
-
-
 #define SINUSOIDE_MR            1
 #define SINUSOIDE_DEGREE        2
 #define SINUSOIDE_CART          3
@@ -59,6 +56,7 @@ EXTRN char flag_MoveKeyboard[MAX_NUM_ARMS];
 EXTRN unsigned int modality_active[MAX_NUM_ARMS];
 EXTRN unsigned int modality_old[MAX_NUM_ARMS];
 EXTRN char* STRING_IP_CNTRL;
+EXTRN char* STRING_SYS_ID;
 
 EXTRN long long        cnt_modality[MAX_NUM_ARMS];
 EXTRN int         si_k[MAX_NUM_ARMS];

@@ -34,6 +34,7 @@ int main(int argc, char** argv){
     }
     catch(std::string s){
       std::cerr << "Erm.. There has been an error.\n";
+      std::cerr << "Details: " << s << "\n";
     }
   }
   return 0;
