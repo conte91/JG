@@ -20,6 +20,32 @@ namespace C5G{
     target_pos.a=p.alpha*RAD_TO_DEG;
     target_pos.e=p.beta*RAD_TO_DEG;
     target_pos.r=p.gamma*RAD_TO_DEG;
+    target_pos.config_flags[0]='\0';
+    std::cout << "Before : " << p << "\nAfter: " << target_pos.x << " " << target_pos.y << " " << target_pos.z << " " << target_pos.a << " " << target_pos.e << " " << target_pos.r << "\n" ;
+    return target_pos;
+  }
+
+  static Pose ORL2Pose(const ORL_cartesian_position& target_pos){
+    static const double RAD_TO_DEG=57.2957795130824;
+    Pose p(target_pos.x/1000, target_pos.y/1000, target_pos.z/1000, target_pos.a/RAD_TO_DEG, target_pos.e/RAD_TO_DEG, target_pos.r/RAD_TO_DEG);
+    std::cout << "After : " << p << "\nBefore: " << target_pos.x << " " << target_pos.y << " " << target_pos.z << " " << target_pos.a << " " << target_pos.e << " " << target_pos.r << "\n" ;
+    return p;
+  }
+
+  void C5G::setZero(){
+    setPosition(Pose(0, 0, 0, 0, 0, 0));
+    std::cout << "I'm now at zero.\n";
+  }
+
+  void C5G::setPosition(const Pose& p){
+    if(_currentMovementMode==MOVING_GLOBAL){
+      /** We were in global mode; save current position in order to restore it when needed */
+      _lastGlobalPose=ORL2Pose(current_position[ORL_ARM1]);
+      _currentMovementMode==MOVING_RELATIVE;
+    }
+    ORL_cartesian_position  target_pos=pose2ORL(p);
+    std::cout << "Setting the position to: " << p << "\n";
+    ORL_set_position (&target_pos, NULL, 0, ORL_CNTRL01, ORL_ARM1);
   }
 
   void C5G::moveCartesianGlobal(const Pose& p){
@@ -31,7 +57,7 @@ namespace C5G{
     {
       throw std::string("--! Inverse Kinematics fails! Check joint values...\n");
     }
-    ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, 1 /* CARTESIAN */, &target_pos, NULL, ORL_SILENT, ORL_CNTRL01, ORL_ARM1);
+    ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, ORL_TRCARLIN /* CARTESIAN - LINEAR */, &target_pos, NULL, ORL_SILENT, ORL_CNTRL01, ORL_ARM1);
     mask_moving_arms = mask_moving_arms | (1<<ORL_ARM1);
     flag_RunningMove[ORL_ARM1] = true;
     std::cout << "--> Move acquired.\n";
@@ -145,7 +171,8 @@ namespace C5G{
 
   C5G::C5G(const std::string& ip, const std::string& sys_id, bool mustInit):
     _ip(ip),
-    _sys_id(sys_id)
+    _sys_id(sys_id),
+    _currentMovementMode(MOVING_GLOBAL)
   {
     if(mustInit){
       init();
