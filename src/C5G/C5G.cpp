@@ -7,6 +7,17 @@
 
 namespace C5G{
 
+  void C5G::setZero(){
+    setPosition(Pose(0, 0, 0, 0, 0, 0));
+    std::cout << "I'm now at zero.\n";
+  }
+
+  void setPosition(const Pose& p){
+    ORL_cartesian_position  target_pos=pose2ORL(p);
+    std::cout << "Setting the position to: " << p << "\n";
+    ORL_set_position (&target_pos, NULL, 0, ORL_CNTRL01, ORL_ARM1);
+  }
+
   static ORL_cartesian_position pose2ORL(const Pose& p){
     static const double RAD_TO_DEG=57.2957795130824;
     ORL_cartesian_position  target_pos;
