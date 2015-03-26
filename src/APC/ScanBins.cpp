@@ -13,8 +13,12 @@ namespace APC{
     for(int i=0; i<Shelf::WIDTH; ++i){
       for(int j=0; j<Shelf::HEIGHT; ++j){
         /** Move to the bin */
-        robot.moveCartesianGlobal(Shelf::getBinSafePose(i, j)+Shelf::POSE);
-        photo.update();
+        Pose whereToGo=Shelf::getBinSafePose(i, j)+Shelf::POSE;
+        whereToGo.alpha=0;
+        whereToGo.beta=1.57;
+        whereToGo.gamma=0;
+        robot.moveCartesianGlobal(whereToGo);
+        //photo.update();
         /** Go to a safe position - TODO needed?*/
         robot.moveCartesianGlobal(C5G::C5G::safePose);
       }

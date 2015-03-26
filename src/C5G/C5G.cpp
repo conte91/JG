@@ -26,6 +26,7 @@ namespace C5G{
     ORL_cartesian_position  target_pos=pose2ORL(p);
     ORL_joint_value         target_jnt, temp_joints;
 
+    std::cout << "Would like to move to " << p << "\n";
     if( ORL_inverse_kinematics(&target_pos, &temp_joints, ORL_SILENT, ORL_CNTRL01, ORL_ARM1) != 0 )
     {
       throw std::string("--! Inverse Kinematics fails! Check joint values...\n");
@@ -41,7 +42,7 @@ namespace C5G{
   }
 
   /** TODO CHECK THIS!*/
-  const Pose C5G::safePose(0.3, 0, 0.7, 0, 0, 0);
+  const Pose C5G::safePose(0.3, 0, 0.7, 0, 1.57, 0);
   void C5G::moveCartesian(const Pose& p){
     ORL_cartesian_position  target_pos;
     target_pos.x=p.x;
@@ -124,6 +125,9 @@ namespace C5G{
     initialize_Control_position();
 
     std::cout << "Done.\n";
+    std::cout << "\n\n****HERE WE GO.****\n\n****START THE PDL PROGRAM AND PRESS ENTER WHERE READY...\n\n";
+    std::string a;
+    std::cin >> a;
   }
 
   void C5G::standby(){

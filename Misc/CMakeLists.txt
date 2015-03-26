@@ -1,5 +1,6 @@
 add_subdirectory("leap")
 add_subdirectory("Test_C5G")
+add_subdirectory("Test_scanBins")
 add_subdirectory("DemoC5GOpen")
 add_subdirectory("Test_condition_variables")
 add_subdirectory("Sandbox/provamain/")
