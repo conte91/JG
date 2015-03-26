@@ -4,6 +4,9 @@
 #Papers
 refs/
 
+#Ugly stuff
+Burocrazia/
+
 # C extensions
 *.so
 
