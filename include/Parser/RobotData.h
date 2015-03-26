@@ -8,6 +8,7 @@ namespace InterProcessCommunication{
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);
       bool isDirty(int row, int column);
+      void setDirty(int row, int column);
       std::vector<std::string> getWorkOrder();
       void setWorkOrder(int row,int column,const std::string& itemName);
       static Camera::Image getImageFrame();
