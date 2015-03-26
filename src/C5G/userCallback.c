@@ -145,7 +145,7 @@ void decode_modality( int si_modality, char* string)
 int user_callback (int period)
 {
   int res;
-  char flag_new_modality[MAX_NUM_ARMS];
+  char flag_new_modality[MAX_NUM_ARMS], flag_MustSetComplete[MAX_NUM_ARMS];
   float override = 0.01 * period;
   long mask;
   ORL_joint_value sx_jnt_pos;
@@ -205,8 +205,13 @@ int user_callback (int period)
         }
         else if (res==2) /*the movement has been finished*/
         {
+          if(flag_RunningMove[armIndex]){
+            flag_MustSetComplete[armIndex]=1;
+          }
+          printf("%d", flag_RunningMove[armIndex]);
           flag_RunningMove[armIndex] = false;
-          mask_moving_arms = mask_moving_arms & !(1<<armIndex);
+          printf("%d", flag_RunningMove[armIndex]);
+          mask_moving_arms = mask_moving_arms & ~(1<<armIndex);
           printf("\n--------------------- END MOVE ARM_%d: %d step ----------------\n",armIndex+1,si_k[armIndex]);
           si_k[armIndex]=0;
           if (cycle_active)
@@ -229,6 +234,10 @@ int user_callback (int period)
     printf("Exiting from OPEN\n");
     ORLOPEN_ExitFromOpen( ORL_SILENT,  ORL_CNTRL01, armIndex);
     flag_ExitFromOpen[armIndex] = false;
+  }
+  if(flag_MustSetComplete[armIndex]){
+    flag_MustSetComplete[armIndex]=0;
+    flag_hasCompletedTheMovement[armIndex] = 1;
   }
   return ORLOPEN_RES_OK;
 }

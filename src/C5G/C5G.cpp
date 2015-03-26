@@ -7,9 +7,6 @@
 
 namespace C5G{
 
-  void C5G::setZero(){
-    std::cout << "I'm now at zero.\n";
-  }
   static ORL_cartesian_position pose2ORL(const Pose& p){
     static const double RAD_TO_DEG=57.2957795130824;
     ORL_cartesian_position  target_pos;
@@ -40,7 +37,7 @@ namespace C5G{
   void C5G::setPosition(const Pose& p){
     if(_currentMovementMode==MOVING_GLOBAL){
       /** We were in global mode; save current position in order to restore it when needed */
-      _lastGlobalPose=ORL2Pose(current_position[ORL_ARM1]);
+      _lastGlobalPose=ORL2Pose(current_position[0]);
       _currentMovementMode==MOVING_RELATIVE;
     }
     ORL_cartesian_position  target_pos=pose2ORL(p);
@@ -51,19 +48,23 @@ namespace C5G{
   void C5G::moveCartesianGlobal(const Pose& p){
     ORL_cartesian_position  target_pos=pose2ORL(p);
     ORL_joint_value         target_jnt, temp_joints;
+    int ret;
 
     std::cout << "Would like to move to " << p << "\n";
-    if( ORL_inverse_kinematics(&target_pos, &temp_joints, ORL_SILENT, ORL_CNTRL01, ORL_ARM1) != 0 )
+    if( (ret=ORL_inverse_kinematics(&target_pos, &temp_joints, ORL_SILENT, ORL_CNTRL01, ORL_ARM1) )!= 0 )
     {
+      std::cerr << ret << "\n";
       throw std::string("--! Inverse Kinematics fails! Check joint values...\n");
     }
     ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, ORL_TRCARLIN /* CARTESIAN - LINEAR */, &target_pos, NULL, ORL_SILENT, ORL_CNTRL01, ORL_ARM1);
     mask_moving_arms = mask_moving_arms | (1<<ORL_ARM1);
-    flag_RunningMove[ORL_ARM1] = true;
     std::cout << "--> Move acquired.\n";
 
     std::cout << "Global movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
-    while(flag_RunningMove[ORL_ARM1]);
+    flag_hasCompletedTheMovement[0]=0;
+    flag_RunningMove[0] = 1;
+    while(!flag_hasCompletedTheMovement[ORL_ARM1]);
+    flag_hasCompletedTheMovement[0]=0;
     std::cout << "Movement ended.\n";
   }
 

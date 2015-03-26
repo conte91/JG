@@ -2,6 +2,8 @@ PROJECT("Amazon Picking Challenge")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
+SET(C_MAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wall)
+SET(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wall)
 IF( NOT(DEFINED NO_EORL))
   IF( CMAKE_SIZEOF_VOID_P MATCHES 8 )
     MESSAGE("Sorry, only 32 bit architectures are supported :( Try again in a few years..")
