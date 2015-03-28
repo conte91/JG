@@ -3,12 +3,21 @@ import numpy as np
 from csg.core import CSG
 
 
+GRASP_ERROR_LIMIT = 1
+
+
 class Item(object):
     def __init__(self, pose, roughShape, shape, grasps):
         self.pose = pose
         self.roughShape = roughShape
         self.shape = shape
         self.grasps = grasps
+
+    def __hash__(self):
+        return hash((self.pose ,self.shape))
+
+    def __eq__(self, other):
+        return (self.pose, self.shape) == (other.pose, other.shape)
 
     def translate(self, translationMatrix):
         self.pose += translationMatrix
@@ -26,12 +35,11 @@ class Grasp(object):
         self.approachPose += translationMatrix
         self.gripPose += translationMatrix
 
-    def checkCollision(self, otherItem):
+    def getCollisionVolume(self, otherItem):
         # missing shape <-> shape collision checking
         roughShape = CSG.cylinder(radius=1)
-        if roughShape.intersect(otherItem.roughShape):
-            return True
-        return False
+        volume = roughShape.intersect(otherItem.roughShape)
+        return volume
 
 """
     python::class_<InterProcessCommunication::RobotData, boost::noncopyable>("RobotData", python::no_init)
@@ -54,34 +62,31 @@ def getBestGrasp(targetItem):
 
     score = []
     for grasp in targetItem.getGrasps():
-        score[grasp] = calculateGraspScore(grasp)
+        score[grasp] = calculateGraspScore(grasp,)
 
 
-def calculateGraspScore(grasp, targetItem, otherItems):
+def calculateGraspScore(grasp, targetItem, bin):
     if not isDoable(grasp, targetItem):
         return -1
 
-    for binItem in binItems:
-        score[grasp] += grasp.checkCollision(binItem)
+    scores = dict()
+    for binItem in bin.getItems():
+        collisionVolume = 0
+        for grasp in targetItem.getGrasps():
+            collisionVolume += grasp.checkCollision(binItem)
+        scores[binItem] = collisionVolume
+    return scores
 
 
-def isDoable(itemName, grasp, row, column):
-    global gripper
-    translationMatrix = robotData.bins[row, column].getObjectPose(itemName)
-    shape = approx[itemName]
-    # get polygons of the real object
-    itemPolygons = shape + translationMatrix
-    # get the gripper translated by grip.apporach
-    translationMatrix = generateTranslationMatrix(grasp['approach'])
-    gripperPolygons = gripper + translationMatrix
-    # draw gripper on polygon
-    movingArea = gripperPolygons.union(itemPolygons)
-    otherItems = robotData.getItems()
-    for otherItem in getItem(Bin):
-        if item, itemPose > 0:
-            return False
+def isDoable(grasp, targetItem):
+    """
+    Checks if the gripper can grasp the item ignoring the environment
+    we only allow GRASP_ERROR_LIMIT error
+    """
+    distance = np.sqrt(np.square(grasp.gripPose) + np.square(targetItem.pose))
+    if distance > GRASP_ERROR_LIMIT:
+        return False
     return True
-
 
 if __name__ == '__main__':
     grasps = {}
@@ -97,4 +102,5 @@ if __name__ == '__main__':
         grasps = []
         for j in range(4):
             grasps.append(dummyGrasp)
-        items.append(Item(originPose,dummyShape,dummyShape,grasps))
+        someItem = Item(originPose, dummyShape, dummyShape, grasps)
+        items.append(someItem)
