@@ -17,6 +17,10 @@ namespace InterProcessCommunication{
     return this->shelf.bins[(row*4)+column].object[item];
   }
 
+  std::string RobotData::getBinItems(int row, int column){
+    return this->shelf.bins[(row*4)+column]
+  }
+
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
     this->shelf.bins[(row*4)+column].object[item] = val;
   }
@@ -54,6 +58,7 @@ BOOST_PYTHON_MODULE(apcRobot)
       .def("getInstance",&InterProcessCommunication::RobotData::getInstance,python::return_value_policy<python::reference_existing_object>() )
       .staticmethod("getInstance")
       .def("getBinItem",&InterProcessCommunication::RobotData::getBinItem)
+      .def("getBinItems",&InterProcessCommunication::RobotData::getBinItems)
       .def("setBinItem",&InterProcessCommunication::RobotData::setBinItem)
       .def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
       .def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
