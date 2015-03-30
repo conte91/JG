@@ -23,10 +23,7 @@ namespace C5G{
   }
 
   static Pose ORL2Pose(const ORL_cartesian_position& target_pos){
-    static const double RAD_TO_DEG=57.2957795130824;
-    Pose p(target_pos.x/1000, target_pos.y/1000, target_pos.z/1000, target_pos.a/RAD_TO_DEG, target_pos.e/RAD_TO_DEG, target_pos.r/RAD_TO_DEG);
-    std::cout << "After : " << p << "\nBefore: " << target_pos.x << " " << target_pos.y << " " << target_pos.z << " " << target_pos.a << " " << target_pos.e << " " << target_pos.r << "\n" ;
-    return p;
+    static const double RAD_TO_DEG=57.2957795130824; Pose p(target_pos.x/1000, target_pos.y/1000, target_pos.z/1000, target_pos.a/RAD_TO_DEG, target_pos.e/RAD_TO_DEG, target_pos.r/RAD_TO_DEG); std::cout << "After : " << p << "\nBefore: " << target_pos.x << " " << target_pos.y << " " << target_pos.z << " " << target_pos.a << " " << target_pos.e << " " << target_pos.r << "\n" ; return p;
   }
 
   void C5G::setZero(){
@@ -61,9 +58,8 @@ namespace C5G{
     std::cout << "--> Move acquired.\n";
 
     std::cout << "Global movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
-    flag_hasCompletedTheMovement[0]=0;
     flag_RunningMove[0] = 1;
-    while(!flag_hasCompletedTheMovement[ORL_ARM1]);
+    while(flag_RunningMove[0]);
     flag_hasCompletedTheMovement[0]=0;
     std::cout << "Movement ended.\n";
   }

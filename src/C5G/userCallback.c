@@ -201,7 +201,7 @@ int user_callback (int period)
       {
         if (res==-42) /*no active move*/
         {
-          flag_RunningMove[armIndex] = false;
+          //flag_RunningMove[armIndex] = false;
         }
         else if (res==2) /*the movement has been finished*/
         {

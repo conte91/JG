@@ -12,19 +12,30 @@ namespace APC{
     Pose p=Shelf::POSE;
 
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
-    /** First, move globally into the safe pose of each bin */
-    for(int i=0; i<Shelf::WIDTH; ++i){
-      for(int j=0; j<Shelf::HEIGHT; ++j){
-        /** Move to the bin */
+    for(int j=0; j<Shelf::HEIGHT; ++j){
+      for(int i=0; i<Shelf::WIDTH; ++i){
+        /** First, move globally into the safe pose of each bin */
         Pose whereToGo=Shelf::getBinSafePose(i, j)+Shelf::POSE;
         whereToGo.alpha=0;
         whereToGo.beta=1.57;
         whereToGo.gamma=0;
+
+        /** Go to the safe pose */
+        Pose p=C5G::C5G::safePose;
+        robot.moveCartesianGlobal(p);
+
+        /** Approach the shelf */
+        p.x=whereToGo.x;
+        p.y=whereToGo.y;
+        robot.moveCartesianGlobal(p);
+
+        /** Move to the bin */
         robot.moveCartesianGlobal(whereToGo);
         photo.update();
         rData.setDirty(i, j);
-        /** Go to a safe position - TODO needed?*/
-        robot.moveCartesianGlobal(C5G::C5G::safePose);
+
+        /** Return to the approach position */
+        robot.moveCartesianGlobal(p);
       }
     }
   }

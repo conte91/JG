@@ -46,10 +46,10 @@ EXTRN ORL_cartesian_position current_position[MAX_NUM_ARMS];
 
 EXTRN delta_position_t Delta_Position[MAX_NUM_ARMS];
 
-EXTRN char flag_RunningMove[MAX_NUM_ARMS];
+EXTRN volatile char flag_RunningMove[MAX_NUM_ARMS];
 EXTRN char flag_ExitFromOpen[MAX_NUM_ARMS];
 EXTRN char flag_MoveKeyboard[MAX_NUM_ARMS];
-EXTRN char flag_hasCompletedTheMovement[MAX_NUM_ARMS];
+EXTRN volatile char flag_hasCompletedTheMovement[MAX_NUM_ARMS];
 EXTRN unsigned int modality_active[MAX_NUM_ARMS];
 EXTRN unsigned int modality_old[MAX_NUM_ARMS];
 EXTRN char* STRING_IP_CNTRL;

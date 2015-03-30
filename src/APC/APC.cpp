@@ -49,7 +49,13 @@ namespace APC{
 
     boost::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
     Camera::DummyConsumer img(x); 
-    ScanBins(robot, img);
+    try{
+      ScanBins(robot, img);
+    }
+    catch(std::string ex){
+      std::cerr << "Error while scanning bins: " << ex << "\n";
+      return -4;
+    }
 
     OrderStatus orderBin;
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
