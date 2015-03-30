@@ -12,12 +12,18 @@ namespace InterProcessCommunication{
       std::vector<std::string> getWorkOrder();
       void setWorkOrder(int row,int column,const std::string& itemName);
       static Camera::Image getImageFrame();
+      int getCurrentRow();
+      int getCurrentColumn();
+      int setCurrentRow(int row);
+      int setCurrentColumn(int column);
+      friend std::ostream& operator<< (std::ostream& os, const RobotData& r);
 
     private:
       struct Bin {
         std::string object[5];
         bool dirty;
         Camera::Image photo;
+        friend std::ostream& operator<< (std::ostream& os, const InterProcessCommunication::RobotData r);
       };
       struct Shelf {
         Bin bins[12];
@@ -34,5 +40,7 @@ namespace InterProcessCommunication{
 
       void operator=(RobotData const&); // Don't implement
       RobotData(RobotData const&);              // Don't Implement
+
+      int _row, _column;
   };
 }

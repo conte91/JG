@@ -1,7 +1,9 @@
 #include <C5G/C5G.h>
 #include <C5G/Pose.h>
 #include <APC/Shelf.h>
+#include <Parser/RobotData.h>
 #include <Camera/ImageConsumer.h>
+#include <Parser/RobotData.h>
 
 namespace APC{
   void ScanBins(C5G::C5G& robot, Camera::ImageConsumer& photo){
@@ -9,6 +11,7 @@ namespace APC{
     using C5G::Pose;
     Pose p=Shelf::POSE;
 
+    InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
     /** First, move globally into the safe pose of each bin */
     for(int i=0; i<Shelf::WIDTH; ++i){
       for(int j=0; j<Shelf::HEIGHT; ++j){
@@ -18,7 +21,8 @@ namespace APC{
         whereToGo.beta=1.57;
         whereToGo.gamma=0;
         robot.moveCartesianGlobal(whereToGo);
-        //photo.update();
+        photo.update();
+        rData.setDirty(i, j);
         /** Go to a safe position - TODO needed?*/
         robot.moveCartesianGlobal(C5G::C5G::safePose);
       }

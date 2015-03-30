@@ -9,6 +9,37 @@
 #include <Parser/RobotData.h>
 
 namespace InterProcessCommunication{
+
+  std::ostream& operator<< (std::ostream& os, const InterProcessCommunication::RobotData& r){
+    for(int i=0; i<12; ++i){
+      os << "Bin " << (char) (i+'A') << ": ";
+      for(int item=0; item<5; ++item){
+        std::string s=r.shelf.bins[i].object[item];
+        if(s!=""){
+          os << r.shelf.bins[i].object[item];
+          os << ",";
+        }
+      }
+      os << "\n";
+    }
+  }
+
+  int RobotData::getCurrentRow(){
+    return _row;
+  }
+
+  int RobotData::getCurrentColumn(){
+    return _column;
+  }
+
+  int RobotData::setCurrentRow(int row){
+    _row=row;
+  }
+
+  int RobotData::setCurrentColumn(int column){
+    _column=column;
+  }
+
   RobotData& RobotData::getInstance() {
     static RobotData instance; // Guaranteed to be destroyed.
     return instance;
@@ -32,7 +63,6 @@ namespace InterProcessCommunication{
 
   bool RobotData::isDirty(int row, int column){
     return shelf.bins[xyToBin(row, column)].dirty;
-
   }
   
   std::vector<std::string> RobotData::getWorkOrder(){

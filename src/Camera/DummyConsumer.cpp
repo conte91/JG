@@ -9,7 +9,7 @@ namespace Camera{
   }
 
   void DummyConsumer::update(){
-    std::cout << "Updating...\n";
+    std::cout << "Updating image...\n";
   }
 
   void setProvider(boost::shared_ptr<const ImageProvider> provider){

@@ -1,11 +1,11 @@
 #include <APC/APC.h>
-
 #include <C5G/C5G.h>
 #include <C5G/Pose.h>
 #include <C5G/Grasp.h>
 #include <Camera/DummyConsumer.h>
 #include <Camera/DummyProvider.h>
 #include <APC/Order.h>
+#include <APC/ReadWorkOrder.h>
 #include <APC/ScanBins.h>
 #include <APC/UpdateBins.h>
 #include <APC/Shelf.h>
@@ -13,6 +13,18 @@
 #include <Parser/RobotData.h>
 
 namespace APC{
+  /** Base idea:
+   * Start with scanning all bins. In this way each bin has a recorded image, and each order is marked as "dirty".
+   * while(!finished):
+   *    Sort the objects which still have to be taken by score of their best grasp, after updating all the orders for which the best grasp score could have changed. 
+   *    Take the best one,
+   *    go in front of the bin (basic point from which the best grasp has been computed)
+   *    start executing the grasp
+   *    go back in front of the bin
+   *    Bring the object into the order bin
+   *    (go to a safe position)
+   *
+   */
   int APC::main(int argc, char** argv){
     using C5G::Pose;
     using C5G::Grasp;
@@ -41,7 +53,18 @@ namespace APC{
 
     OrderStatus orderBin;
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
-    std::vector<std::string> workOrder =rData.getWorkOrder();
+
+    std::cout << "Contents of the bins:\n" << rData << "\n";
+    readWorkOrder();
+
+    std::cout << "After loading:\n" << rData << "\n";
+    std::vector<std::string> workOrder=rData.getWorkOrder();
+
+    std::cout << "Work order: " ;
+    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
+     std::cout << *i << ",";
+    }
+    std::cout << "\n";
     for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
       orderBin.push(Order(*i));
     }

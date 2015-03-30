@@ -8,6 +8,6 @@ ENDIF(NOT ${Boost_FOUND})
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 
-PYTHON_ADD_MODULE(pyAPC ../APC.cpp ../main.cpp mainModule.cpp)
+PYTHON_ADD_MODULE(pyAPC ../main.cpp mainModule.cpp)
 
-TARGET_LINK_LIBRARIES(pyAPC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} robotdata camera c5g c5g_misc) 
+TARGET_LINK_LIBRARIES(pyAPC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} robotdata camera c5g c5g_misc apc_main) 
