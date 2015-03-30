@@ -31,7 +31,6 @@ for position in range(len(binNames)):
         print(row,column,index,itemName)
 
 for order in workOrders:
-    shelfBin = order['bin']
-    targetItem = order['item']
-    robotController.goToBin(shelfBin)
-    robotController.pickItem(targetItem)
+    row = position % 3
+    column = int(position/3)
+    robotData.setWorkOrder(row,column,order)
