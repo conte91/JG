@@ -1,3 +1,4 @@
+IF(NOT(DEFINED NO_LEAP))
 find_package(Leap REQUIRED)
 find_package(OpenCV REQUIRED)
 message("Leap LIBRARIES: ${OpenCV_LIBRARIES}")
@@ -10,3 +11,4 @@ add_library(leapcamera
 )
 
 target_link_libraries(leapcamera ${Leap_LIBRARIES} ${OpenCV_LIBRARIES} camera)
+ENDIF(NOT(DEFINED NO_LEAP))

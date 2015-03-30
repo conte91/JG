@@ -1,4 +1,6 @@
 #include <boost/python.hpp>
+#include <vector>
+#include <string>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -24,7 +26,14 @@ namespace InterProcessCommunication{
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
     this->shelf.bins[(row*4)+column].object[item] = val;
   }
-  
+
+  std::vector<std::string> RobotData::getWorkOrder(){
+    return this->workOrder;
+  }
+  void RobotData::setWorkOrder(int row, int column,const std::string& itemName){
+    this->workOrder[(row*4)+column] = itemName;
+  }
+
   //cv::Mat (const cv::Mat& orgImage)
   Camera::Image RobotData::getImageFrame(){
     using Camera::Image;
@@ -34,13 +43,6 @@ namespace InterProcessCommunication{
     cv::imshow("rgb",cv::imread("a.jpg"));
     cv::imshow("bw",cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE));
     return frame;
-  }
-  
-  int RobotData::start() {
-    return 0;
-  }
-  int RobotData::stop() {
-    return 0;
   }
   RobotData::RobotData() {};
   RobotData::~RobotData() {};
@@ -60,6 +62,8 @@ BOOST_PYTHON_MODULE(apcRobot)
       .def("getBinItem",&InterProcessCommunication::RobotData::getBinItem)
       .def("getBinItems",&InterProcessCommunication::RobotData::getBinItems)
       .def("setBinItem",&InterProcessCommunication::RobotData::setBinItem)
+      .def("getWorkOrder",&InterProcessCommunication::RobotData::getWorkOrder)
+      .def("setworkOrder",&InterProcessCommunication::RobotData::setWorkOrder)
       .def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
       .def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
       ;

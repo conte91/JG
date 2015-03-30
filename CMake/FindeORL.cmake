@@ -1,7 +1,7 @@
-FIND_PATH(eORL_INCLUDE_DIRS NAMES "eORL.h" PATHS ENV eORL_INCLUDE_DIR DOC "The eORL include directory")
+FIND_PATH(eORL_INCLUDE_DIRS NAMES "eORL.h" PATHS ${eORL_INCLUDE_DIR} DOC "The eORL include directory")
 message("eORL_INCLUDE_DIRS: ${eORL_INCLUDE_DIRS}; eORL_LIBRARIES: ${eORL_LIBRARIES}")
 message("PREFIX: ${CMAKE_PREFIX_PATH}")
-FIND_LIBRARY(eORL_LIBRARIES NAMES "eORL" PATHS /opt/eorl/lib /opt/eORL/lib /usr/lib/eORL /lib/eORL /opt/eORL/ ${CMAKE_PREFIX_PATH}/eORL ENV eORL_LIB_DIR DOC "The eORL library (libeORL.so)")
+FIND_LIBRARY(eORL_LIBRARIES NAMES "eORL" PATHS /opt/eorl/lib /opt/eORL/lib /usr/lib/eORL /lib/eORL /opt/eORL/ ${CMAKE_PREFIX_PATH}/eORL ${eORL_LIB_DIR} DOC "The eORL library (libeORL.so)")
 
 SET(eORL_FOUND FALSE)
 
