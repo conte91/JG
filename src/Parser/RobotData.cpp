@@ -19,8 +19,8 @@ namespace InterProcessCommunication{
     return this->shelf.bins[(row*4)+column].object[item];
   }
 
-  std::string RobotData::getBinItems(int row, int column){
-    return this->shelf.bins[(row*4)+column]
+  RobotData::Bin RobotData::getBinItems(int row, int column){
+    return this->shelf.bins[(row*4)+column];
   }
 
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
