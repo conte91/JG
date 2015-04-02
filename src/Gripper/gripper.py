@@ -1,6 +1,7 @@
 #import RobotData as robotData
 from copy import deepcopy
 import numpy as np
+from random import random
 
 
 GRASP_ERROR_LIMIT = 1
@@ -9,6 +10,9 @@ class Shape(object):
   def __init__(self,cubes):
     # set of cubes
     self.cubes = cubes
+
+  def __repr__(self):
+    return "Shape(" + ' '.join([repr(cube) for cube in self.cubes])+")"
 
   def intersect(self,otherShape):
     for myCube in self.cubes:
@@ -46,12 +50,32 @@ class RobotData(object):
   def __repr__(self):
     return '\n'.join([repr(item) for item in self.items[:5]])
 
+  def getBin(self):
+    return KivaBin(self.items)
+
+  def removeItem(self,item):
+    ind = items.index(item)
+    self.items.pop(ind)
+
+
+class KivaBin(object):
+  # fake
+  def __init__(self,items):
+    self.items = items
+
+  def __repr__(self):
+    return "KivaBin(\n\t" + '\n\t'.join([repr(item) for item in self.items[:5]]) + "\n)"
+
   def getBinItems(self):
     return self.items
 
   def removeItem(self,item):
     ind = items.index(item)
     self.items.pop(ind)
+
+  def getItemPose(self,itemName):
+    dx,dy,dz,da,db,dg = [100*random() for i in range(6)]
+    return {'x':dx,'y':dy,'z':dz,'a':da,'b':db,'g':dg}
 
 
 class Item(object):
@@ -71,9 +95,9 @@ class Item(object):
   def __eq__(self, other):
     return (self.pose, self.shape) == (other.pose, other.shape)
 
-  def translate(self, translationMatrix):
-    self.pose += translationMatrix
-    self.roughShape += translationMatrix
+  def transform(self, transformationMatrix):
+    for key in transformationMatrix.keys():
+      self.pose[key] += transformationMatrix[key]
 
   def getGrasps(self):
     return self.grasps
@@ -83,40 +107,38 @@ class Grasp(object):
   def __init__(self, approachPose, gripPose, minForce, maxForce):
     self.approachPose = approachPose
     self.gripPose = gripPose
+    self.roughShape = Shape([((1,2,0),(3,5,5))])
     self.minForce = minForce
     self.maxForce = maxForce
 
   def __repr__(self):
-    return ' '.join([str(val) for val in self.gripPose.values()])
-
-  def translate(self, translationMatrix):
-    self.approachPose += translationMatrix
-    self.gripPose += translationMatrix
+    return "Grasp(" + ' '.join([str(val) for val in self.gripPose.values()]) + ")"
 
   def getCollisionVolume(self, otherItem):
-    # missing shape <-> shape collision checking
-    cubes = [((1,2,0),(3,5,5))]
-    roughShape = Shape(cubes)
-    volume = roughShape.intersect(otherItem.roughShape)
+    volume = self.roughShape.intersect(otherItem.roughShape)
     return volume
 
-def getBestGrasp(targetItem):
-  binItems = robotData.getBinItems()
-  binItems.pop(targetItem)
+def getBestGrasp(targetItem,targetBin):
 
-  translationMatrix = robotData.getItemPose(targetItem)
-  targetItem.translate(translationMatrix)
+  transformationMatrix = targetBin.getItemPose(targetItem)
+  targetItem.transform(transformationMatrix)
 
   score = []
-  for grasp in targetItem.getGrasps():
-    score[grasp] = calculateGraspScore(grasp,)
+  grasps = targetItem.getGrasps()
+  for grasp in range(len(grasps)):
+    score[grasp] = calculateGraspScore(grasp,targetItem,targetBin)
+  best = score[score.index(max(score))]
+  return best
 
 def calculateGraspScore(grasp, targetItem, targetBin):
+  leftoverBin = deepcopy(targetBin)
+  leftoverBin.removeItem(targetItem)
+
   if not isDoable(grasp, targetItem):
     return -1
 
   scores = dict()
-  for binItem in targetBin.getBinItems():
+  for binItem in leftoverBin.getBinItems():
     collisionVolume = 0
     for grasp in targetItem.getGrasps():
       collisionVolume += grasp.getCollisionVolume(binItem)
@@ -141,7 +163,7 @@ def isDoable(grasp, targetItem):
 if __name__ == '__main__':
   grasps = {}
   gripper = "somegripper"
-  originPose = {'x': 0, 'y': 0, 'z': 0, 'alpha': 0, 'beta': 0, 'gamma': 0, }
+  originPose = {'x': 0, 'y': 0, 'z': 0, 'a': 0, 'b': 0, 'g': 0, }
   originXYZ = [0, 0, 0 ]
 
   objects = [
@@ -210,8 +232,13 @@ if __name__ == '__main__':
   # fake
   robotData = RobotData(items)
 
-  otherBin = deepcopy(robotData)
-  otherBin.removeItem(targetItem)
 
-  score = calculateGraspScore(grasps[0], items[0], otherBin)
+
+  kivaBin = KivaBin(items)
+
+  leftoverBin = deepcopy(kivaBin)
+  leftoverBin.removeItem(targetItem)
+
+  score = calculateGraspScore(grasps[0], items[0], leftoverBin)
+  getBestGrasp(targetItem, kivaBin)
   print "score",score
