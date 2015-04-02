@@ -7,6 +7,7 @@ GRASP_ERROR_LIMIT = 1
 
 class Shape(object):
   def __init__(self,cubes):
+    # set of cubes
     self.cubes = cubes
 
   def intersect(self,otherShape):
@@ -42,6 +43,9 @@ class RobotData(object):
   def __init__(self,items):
     self.items = items
 
+  def __repr__(self):
+    return '\n'.join([repr(item) for item in self.items[:5]])
+
   def getBinItems(self):
     return self.items
 
@@ -61,6 +65,9 @@ class Item(object):
   def __hash__(self):
     return hash(self.name)
 
+  def __repr__(self):
+    return "Item("+self.name+")"
+
   def __eq__(self, other):
     return (self.pose, self.shape) == (other.pose, other.shape)
 
@@ -79,14 +86,17 @@ class Grasp(object):
     self.minForce = minForce
     self.maxForce = maxForce
 
+  def __repr__(self):
+    return ' '.join([str(val) for val in self.gripPose.values()])
+
   def translate(self, translationMatrix):
     self.approachPose += translationMatrix
     self.gripPose += translationMatrix
 
   def getCollisionVolume(self, otherItem):
     # missing shape <-> shape collision checking
-    points = [((1,2,0),(3,5,5)),]
-    roughShape = Shape(points)
+    cubes = [((1,2,0),(3,5,5))]
+    roughShape = Shape(cubes)
     volume = roughShape.intersect(otherItem.roughShape)
     return volume
 
@@ -100,7 +110,6 @@ def getBestGrasp(targetItem):
   score = []
   for grasp in targetItem.getGrasps():
     score[grasp] = calculateGraspScore(grasp,)
-
 
 def calculateGraspScore(grasp, targetItem, targetBin):
   if not isDoable(grasp, targetItem):
@@ -133,11 +142,12 @@ if __name__ == '__main__':
   grasps = {}
   gripper = "somegripper"
   originPose = {'x': 0, 'y': 0, 'z': 0, 'alpha': 0, 'beta': 0, 'gamma': 0, }
+  originXYZ = [0, 0, 0 ]
 
   objects = [
     ['munchkin_white_hot_duck_bath_toy',(150,160,80)],
     ['mark_twain_huckleberry_finn',(128,250,16)],
-    ['sharpie_accent_tank_style_highlighters',(120,130,20],
+    ['sharpie_accent_tank_style_highlighters',(120,130,20)],
     ['genuine_joe_plastic_stir_sticks',(144,97,108)],
     ['safety_works_safety_glasses',(220,55,115)],
     ['rollodex_mesh_collection_jumbo_pencil_cup', (100,136,100)],
@@ -148,11 +158,13 @@ if __name__ == '__main__':
     ['highland_6539_self_stick_notes',(150,40,50)],
     ['expo_dry_erase_board_eraser',(130,35,55)],
     ['paper_mate_12_count_mirado_black_warrior',(195,20,50)],
-    ['laugh_out_loud_joke_book',(180,10,110)]
+    ['laugh_out_loud_joke_book',(180,10,110)],
     ['stanley_66_052',(195,20,100)],
     ['mead_index_cards',(130,78,23)],
     ['elmers_washable_no_run_school_glue', (65,150,35)],
+  ]
 
+  """
     ['champion_copper_plus_spark_plug',],
     ['cheezit_big_original',],
     ['crayola_64_ct',],
@@ -164,10 +176,11 @@ if __name__ == '__main__':
     ['one_with_nature_soap_dead_sea_mud',],
     ['oreo_mega_stuf',],
   ]
+  """
 
   dummyGrasp = Grasp(originPose, originPose, 0, 100000)
-  points = [(1, 2, 0), (2, 0, 1)]
-  dummyShape = Shape(points)
+  cubes = [((1, 2, 0), (2, 0, 1)),]
+  dummyShape = Shape(cubes)
   dummyPose = originPose
 
   items = []
@@ -175,7 +188,21 @@ if __name__ == '__main__':
     grasps = []
     for j in range(4):
       grasps.append(dummyGrasp)
-    someItem = Item(str(i*j),originPose, dummyShape, dummyShape, grasps)
+    if i < len(objects):
+      name = objects[i][0]
+      cube0 = (originXYZ, objects[i][1])
+      cube1 = cube0
+      cube2 = cube0
+      cube3 = cube0
+      cubes = [cube1,]
+      roughShape = Shape(cubes)
+      cubes = [cube0, cube1, cube2, cube3,]
+      fineShape = Shape(cubes)
+
+      someItem = Item(name, originPose, roughShape, fineShape, grasps)
+    else:
+      someItem = Item(str(i*j), originPose, dummyShape, dummyShape, grasps)
+
     items.append(someItem)
 
   targetItem = items[0]
@@ -186,4 +213,5 @@ if __name__ == '__main__':
   otherBin = deepcopy(robotData)
   otherBin.removeItem(targetItem)
 
-  calculateGraspScore(grasps[0], items[0], otherBin)
+  score = calculateGraspScore(grasps[0], items[0], otherBin)
+  print "score",score
