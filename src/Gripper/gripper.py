@@ -1,6 +1,7 @@
 #import RobotData as robotData
 from copy import deepcopy
 import numpy as np
+from math import sqrt
 from random import random
 
 
@@ -40,6 +41,55 @@ class Shape(object):
         print "test me"
         overlap = x*y*z
     return overlap
+
+
+class Sphere(object):
+  def __init__(self,center=point,radius=radius):
+    self.center = center
+    self.radius = radius
+    self.shapeName = "sphere"
+
+  def __repr__(self):
+    return "Sphere(" + self.center + "," + self.radius + ")"
+
+  def distance(p0,p1):
+    x0,y0 = p0
+    x1,y1 = p1
+    return sqrt((x0 - x1)**2 + (y0 - y1)**2)
+
+  def intersect(self,otherShape):
+    if otherShape.shapeName == "sphere":
+      p0 = self.center
+      r0 = self.radius
+      p1 = otherShape.center
+      r1 = otherShape.radius
+
+    else:
+      for myCube in self.cubes:
+        for otherCube in otherShape.cubes:
+          x0 = min(myCube[0][0],myCube[1][0])
+          y0 = min(myCube[0][1],myCube[1][1])
+          z0 = min(myCube[0][2],myCube[1][2])
+
+          x1 = max(myCube[0][0],myCube[1][0])
+          y1 = max(myCube[0][1],myCube[1][1])
+          z1 = max(myCube[0][2],myCube[1][2])
+
+          a0 = min(myCube[0][0],myCube[1][0])
+          b0 = min(myCube[0][1],myCube[1][1])
+          c0 = min(myCube[0][2],myCube[1][2])
+
+          a1 = max(myCube[0][0],myCube[1][0])
+          b1 = max(myCube[0][1],myCube[1][1])
+          c1 = max(myCube[0][2],myCube[1][2])
+
+          x = max(min(a1,x1)-max(a0,x0),0)
+          y = max(min(b1,y1)-max(b0,y0),0)
+          z = max(min(c1,z1)-max(c0,z0),0)
+
+          print "test me"
+          overlap = x*y*z
+      return overlap
 
 
 class RobotData(object):
@@ -125,9 +175,9 @@ def getBestGrasp(targetItem,targetBin):
 
   score = []
   grasps = targetItem.getGrasps()
-  for grasp in range(len(grasps)):
-    score[grasp] = calculateGraspScore(grasp,targetItem,targetBin)
-  best = score[score.index(max(score))]
+  for grasp in grasps:
+    score.append(calculateGraspScore(grasp,targetItem,targetBin))
+  best = score.index(max(score))
   return best
 
 def calculateGraspScore(grasp, targetItem, targetBin):
@@ -138,13 +188,16 @@ def calculateGraspScore(grasp, targetItem, targetBin):
     return -1
 
   scores = dict()
+  collisionVolume = 1
   for binItem in leftoverBin.getBinItems():
-    collisionVolume = 0
-    for grasp in targetItem.getGrasps():
-      collisionVolume += grasp.getCollisionVolume(binItem)
+    scores[binItem] = grasp.getCollisionVolume(binItem)
+    collisionVolume += scores[binItem]
 
-    scores[binItem] = collisionVolume
-  return scores
+  bestScore = 1.0
+  if collisionVolume == 0:
+    return bestScore
+  else:
+    return bestScore/collisionVolume
 
 
 def isDoable(grasp, targetItem):
