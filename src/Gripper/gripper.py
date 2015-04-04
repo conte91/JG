@@ -8,39 +8,75 @@ from random import random
 GRASP_ERROR_LIMIT = 1
 
 class Shape(object):
-  def __init__(self,cubes):
-    # set of cubes
-    self.cubes = cubes
+  def __init__(self,elements):
+    self.elements = elements
 
   def __repr__(self):
-    return "Shape(" + ' '.join([repr(cube) for cube in self.cubes])+")"
+    return "Shape(" + ' '.join([repr(element) for element in self.elements])+")"
 
   def intersect(self,otherShape):
-    for myCube in self.cubes:
-      for otherCube in otherShape.cubes:
-        x0 = min(myCube[0][0],myCube[1][0])
-        y0 = min(myCube[0][1],myCube[1][1])
-        z0 = min(myCube[0][2],myCube[1][2])
-
-        x1 = max(myCube[0][0],myCube[1][0])
-        y1 = max(myCube[0][1],myCube[1][1])
-        z1 = max(myCube[0][2],myCube[1][2])
-
-        a0 = min(myCube[0][0],myCube[1][0])
-        b0 = min(myCube[0][1],myCube[1][1])
-        c0 = min(myCube[0][2],myCube[1][2])
-
-        a1 = max(myCube[0][0],myCube[1][0])
-        b1 = max(myCube[0][1],myCube[1][1])
-        c1 = max(myCube[0][2],myCube[1][2])
-
-        x = max(min(a1,x1)-max(a0,x0),0)
-        y = max(min(b1,y1)-max(b0,y0),0)
-        z = max(min(c1,z1)-max(c0,z0),0)
-
-        print "test me"
+    value = 0
+    for element in self.elements:
+      for otherElement in otherShape.elements:
+        value += element.intersect(otherElement)
         overlap = x*y*z
     return overlap
+
+
+class Cube(object):
+  def __init__(self,vertices):
+    self.vertices = [
+        (vertices[0][0],vertices[0][1],vertices[0][2]),
+        (vertices[1][0],vertices[0][1],vertices[0][2]),
+        (vertices[0][0],vertices[1][1],vertices[0][2]),
+        (vertices[0][0],vertices[0][1],vertices[1][2]),
+
+        (vertices[1][0],vertices[1][1],vertices[1][2]),
+        (vertices[0][0],vertices[1][1],vertices[1][2]),
+        (vertices[1][0],vertices[0][1],vertices[1][2]),
+        (vertices[1][0],vertices[1][1],vertices[0][2]),
+
+        ]
+    self.shapeName = "cube"
+
+  def __repr__(self):
+    return "Cube(" + vertices[0] + "," + vertices[1] + ")"
+
+  def intersect(self,otherShape):
+    if otherShape.shapeName == "cube":
+      x0 = min(myCube[0][0],myCube[1][0])
+      y0 = min(myCube[0][1],myCube[1][1])
+      z0 = min(myCube[0][2],myCube[1][2])
+
+      x1 = max(myCube[0][0],myCube[1][0])
+      y1 = max(myCube[0][1],myCube[1][1])
+      z1 = max(myCube[0][2],myCube[1][2])
+
+      a0 = min(myCube[0][0],myCube[1][0])
+      b0 = min(myCube[0][1],myCube[1][1])
+      c0 = min(myCube[0][2],myCube[1][2])
+
+      a1 = max(myCube[0][0],myCube[1][0])
+      b1 = max(myCube[0][1],myCube[1][1])
+      c1 = max(myCube[0][2],myCube[1][2])
+
+      x = max(min(a1,x1)-max(a0,x0),0)
+      y = max(min(b1,y1)-max(b0,y0),0)
+      z = max(min(c1,z1)-max(c0,z0),0)
+
+      print "test me"
+      overlap = x*y*z
+      return overlap
+    else if otherShape.shapeName = "sphere":
+      for 
+      distance(otherShape.center,)
+
+      print "test me"
+      overlap = x*y*z
+      return overlap
+
+
+
 
 
 class Sphere(object):
@@ -59,14 +95,19 @@ class Sphere(object):
 
   def intersect(self,otherShape):
     if otherShape.shapeName == "sphere":
-      p0 = self.center
-      r0 = self.radius
-      p1 = otherShape.center
-      r1 = otherShape.radius
 
+      c0 = self.center
+      r0 = self.radius
+
+      c1 = otherShape.center
+      r1 = otherShape.radius
+      radius = min(r0,r1)
+      d = distance(c0,c1) 
+      return d
     else:
       for myCube in self.cubes:
         for otherCube in otherShape.cubes:
+
           x0 = min(myCube[0][0],myCube[1][0])
           y0 = min(myCube[0][1],myCube[1][1])
           z0 = min(myCube[0][2],myCube[1][2])
@@ -89,6 +130,8 @@ class Sphere(object):
 
           print "test me"
           overlap = x*y*z
+          score = overlap**0.33
+
       return overlap
 
 
