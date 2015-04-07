@@ -14,69 +14,90 @@ class Shape(object):
   def __repr__(self):
     return "Shape(" + ' '.join([repr(element) for element in self.elements])+")"
 
-  def intersect(self,otherShape):
-    value = 0
-    for element in self.elements:
-      for otherElement in otherShape.elements:
-        value += element.intersect(otherElement)
-        overlap = x*y*z
-    return overlap
+  def collisionScore(self,otherShape):
+    name0 = type(self)
+    name1 = type(otherShape)
+    names = sorted((shape1,shape2))
 
+    if names == ("Cube","Cube"):
+      thisCube = self.vertices
+      otherCube = otherShape.vertices
 
-class Cube(object):
-  def __init__(self,vertices):
-    self.vertices = [
-        (vertices[0][0],vertices[0][1],vertices[0][2]),
-        (vertices[1][0],vertices[0][1],vertices[0][2]),
-        (vertices[0][0],vertices[1][1],vertices[0][2]),
-        (vertices[0][0],vertices[0][1],vertices[1][2]),
+      x0 = min(thisCube[0],otherCube[0])
+      y0 = min(thisCube[1],otherCube[1])
+      z0 = min(thisCube[2],otherCube[2])
 
-        (vertices[1][0],vertices[1][1],vertices[1][2]),
-        (vertices[0][0],vertices[1][1],vertices[1][2]),
-        (vertices[1][0],vertices[0][1],vertices[1][2]),
-        (vertices[1][0],vertices[1][1],vertices[0][2]),
+      x1 = max(thisCube[0],otherCube[0])
+      y1 = max(thisCube[1],otherCube[1])
+      z1 = max(thisCube[2],otherCube[2])
 
-        ]
-    self.shapeName = "cube"
+      a0 = min(thisCube[0],otherCube[0])
+      b0 = min(thisCube[1],otherCube[1])
+      c0 = min(thisCube[2],otherCube[2])
 
-  def __repr__(self):
-    return "Cube(" + vertices[0] + "," + vertices[1] + ")"
-
-  def intersect(self,otherShape):
-    if otherShape.shapeName == "cube":
-      x0 = min(myCube[0][0],myCube[1][0])
-      y0 = min(myCube[0][1],myCube[1][1])
-      z0 = min(myCube[0][2],myCube[1][2])
-
-      x1 = max(myCube[0][0],myCube[1][0])
-      y1 = max(myCube[0][1],myCube[1][1])
-      z1 = max(myCube[0][2],myCube[1][2])
-
-      a0 = min(myCube[0][0],myCube[1][0])
-      b0 = min(myCube[0][1],myCube[1][1])
-      c0 = min(myCube[0][2],myCube[1][2])
-
-      a1 = max(myCube[0][0],myCube[1][0])
-      b1 = max(myCube[0][1],myCube[1][1])
-      c1 = max(myCube[0][2],myCube[1][2])
+      a1 = max(thisCube[0],otherCube[0])
+      b1 = max(thisCube[1],otherCube[1])
+      c1 = max(thisCube[2],otherCube[2])
 
       x = max(min(a1,x1)-max(a0,x0),0)
       y = max(min(b1,y1)-max(b0,y0),0)
       z = max(min(c1,z1)-max(c0,z0),0)
 
       print "test me"
-      overlap = x*y*z
-      return overlap
-    else if otherShape.shapeName = "sphere":
-      for 
-      distance(otherShape.center,)
-
-      print "test me"
-      overlap = x*y*z
+      overlap = sqrt(x*y*z)
       return overlap
 
+    elif names == ("cube","sphere"):
+
+      (v1,v2) = self.vertices
+      (c, r) = (otherShape.center, otherShape.radius)
+
+      # assume C1 and C2 are element-wise sorted, if not, do that now
+
+      if c[0] < v1[0]:
+        #the sphere center is left of cube
+        r -= abs(c[0] - v1[0])
+      elif c[0] > v2[0]:
+        #the sphere center is right of the cube
+        r -= abs(c[0] - v2[0])
+      #if it's inside, do nothing
+
+      if c[1] < v1[1]:
+        r -= abs(c[1] - v1[1])
+      elif c[1] > v2[1]:
+        r -= abs(c[1] - v2[1])
+
+      if c[2] < v1[3]:
+        r -= abs(c[2] - v1[3])
+      elif c[2] > v2[3]:
+        r -= abs(c[2] - v2[3])
+
+      #r = r - |dx| + |dy| + |dz|
+      return max(r,0)
+
+    elif names == ("sphere","sphere"):
+
+      c0 = self.center
+      r0 = self.radius
+      c1 = otherShape.center
+      r1 = otherShape.radius
+
+      coveredSpace = r0 + r1
+      spaceBetween = distance(c0,c1) 
+      intersectionLen = spaceBetween - coveredSpace
+      return max(0,intersectionLen)
 
 
+class Cube(Shape):
+  def __init__(self,vertices):
+    (v1,v2) = vertices
+    v1 = (min(v1[0],v2[0]),max(v1[0],v2[0]))
+    v2 = (min(v1[1],v2[1]),max(v1[1],v2[1]))
+    self.vertices = vertices
+    self.shapeName = "cube"
+
+  def __repr__(self):
+    return "Cube(" + vertices[0] + "," + vertices[1] + ")"
 
 
 class Sphere(object):
@@ -92,47 +113,6 @@ class Sphere(object):
     x0,y0 = p0
     x1,y1 = p1
     return sqrt((x0 - x1)**2 + (y0 - y1)**2)
-
-  def intersect(self,otherShape):
-    if otherShape.shapeName == "sphere":
-
-      c0 = self.center
-      r0 = self.radius
-
-      c1 = otherShape.center
-      r1 = otherShape.radius
-      radius = min(r0,r1)
-      d = distance(c0,c1) 
-      return d
-    else:
-      for myCube in self.cubes:
-        for otherCube in otherShape.cubes:
-
-          x0 = min(myCube[0][0],myCube[1][0])
-          y0 = min(myCube[0][1],myCube[1][1])
-          z0 = min(myCube[0][2],myCube[1][2])
-
-          x1 = max(myCube[0][0],myCube[1][0])
-          y1 = max(myCube[0][1],myCube[1][1])
-          z1 = max(myCube[0][2],myCube[1][2])
-
-          a0 = min(myCube[0][0],myCube[1][0])
-          b0 = min(myCube[0][1],myCube[1][1])
-          c0 = min(myCube[0][2],myCube[1][2])
-
-          a1 = max(myCube[0][0],myCube[1][0])
-          b1 = max(myCube[0][1],myCube[1][1])
-          c1 = max(myCube[0][2],myCube[1][2])
-
-          x = max(min(a1,x1)-max(a0,x0),0)
-          y = max(min(b1,y1)-max(b0,y0),0)
-          z = max(min(c1,z1)-max(c0,z0),0)
-
-          print "test me"
-          overlap = x*y*z
-          score = overlap**0.33
-
-      return overlap
 
 
 class RobotData(object):
