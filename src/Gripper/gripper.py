@@ -12,42 +12,56 @@ class Shape(object):
     self.elements = elements
 
   def __repr__(self):
-    return "Shape(" + ' '.join([repr(element) for element in self.elements])+")"
+    return 'Shape(\n  ' + '\n  '.join([repr(element) for element in self.elements]) + '\n)'
 
-  def collisionScore(self,otherShape):
-    name0 = type(self)
-    name1 = type(otherShape)
-    names = sorted((shape1,shape2))
+  def intersect(self,otherShape):
+    total = 0
+    for e0 in self.elements:
+      for e1 in otherShape.elements:
+        total += e0.getCollisionScore(e1)
+    return total
 
-    if names == ("Cube","Cube"):
-      thisCube = self.vertices
-      otherCube = otherShape.vertices
 
-      x0 = min(thisCube[0],otherCube[0])
-      y0 = min(thisCube[1],otherCube[1])
-      z0 = min(thisCube[2],otherCube[2])
 
-      x1 = max(thisCube[0],otherCube[0])
-      y1 = max(thisCube[1],otherCube[1])
-      z1 = max(thisCube[2],otherCube[2])
+class PrimitiveShape(object):
+  def __init__(self):
+    print "primitive shape can only be extended"
+    raise Exception("can't init PrimitiveShape")
 
-      a0 = min(thisCube[0],otherCube[0])
-      b0 = min(thisCube[1],otherCube[1])
-      c0 = min(thisCube[2],otherCube[2])
+  def getCollisionScore(self,otherShape):
+    name0 = type(self).__name__
+    name1 = type(otherShape).__name__
+    names = sorted((name0,name1))
 
-      a1 = max(thisCube[0],otherCube[0])
-      b1 = max(thisCube[1],otherCube[1])
-      c1 = max(thisCube[2],otherCube[2])
+    if names == ["Cuboid","Cuboid"]:
+      thisCuboid = self.vertices
+      otherCuboid = otherShape.vertices
+      x,y,z = range(3)
 
-      x = max(min(a1,x1)-max(a0,x0),0)
-      y = max(min(b1,y1)-max(b0,y0),0)
-      z = max(min(c1,z1)-max(c0,z0),0)
+      x0 = min(thisCuboid[0][x],otherCuboid[0][x])
+      y0 = min(thisCuboid[0][y],otherCuboid[0][y])
+      z0 = min(thisCuboid[0][z],otherCuboid[0][z])
 
-      print "test me"
-      overlap = sqrt(x*y*z)
+      x1 = max(thisCuboid[0][x],otherCuboid[0][x])
+      y1 = max(thisCuboid[0][y],otherCuboid[0][y])
+      z1 = max(thisCuboid[0][z],otherCuboid[0][z])
+
+      a0 = min(thisCuboid[1][x],otherCuboid[1][x])
+      b0 = min(thisCuboid[1][y],otherCuboid[1][y])
+      c0 = min(thisCuboid[1][z],otherCuboid[1][z])
+
+      a1 = max(thisCuboid[1][x],otherCuboid[1][x])
+      b1 = max(thisCuboid[1][y],otherCuboid[1][y])
+      c1 = max(thisCuboid[1][z],otherCuboid[1][z])
+
+      x = max(max(a0,x0)-min(a1,x1),0)
+      y = max(max(b0,y0)-min(b1,y1),0)
+      z = max(max(c0,z0)-min(c1,z1),0)
+
+      overlap = pow(x*y*z,1/3)
       return overlap
 
-    elif names == ("cube","sphere"):
+    elif names == ["Cuboid","Sphere"]:
 
       (v1,v2) = self.vertices
       (c, r) = (otherShape.center, otherShape.radius)
@@ -75,7 +89,7 @@ class Shape(object):
       #r = r - |dx| + |dy| + |dz|
       return max(r,0)
 
-    elif names == ("sphere","sphere"):
+    elif names == ["Sphere","Sphere"]:
 
       c0 = self.center
       r0 = self.radius
@@ -88,20 +102,31 @@ class Shape(object):
       return max(0,intersectionLen)
 
 
-class Cube(Shape):
-  def __init__(self,vertices):
-    (v1,v2) = vertices
-    v1 = (min(v1[0],v2[0]),max(v1[0],v2[0]))
-    v2 = (min(v1[1],v2[1]),max(v1[1],v2[1]))
-    self.vertices = vertices
-    self.shapeName = "cube"
+class Cuboid(PrimitiveShape):
+  def __init__(self,v0,v1):
+    tv0 = v0
+    tv1 = v1
+    v1 = (
+        min(tv0[0],tv1[0]),
+        min(tv0[1],tv1[1]),
+        min(tv0[2],tv1[2])
+        )
+    v1 = (
+        max(tv0[0],tv1[0]),
+        max(tv0[1],tv1[1]),
+        max(tv0[2],tv1[2])
+        )
+    self.vertices = (v0,v1)
 
   def __repr__(self):
-    return "Cube(" + vertices[0] + "," + vertices[1] + ")"
+    return 'Cuboid(' + ' '.join([repr(vertex) for vertex in self.vertices]) + ')'
+
+  def __name__(self):
+    return 'Cuboid'
 
 
-class Sphere(object):
-  def __init__(self,center=point,radius=radius):
+class Sphere(PrimitiveShape):
+  def __init__(self,center,radius):
     self.center = center
     self.radius = radius
     self.shapeName = "sphere"
@@ -110,9 +135,10 @@ class Sphere(object):
     return "Sphere(" + self.center + "," + self.radius + ")"
 
   def distance(p0,p1):
-    x0,y0 = p0
-    x1,y1 = p1
-    return sqrt((x0 - x1)**2 + (y0 - y1)**2)
+    x0,y0,z0 = p0
+    x1,y1,z1 = p1
+    squares = (x0 - x1)**2 + (y0 - y1)**2 + (z0 - z1)**2
+    return pow(squares,1/3)
 
 
 class RobotData(object):
@@ -127,7 +153,7 @@ class RobotData(object):
     return KivaBin(self.items)
 
   def removeItem(self,item):
-    ind = items.index(item)
+    ind = self.items.index(item)
     self.items.pop(ind)
 
 
@@ -143,7 +169,7 @@ class KivaBin(object):
     return self.items
 
   def removeItem(self,item):
-    ind = items.index(item)
+    ind = self.items.index(item)
     self.items.pop(ind)
 
   def getItemPose(self,itemName):
@@ -152,21 +178,21 @@ class KivaBin(object):
 
 
 class Item(object):
-  def __init__(self, name, pose, roughShape, shape, grasps):
+  def __init__(self, name, pose, roughShape, fineShape, grasps):
     self.name = name
     self.pose = pose
     self.roughShape = roughShape
-    self.shape = shape
+    self.fineShape = fineShape
     self.grasps = grasps
 
   def __hash__(self):
-    return hash(self.name)
+    return hash(hash(self.name) + sum(self.pose.values()))
 
   def __repr__(self):
-    return "Item("+self.name+")"
+    return "Item("+self.name+" at " + repr(self.pose) + ")"
 
   def __eq__(self, other):
-    return (self.pose, self.shape) == (other.pose, other.shape)
+    return (self.name, self.pose) == (other.name, other.pose)
 
   def transform(self, transformationMatrix):
     for key in transformationMatrix.keys():
@@ -180,7 +206,11 @@ class Grasp(object):
   def __init__(self, approachPose, gripPose, minForce, maxForce):
     self.approachPose = approachPose
     self.gripPose = gripPose
-    self.roughShape = Shape([((1,2,0),(3,5,5))])
+
+    print "using fake shape"
+    self.roughShape = Shape([
+      Cuboid((1,2,0),(3,5,5)),
+      ])
     self.minForce = minForce
     self.maxForce = maxForce
 
@@ -199,7 +229,7 @@ def getBestGrasp(targetItem,targetBin):
   score = []
   grasps = targetItem.getGrasps()
   for grasp in grasps:
-    score.append(calculateGraspScore(grasp,targetItem,targetBin))
+    score.append(calculateGraspScore(grasp, targetItem, targetBin))
   best = score.index(max(score))
   return best
 
@@ -240,27 +270,27 @@ if __name__ == '__main__':
   grasps = {}
   gripper = "somegripper"
   originPose = {'x': 0, 'y': 0, 'z': 0, 'a': 0, 'b': 0, 'g': 0, }
-  originXYZ = [0, 0, 0 ]
+  originXYZ = (0, 0, 0)
 
-  objects = [
-    ['munchkin_white_hot_duck_bath_toy',(150,160,80)],
-    ['mark_twain_huckleberry_finn',(128,250,16)],
-    ['sharpie_accent_tank_style_highlighters',(120,130,20)],
-    ['genuine_joe_plastic_stir_sticks',(144,97,108)],
-    ['safety_works_safety_glasses',(220,55,115)],
-    ['rollodex_mesh_collection_jumbo_pencil_cup', (100,136,100)],
-    ['dr_browns_bottle_brush',(350,140,50)],
-    ['kygen_squeakin_eggs_plush_puppies',(240,60,130)],
-    ['kong_duck_dog_toy',(170,110,70)],
-    ['mommys_helper_outlet_plugs',(190,60,90)],
-    ['highland_6539_self_stick_notes',(150,40,50)],
-    ['expo_dry_erase_board_eraser',(130,35,55)],
-    ['paper_mate_12_count_mirado_black_warrior',(195,20,50)],
-    ['laugh_out_loud_joke_book',(180,10,110)],
-    ['stanley_66_052',(195,20,100)],
-    ['mead_index_cards',(130,78,23)],
-    ['elmers_washable_no_run_school_glue', (65,150,35)],
-  ]
+  objects = {
+    'munchkin_white_hot_duck_bath_toy': (150,160,80),
+    'mark_twain_huckleberry_finn': (128,250,16),
+    'sharpie_accent_tank_style_highlighters': (120,130,20),
+    'genuine_joe_plastic_stir_sticks': (144,97,108),
+    'safety_works_safety_glasses': (220,55,115),
+    'rollodex_mesh_collection_jumbo_pencil_cup':  (100,136,100),
+    'dr_browns_bottle_brush': (350,140,50),
+    'kygen_squeakin_eggs_plush_puppies': (240,60,130),
+    'kong_duck_dog_toy': (170,110,70),
+    'mommys_helper_outlet_plugs': (190,60,90),
+    'highland_6539_self_stick_notes': (150,40,50),
+    'expo_dry_erase_board_eraser': (130,35,55),
+    'paper_mate_12_count_mirado_black_warrior': (195,20,50),
+    'laugh_out_loud_joke_book': (180,10,110),
+    'stanley_66_052': (195,20,100),
+    'mead_index_cards': (130,78,23),
+    'elmers_washable_no_run_school_glue': (65,150,35),
+  }
 
   """
     ['champion_copper_plus_spark_plug',],
@@ -276,45 +306,34 @@ if __name__ == '__main__':
   ]
   """
 
+  items = dict()
+  print "fineShape is fake"
   dummyGrasp = Grasp(originPose, originPose, 0, 100000)
-  cubes = [((1, 2, 0), (2, 0, 1)),]
-  dummyShape = Shape(cubes)
-  dummyPose = originPose
+  print "using dummy grasps"
+  fakeCuboids = [
+      Cuboid(originXYZ, (1, 2, 1)),
+      Cuboid(originXYZ, (2, 2, 3)),
+    ]
 
-  items = []
-  for i in range(12):
+  for name in objects.keys():
+    roughShape = Shape([
+      Cuboid( originXYZ , objects[name] )
+      ])
+    fineShape = Shape(fakeCuboids)
     grasps = []
     for j in range(4):
       grasps.append(dummyGrasp)
-    if i < len(objects):
-      name = objects[i][0]
-      cube0 = (originXYZ, objects[i][1])
-      cube1 = cube0
-      cube2 = cube0
-      cube3 = cube0
-      cubes = [cube1,]
-      roughShape = Shape(cubes)
-      cubes = [cube0, cube1, cube2, cube3,]
-      fineShape = Shape(cubes)
+    items[name] = Item(name, originPose, roughShape, fineShape, grasps);
 
-      someItem = Item(name, originPose, roughShape, fineShape, grasps)
-    else:
-      someItem = Item(str(i*j), originPose, dummyShape, dummyShape, grasps)
+  dummyShape = Shape(fakeCuboids)
+  dummyPose = originPose
 
-    items.append(someItem)
-
-  targetItem = items[0]
+  targetItem = items.values()[0]
 
   # fake
-  robotData = RobotData(items)
+  robotData = RobotData(items.values())
+  kivaBin = KivaBin(items.values())
 
-
-
-  kivaBin = KivaBin(items)
-
-  leftoverBin = deepcopy(kivaBin)
-  leftoverBin.removeItem(targetItem)
-
-  score = calculateGraspScore(grasps[0], items[0], leftoverBin)
+  score = calculateGraspScore(targetItem.grasps[0], targetItem, kivaBin)
   getBestGrasp(targetItem, kivaBin)
   print "score",score
