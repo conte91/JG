@@ -7,6 +7,13 @@ from random import random
 
 GRASP_ERROR_LIMIT = 1
 
+def distance(p0,p1):
+    dimensions = len(p0)
+    squares = 0
+    for i in range(dimensions):
+        squares += (p0[i] - p1[i]) ** 2
+    return pow(squares,1/dimensions)
+
 class Shape(object):
   def __init__(self,elements):
     self.elements = elements
@@ -97,7 +104,7 @@ class PrimitiveShape(object):
       r1 = otherShape.radius
 
       coveredSpace = r0 + r1
-      spaceBetween = distance(c0,c1) 
+      spaceBetween = distance(c0,c1)
       intersectionLen = spaceBetween - coveredSpace
       return max(0,intersectionLen)
 
@@ -134,11 +141,6 @@ class Sphere(PrimitiveShape):
   def __repr__(self):
     return "Sphere(" + self.center + "," + self.radius + ")"
 
-  def distance(p0,p1):
-    x0,y0,z0 = p0
-    x1,y1,z1 = p1
-    squares = (x0 - x1)**2 + (y0 - y1)**2 + (z0 - z1)**2
-    return pow(squares,1/3)
 
 
 class RobotData(object):
@@ -189,7 +191,7 @@ class Item(object):
     return hash(hash(self.name) + sum(self.pose.values()))
 
   def __repr__(self):
-    return "Item("+self.name+" at " + repr(self.pose) + ")"
+    return "Item("+self.name+" at " + repr(self.pose.values) + ")"
 
   def __eq__(self, other):
     return (self.name, self.pose) == (other.name, other.pose)
@@ -209,7 +211,7 @@ class Grasp(object):
 
     print "using fake shape"
     self.roughShape = Shape([
-      Cuboid((1,2,0),(3,5,5)),
+      Cuboid((0,0,0),(3,5,5)),
       ])
     self.minForce = minForce
     self.maxForce = maxForce
@@ -261,8 +263,8 @@ def isDoable(grasp, targetItem):
   runningSum = 0
   for key in grasp.gripPose.keys():
     runningSum += ( grasp.gripPose[key] + targetItem.pose[key] ) ** 2
-  distance = np.sqrt(runningSum)
-  if distance > GRASP_ERROR_LIMIT:
+  grasp_error = np.sqrt(runningSum)
+  if grasp_error > GRASP_ERROR_LIMIT:
     return False
   return True
 
@@ -316,14 +318,17 @@ if __name__ == '__main__':
     ]
 
   for name in objects.keys():
-    roughShape = Shape([
-      Cuboid( originXYZ , objects[name] )
-      ])
+    roughElements = [
+        Cuboid( (1,1,1) , objects[name] ),
+        Cuboid( originXYZ , objects[name] )
+    ]
+    roughShape = Shape(roughElements)
+
     fineShape = Shape(fakeCuboids)
     grasps = []
     for j in range(4):
       grasps.append(dummyGrasp)
-    items[name] = Item(name, originPose, roughShape, fineShape, grasps);
+    items[name] = Item(name, originPose, roughShape, fineShape, grasps)
 
   dummyShape = Shape(fakeCuboids)
   dummyPose = originPose
