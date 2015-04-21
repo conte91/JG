@@ -1,0 +1,18 @@
+#!/bin/bash
+# give me the branch I am currently working on
+mybranch=`git rev-parse --abbrev-ref HEAD`
+reporoot=`git rev-parse --show-toplevel`
+
+if [ -z $reporoot ];
+then
+    echo "fail"
+    exit 1
+fi
+cd $reporoot
+rm -rf build/
+mkdir -p build/
+cd build
+cmake .. -DNO_LEAP=1 -DNO_EORL=1
+make -j9 && exit 0
+echo "you n00b"
+exit 1

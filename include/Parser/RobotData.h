@@ -5,6 +5,10 @@
 namespace InterProcessCommunication{
   class RobotData {
     public:
+      struct Bin {
+        std::string object[5];
+      };
+
       static RobotData& getInstance();
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);

@@ -47,6 +47,10 @@ namespace InterProcessCommunication{
     return this->shelf.bins[(row*4)+column].object[item];
   }
 
+  RobotData::Bin RobotData::getBinItems(int row, int column){
+    return this->shelf.bins[(row*4)+column];
+  }
+
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
     this->shelf.bins[(row*4)+column].object[item] = val;
   }
@@ -77,18 +81,6 @@ namespace InterProcessCommunication{
     this->workOrder[(row*4)+column] = itemName;
   }
 
-  //cv::Mat (const cv::Mat& orgImage)
-#if 0
-  Camera::Image RobotData::getImageFrame(){
-    using Camera::Image;
-    Image frame;
-    frame.rgb = cv::imread("a.jpg");
-    frame.depth = cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE);
-    cv::imshow("rgb",cv::imread("a.jpg"));
-    cv::imshow("bw",cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE));
-    return frame;
-  }
-#endif
   RobotData::RobotData() {
     std::cout << "Your mom is being constructed\n";
   }
@@ -98,6 +90,7 @@ namespace InterProcessCommunication{
   }
   void RobotData::operator=(RobotData const&) {}; // Don't implement
   RobotData::RobotData(RobotData const&) {};              // Don't Implement
+
   void RobotData::setPhoto(int row, int column, const Camera::Image& frame){
     shelf.bins[xyToBin(row, column)].photo=frame;
   }
