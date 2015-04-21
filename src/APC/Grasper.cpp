@@ -18,7 +18,7 @@ namespace APC{
         }
       }
     }
-    system(("python ./grasper.py "+what).c_str());
+    system(("python ./gripper.py "+what).c_str());
     {
       std::ifstream resultFile("/tmp/grasp.result");
       C5G::Pose approach, gPose;
