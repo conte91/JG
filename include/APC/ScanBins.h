@@ -2,5 +2,5 @@
 #include <Camera/ImageConsumer.h>
 
 namespace APC{
-  void ScanBins(C5G::C5G& robot, Camera::ImageConsumer& photo);
+  void ScanBins(C5G::C5G& robot);
 }

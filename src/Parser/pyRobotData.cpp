@@ -15,8 +15,8 @@ BOOST_PYTHON_MODULE(apcRobot)
       .def("setBinItem",&InterProcessCommunication::RobotData::setBinItem)
       .def("getWorkOrder",&InterProcessCommunication::RobotData::getWorkOrder)
       .def("setworkOrder",&InterProcessCommunication::RobotData::setWorkOrder)
-      .def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
-      .def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
+      //.def("getImageFrame",&InterProcessCommunication::RobotData::getImageFrame)
+      //.def("createGrasp",&InterProcessCommunication::RobotData::getImageFrame)
       ;
   }
 }

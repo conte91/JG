@@ -13,12 +13,10 @@ namespace InterProcessCommunication{
   std::ostream& operator<< (std::ostream& os, const InterProcessCommunication::RobotData& r){
     for(int i=0; i<12; ++i){
       os << "Bin " << (char) (i+'A') << ": ";
-      for(int item=0; item<5; ++item){
+      for(int item=0; item<RobotData::MAX_ITEM_N; ++item){
         std::string s=r.shelf.bins[i].object[item];
-        if(s!=""){
-          os << r.shelf.bins[i].object[item];
-          os << ",";
-        }
+        os << r.shelf.bins[i].object[item];
+        os << ",";
       }
       os << "\n";
     }
@@ -52,13 +50,20 @@ namespace InterProcessCommunication{
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
     this->shelf.bins[(row*4)+column].object[item] = val;
   }
+  C5G::Pose RobotData::getObjPose(int row, int column, int item) const{
+    return this->shelf.bins[(row*4)+column].objPose[item];
+  }
+
+  void RobotData::setObjPose(int row,int column,int item,const C5G::Pose& val){
+    this->shelf.bins[(row*4)+column].objPose[item] = val;
+  }
 
   int RobotData::xyToBin(int row, int column){
     return (row*4)+column;
   }
 
-  void RobotData::setDirty(int row, int column){
-    shelf.bins[xyToBin(row, column)].dirty;
+  void RobotData::setDirty(int row, int column, bool value){
+    shelf.bins[xyToBin(row, column)].dirty=value;
   }
 
   bool RobotData::isDirty(int row, int column){
@@ -73,6 +78,7 @@ namespace InterProcessCommunication{
   }
 
   //cv::Mat (const cv::Mat& orgImage)
+#if 0
   Camera::Image RobotData::getImageFrame(){
     using Camera::Image;
     Image frame;
@@ -82,8 +88,20 @@ namespace InterProcessCommunication{
     cv::imshow("bw",cv::imread("a.jpg",CV_LOAD_IMAGE_GRAYSCALE));
     return frame;
   }
-  RobotData::RobotData() {};
-  RobotData::~RobotData() {};
+#endif
+  RobotData::RobotData() {
+    std::cout << "Your mom is being constructed\n";
+  }
+
+  RobotData::~RobotData() {
+    std::cout << "Your mom is being destructed\n";
+  }
   void RobotData::operator=(RobotData const&) {}; // Don't implement
   RobotData::RobotData(RobotData const&) {};              // Don't Implement
+  void RobotData::setPhoto(int row, int column, const Camera::Image& frame){
+    shelf.bins[xyToBin(row, column)].photo=frame;
+  }
+  Camera::Image RobotData::getFrame(int row, int column){
+    return shelf.bins[xyToBin(row,column)].photo;
+  }
 }

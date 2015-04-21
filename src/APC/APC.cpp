@@ -1,4 +1,5 @@
 #include <APC/APC.h>
+#include <APC/Robot.h>
 #include <C5G/C5G.h>
 #include <C5G/Pose.h>
 #include <C5G/Grasp.h>
@@ -37,7 +38,9 @@ namespace APC{
 
     std::string ip(argv[1]);
     std::string profile(argv[2]);
-    C5G robot(ip, profile, false);
+    Camera::ImageProvider::Ptr x(new Camera::DummyProvider());
+    //Camera::DummyConsumer img(x); 
+    Robot robot(ip, profile, false, x);
     try{
       robot.init();
     }
@@ -47,9 +50,7 @@ namespace APC{
     }
 
 
-    boost::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
-    Camera::DummyConsumer img(x); 
-    ScanBins(robot, img);
+    ScanBins(robot);
 
     OrderStatus orderBin;
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
@@ -71,7 +72,7 @@ namespace APC{
 
     try{
       while(!orderBin.empty()){
-        updateBins(orderBin);
+        updateBins(orderBin, robot);
         Order x=orderBin.top();
         orderBin.pop();
         if(x.grasp.score < Order::MIN_SCORE_WE_CAN_MANAGE){

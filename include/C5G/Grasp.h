@@ -8,7 +8,7 @@ namespace C5G{
     Pose approach;
     Pose grasp;
     double score;
-    double forceMin;
+    // REMOVED double forceMin;
     double forceMax;
   };
 

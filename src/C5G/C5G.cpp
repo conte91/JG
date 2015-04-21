@@ -69,7 +69,10 @@ namespace C5G{
   }
 
   /** TODO CHECK THIS!*/
-  const Pose C5G::safePose(0.3, 0, 0.9, 0, 1.57, 0);
+  const Pose C5G::safePose(){
+    static Pose theSafePose(0.3, 0, 0.9, 0, 1.57, 0);
+    return theSafePose;
+  }
   void C5G::moveCartesian(const Pose& p){
     ORL_cartesian_position  target_pos;
     target_pos.x=p.x;

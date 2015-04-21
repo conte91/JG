@@ -1,5 +1,6 @@
 #pragma once
 #include <Camera/Image.h>
+#include <C5G/Pose.h>
 
 namespace InterProcessCommunication{
   class RobotData {
@@ -8,21 +9,26 @@ namespace InterProcessCommunication{
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);
       bool isDirty(int row, int column);
-      void setDirty(int row, int column);
+      void setDirty(int row, int column, bool value=true);
       std::vector<std::string> getWorkOrder();
       void setWorkOrder(int row,int column,const std::string& itemName);
-      static Camera::Image getImageFrame();
+      C5G::Pose getObjPose(int row, int column, int item) const;
+      void setObjPose(int row,int column,int item,const C5G::Pose& val);
+      Camera::Image getFrame(int row, int column);
+      void setPhoto(int row, int column, const Camera::Image& frame);
       int getCurrentRow();
       int getCurrentColumn();
       int setCurrentRow(int row);
       int setCurrentColumn(int column);
       friend std::ostream& operator<< (std::ostream& os, const RobotData& r);
+      static const int MAX_ITEM_N=6;
 
     private:
       struct Bin {
-        std::string object[5];
+        std::string object[MAX_ITEM_N];
         bool dirty;
         Camera::Image photo;
+        C5G::Pose objPose[MAX_ITEM_N];
         friend std::ostream& operator<< (std::ostream& os, const InterProcessCommunication::RobotData r);
       };
       struct Shelf {

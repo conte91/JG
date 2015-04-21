@@ -1,24 +1,26 @@
-FIND_PACKAGE(PythonInterp REQUIRED)
+FIND_PACKAGE(PythonInterp 2 EXACT REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED)
 
 FIND_PACKAGE(OpenCV REQUIRED)
 
+#IF(NOT(DEFINED USE_PYTHON3))
 FIND_PACKAGE(Boost COMPONENTS python system)
-IF(NOT ${Boost_FOUND})
-  MESSAGE("Couldn't find Boost/python: going on searching for python3..\n")
-  FIND_PACKAGE(Boost COMPONENTS python3 system REQUIRED)
-ENDIF(NOT ${Boost_FOUND})
+#ELSE(NOT(DEFINED USE_PYTHON3))
+#  MESSAGE("Couldn't find Boost/python: going on searching for python3..\n")
+#  FIND_PACKAGE(Boost COMPONENTS python3 system REQUIRED)
+#ENDIF(NOT(DEFINED USE_PYTHON3))
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 
-ADD_LIBRARY(robotdata RobotData.cpp)
+ADD_LIBRARY(robotdata SHARED RobotData.cpp)
 TARGET_LINK_LIBRARIES(robotdata camera)
 SET_TARGET_PROPERTIES(robotdata PROPERTIES COMPILE_FLAGS "-fPIC")
 
 PYTHON_ADD_MODULE(apcRobot pyRobotData.cpp)
 
-TARGET_LINK_LIBRARIES(apcRobot camera robotdata ${OpenCV_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}) 
-
+MESSAGE("Boost libraries: ${Boost_LIBRARIES}")
+MESSAGE("PYTHON libraries: ${PYTHON_LIBRARIES}")
+TARGET_LINK_LIBRARIES(apcRobot camera robotdata ${OpenCV_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} c5g c5g_misc) 
 
 CONFIGURE_FILE(parser.py ${CMAKE_BINARY_DIR} COPYONLY)

@@ -6,7 +6,7 @@
 #include <Parser/RobotData.h>
 
 namespace APC{
-  void ScanBins(C5G::C5G& robot, Camera::ImageConsumer& photo){
+  void ScanBins(C5G::C5G& robot){
     using APC::Shelf;
     using C5G::Pose;
     Pose p=Shelf::POSE;
@@ -21,10 +21,9 @@ namespace APC{
         whereToGo.beta=1.57;
         whereToGo.gamma=0;
         robot.moveCartesianGlobal(whereToGo);
-        photo.update();
         rData.setDirty(i, j);
         /** Go to a safe position - TODO needed?*/
-        robot.moveCartesianGlobal(C5G::C5G::safePose);
+        robot.moveCartesianGlobal(C5G::C5G::safePose());
       }
     }
   }

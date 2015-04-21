@@ -1,9 +1,11 @@
 #include <APC/UpdateBins.h>
+#include <APC/Robot.h>
 #include <APC/Grasper.h>
 #include <Parser/RobotData.h>
+#include <Camera/Recognition.h>
 
 namespace APC{
-  void updateBins(OrderStatus& order){
+  void updateBins(OrderStatus& order, Robot& robot){
     /** Dunque..
      * We have to update the data on all the bins with the score
      * of the best grasp!
@@ -24,14 +26,13 @@ namespace APC{
       order.pop();
 
       if(r.isDirty(x.bin[0], x.bin[1])){
-        /**
-         * moveToBin(x.bin[0], x.bin[1])
-         * RobotData.bin[].photo=takePhoto();
-         * updateGiorgio()
-         */
-          /** We moved things, lets'a update the bin content */
-          x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
+        robot.moveToBin(x.bin[0], x.bin[1]);
+        r.setPhoto(x.bin[0], x.bin[1],robot.takePhoto());
+        Camera::updateGiorgio(x.bin[0], x.bin[1]);
       }
+       
+      /** We moved things, lets'a update the bin content */
+      x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
       neworder.push(x);
     }
     order=neworder;

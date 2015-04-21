@@ -10,5 +10,8 @@ target_link_libraries(camera ${OpenCV_LIBRARIES})
 #Necessary as this library will be linked to a shared object later
 SET_TARGET_PROPERTIES( camera PROPERTIES COMPILE_FLAGS "-fPIC" )
 
+add_library(recognition Recognition.cpp)
 add_subdirectory(Leap/)
 
+#Necessary as this library will be linked to a shared object later
+SET_TARGET_PROPERTIES( recognition PROPERTIES COMPILE_FLAGS "-fPIC" )
