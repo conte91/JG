@@ -152,6 +152,9 @@ class RobotData(object):
     return '\n'.join([repr(item) for item in self.items[:5]])
 
   def getBin(self):
+    #legge da file /tmp/robot.data
+    #
+    #legge da file
     return KivaBin(self.items)
 
   def removeItem(self,item):
