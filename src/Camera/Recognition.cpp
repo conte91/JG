@@ -11,6 +11,9 @@ namespace Camera{
     //int binN=RobotData::xyToBin(row,column);
     for(int i=0; i<RobotData::MAX_ITEM_N; ++i){
       std::string name =r.getBinItem(row, column, i);
+      if(name==""){
+        continue;
+      }
       if(name=="kygen_squeakin_eggs_plush_puppies"){
         std::cout << "Searching for a ball..\n";
         auto thePose=recognizeBalls(row, column);

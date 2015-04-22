@@ -81,6 +81,13 @@ namespace C5G{
     target_pos.a=p.alpha;
     target_pos.e=p.beta;
     target_pos.r=p.gamma;
+    if(_currentMovementMode==MOVING_GLOBAL){
+      /** Save the current position configuration, so that we can go in a software-faken relative mode */
+      _currentMovementMode=MOVING_RELATIVE;
+      _lastGlobalPose=
+
+
+    }
     std::cout << "Relative movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
   }
 

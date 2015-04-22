@@ -7,6 +7,7 @@
 #include <iostream>
 #include <Camera/Image.h>
 #include <Parser/RobotData.h>
+#include <C5G/Grasp.h>
 
 namespace InterProcessCommunication{
 
@@ -20,6 +21,7 @@ namespace InterProcessCommunication{
       }
       os << "\n";
     }
+    return os;
   }
 
   int RobotData::getCurrentRow(){
@@ -30,11 +32,11 @@ namespace InterProcessCommunication{
     return _column;
   }
 
-  int RobotData::setCurrentRow(int row){
+  void RobotData::setCurrentRow(int row){
     _row=row;
   }
 
-  int RobotData::setCurrentColumn(int column){
+  void RobotData::setCurrentColumn(int column){
     _column=column;
   }
 
@@ -44,42 +46,51 @@ namespace InterProcessCommunication{
   }
 
   std::string RobotData::getBinItem(int row, int column, int item){
-    return this->shelf.bins[(row*4)+column].object[item];
-  }
-
-  RobotData::Bin RobotData::getBinItems(int row, int column){
-    return this->shelf.bins[(row*4)+column];
+    return this->shelf.bins[xyToBin(row,column)].object[item];
   }
 
   void RobotData::setBinItem(int row,int column,int item,const std::string& val){
-    this->shelf.bins[(row*4)+column].object[item] = val;
+    this->shelf.bins[xyToBin(row,column)].object[item] = val;
   }
   C5G::Pose RobotData::getObjPose(int row, int column, int item) const{
-    return this->shelf.bins[(row*4)+column].objPose[item];
+    return this->shelf.bins[xyToBin(row,column)].objPose[item];
   }
 
   void RobotData::setObjPose(int row,int column,int item,const C5G::Pose& val){
-    this->shelf.bins[(row*4)+column].objPose[item] = val;
+    this->shelf.bins[xyToBin(row,column)].objPose[item] = val;
   }
 
   int RobotData::xyToBin(int row, int column){
-    return (row*4)+column;
+    return (row*COL_N)+column;
   }
 
   void RobotData::setDirty(int row, int column, bool value){
     shelf.bins[xyToBin(row, column)].dirty=value;
   }
 
+  std::string RobotData::xyToName(int row,int  column){
+    if(row>=ROW_N || column>=COL_N){
+      return "Nonexistant";
+    }
+    char r='A'+xyToBin(row,column);
+    return std::string("")+r;
+  }
+
   bool RobotData::isDirty(int row, int column){
     return shelf.bins[xyToBin(row, column)].dirty;
   }
   
-  std::vector<std::string> RobotData::getWorkOrder(){
+  APC::OrderStatus RobotData::getWorkOrder(){
     return this->workOrder;
   }
   void RobotData::setWorkOrder(int row, int column,const std::string& itemName){
-    this->workOrder[(row*4)+column] = itemName;
+    std::cout << "Robotdata: received "+itemName+" into row" << row<<" column"<<column << "\n";
+    APC::Order x(itemName);
+    x.bin[0]=row;
+    x.bin[1]=column;
+    this->workOrder.push(x);
   }
+
 
   RobotData::RobotData() {
     std::cout << "Your mom is being constructed\n";

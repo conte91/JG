@@ -18,17 +18,18 @@ namespace APC{
         }
       }
     }
-    system(("python ./gripper.py "+what).c_str());
+    C5G::Pose approach, gPose;
+    double theForceMayBeWithYou;
+    double score;
+    system(("python ./grasper.py "+what).c_str());
     {
       std::ifstream resultFile("/tmp/grasp.result");
-      C5G::Pose approach, gPose;
-      double theForceMayBeWithYou;
-      double score;
       resultFile >> approach.x >> approach.y >> approach.z >> approach.alpha >> approach.beta >> approach.gamma ;
       resultFile >> gPose.x >> gPose.y >> gPose.z >> gPose.alpha >> gPose.beta >> gPose.gamma ;
       resultFile >> theForceMayBeWithYou >> score;
-      C5G::Grasp x({what, approach, gPose, theForceMayBeWithYou, score});
     }
+    C5G::Grasp x({what, approach, gPose, theForceMayBeWithYou, score});
+    return x;
 
 #if 0
     std::cout << "Implement me!\n";
