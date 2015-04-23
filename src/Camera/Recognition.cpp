@@ -17,6 +17,7 @@ namespace Camera{
       if(name=="kygen_squeakin_eggs_plush_puppies"){
         std::cout << "Searching for a ball..\n";
         auto thePose=recognizeBalls(row, column);
+        //SUGGESTION: draw object skeleton
         r.setObjPose(row, column, i, thePose);
         std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
       }

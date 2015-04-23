@@ -21,12 +21,13 @@ namespace APC{
     InterProcessCommunication::RobotData& r=InterProcessCommunication::RobotData::getInstance();
 
     while(!order.empty()){
-      /** Take a new order and recompute it if needed; then put it again into the queueueue*/
+      /** Take a new order and recompute it if needed; then put it again into the quueueueueueueueueueueueueueueueueeueueue*/
       Order x=order.top();
       order.pop();
 
       if(r.isDirty(x.bin[0], x.bin[1])){
         robot.moveToBin(x.bin[0], x.bin[1]);
+        //SUGGESTION: mostrare foto di bin imshow
         r.setPhoto(x.bin[0], x.bin[1],robot.takePhoto());
         Camera::updateGiorgio(x.bin[0], x.bin[1]);
       }
