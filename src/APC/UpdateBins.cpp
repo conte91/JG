@@ -32,6 +32,7 @@ namespace APC{
       }
        
       /** We moved things, lets'a update the bin content */
+      std::cout << "Computing best grasp for order " << x << "\n";
       x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
       neworder.push(x);
     }

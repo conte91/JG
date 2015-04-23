@@ -59,27 +59,25 @@ namespace APC{
     readWorkOrder();
 
     std::cout << "After loading:\n" << rData << "\n";
-    std::vector<std::string> workOrder=rData.getWorkOrder();
+    auto workOrder=rData.getWorkOrder();
 
-    std::cout << "Work order: " ;
-    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
-     std::cout << *i << ",";
-    }
-    std::cout << "\n";
-    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
-      orderBin.push(Order(*i));
-    }
+    orderBin=workOrder;
+    std::cout << "Items to take: " << orderBin << "\n";
 
     try{
       while(!orderBin.empty()){
+        std::cout << "Updating bins..\n";
         updateBins(orderBin, robot);
+        std::cout << "Finished updating.\n";
+        std::cout << "Remaining order bin: ----------\n" << orderBin << "\n---------\n";
         Order x=orderBin.top();
         orderBin.pop();
+        std::cout << "Best order: " << x << "----------\n";
         if(x.grasp.score < Order::MIN_SCORE_WE_CAN_MANAGE){
           throw std::string("Remaining items are too much difficult to take!");
         }
         std::cout << "Trying to grasp item: " << x.object << std::endl;
-        Grasp& todoGrasp=x.grasp;
+        Grasp todoGrasp=x.grasp;
         robot.moveCartesianGlobal(Shelf::getBinSafePose(x.bin[0], x.bin[1]));
         robot.setZero();
         robot.executeGrasp(todoGrasp);

@@ -65,3 +65,6 @@ srv_gen
 
 .DS_STORE
 *.a
+
+
+.idea/
