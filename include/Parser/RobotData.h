@@ -26,6 +26,7 @@ namespace InterProcessCommunication{
       void setCurrentColumn(int column);
       friend std::ostream& operator<< (std::ostream& os, const RobotData& r);
       static const int MAX_ITEM_N=6;
+      static Camera::Image getImageFrame();
 
     private:
       struct Bin {
@@ -52,5 +53,7 @@ namespace InterProcessCommunication{
       RobotData(RobotData const&);              // Don't Implement
 
       int _row, _column;
+    public:
+      Bin getBinItems(int row, int column);
   };
 }

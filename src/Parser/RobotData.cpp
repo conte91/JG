@@ -92,13 +92,16 @@ namespace InterProcessCommunication{
   }
 
 
-  RobotData::RobotData() {
-    std::cout << "Your mom is being constructed\n";
-  }
 
   RobotData::~RobotData() {
     std::cout << "Your mom is being destructed\n";
   }
+
+  RobotData::RobotData() 
+  {
+    std::cout << "Your mom is being constructed\n";
+  };
+
   void RobotData::operator=(RobotData const&) {}; // Don't implement
   RobotData::RobotData(RobotData const&) {};              // Don't Implement
 
