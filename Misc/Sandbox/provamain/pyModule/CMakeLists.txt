@@ -1,9 +1,9 @@
-FIND_PACKAGE(PythonInterp 2 EXACT REQUIRED)
+FIND_PACKAGE(PythonInterp 2 REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS python system)
 IF(NOT ${Boost_FOUND})
-  MESSAGE("Couldn't find Boost/python: going on searching for python3..\n")
-  FIND_PACKAGE(Boost COMPONENTS python3 system REQUIRED)
+  MESSAGE("Couldn't find Boost/python: going on searching for python########################à..\n")
+  FIND_PACKAGE(Boost COMPONENTS python system REQUIRED)
 ENDIF(NOT ${Boost_FOUND})
 MESSAGE("Boost/PYTHON dirs: ${Boost_INCLUDE_DIRS} ---- ${PYTHON_INCLUDE_DIRS} ---- ${Boost_LIBRARIES} ---- ${PYTHON_LIBRARIES}")
 
