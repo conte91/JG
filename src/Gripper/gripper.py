@@ -146,21 +146,28 @@ class Sphere(PrimitiveShape):
 
 class RobotData(object):
     # fake
-    def __init__(self, items):
-        self.items = items
+    def __init__(self, itemDatabase):
+        self.itemDatabase = itemDatabase
 
     def __repr__(self):
-        return '\n'.join([repr(item) for item in self.items[:5]])
+        return '\n'.join([
+            repr(item) for item in self.itemDatabase.values()[:5]
+        ])+'...'
 
-    def getBin(self):
+    def getBin(self, binName):
+        print "using fake values for", binName
         # legge da file /tmp/robot.data
         #
         # legge da file
-        return KivaBin(self.items)
+        return KivaBin(self.itemDatabase.values()[4:9])
+
+    def getItemTemplate(self, itemName):
+        return self.itemDatabase[itemName]
 
     def removeItem(self, item):
-        ind = self.items.index(item)
-        self.items.pop(ind)
+        raise Exception("can't remove item from the database!")
+        ind = self.itemDatabase.index(item)
+        self.itemDatabase.pop(ind)
 
 
 class KivaBin(object):
@@ -247,7 +254,8 @@ def getBestGrasp(targetItem, targetBin):
 
     grasps = targetItem.getGrasps()
 
-    bestGrasp = max(grasps, key=lambda x: calculateGraspScore(x))
+    bestGrasp = max(grasps, key=lambda x:
+                    calculateGraspScore(x, targetItem, targetBin))
     return bestGrasp
 
 
@@ -352,12 +360,13 @@ if __name__ == '__main__':
                                                  roughShape, fineShape, grasps)
 
     # the item will be passed by the function
-    targetItem = itemsDatabase.values()[0]
+    targetItem = itemsDatabase.keys()[0]
 
     # fake
     # robotData will be filled by the c cod c code
-    robotData = RobotData(itemsDatabase.values())
-    kivaBin = KivaBin(itemsDatabase.values())
+    robotData = RobotData(itemsDatabase)
+    # rm me
+    kivaBin = "bin_F"
 
     # score = calculateGraspScore(targetItem.grasps[0], targetItem, kivaBin)
     score = getBestGrasp(targetItem, kivaBin)
