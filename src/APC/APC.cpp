@@ -5,6 +5,7 @@
 #include <C5G/Grasp.h>
 #include <Camera/DummyConsumer.h>
 #include <Camera/DummyProvider.h>
+#include <Camera/OpenniProvider.h>
 #include <APC/Order.h>
 #include <APC/ReadWorkOrder.h>
 #include <APC/ScanBins.h>
@@ -38,7 +39,22 @@ namespace APC{
 
     std::string ip(argv[1]);
     std::string profile(argv[2]);
-    Camera::ImageProvider::Ptr x(new Camera::DummyProvider());
+    Camera::ImageProvider::Ptr x;
+    try{
+      x=Camera::ImageProvider::Ptr(new Camera::OpenNIProvider());
+    }
+    catch(std::string what){
+      std::cerr << "Error: " << what << ".\n Type OK to continue working with a dummy (NULL) provider.\n";
+      std::string aaa;
+      std::cin >> aaa;
+      if(aaa=="OK"){
+        x=Camera::ImageProvider::Ptr(new Camera::DummyProvider());
+      }
+      else{
+        return -1;
+      }
+    }
+
     //Camera::DummyConsumer img(x); 
     Robot robot(ip, profile, false, x);
     try{

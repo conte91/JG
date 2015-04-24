@@ -1,36 +1,24 @@
-#include <Camera/Image.hpp>
-#include <pcl/io/openni_grabber.h>
+#include <Camera/Image.h>
+#include <Camera/OpenniProvider.h>
+#include <opencv2/opencv.hpp>
 
-pcl::Grabber;
-Grabber* openniGrabber;                                               // OpenNI grabber that takes data from the device.
- 
-// This function is called every time the device has new data.
-void
-grabberCallback(const PointCloud<PointXYZRGBA>::ConstPtr& cloud)
-{
-	if (! viewer->wasStopped())
-		viewer->showCloud(cloud);
- 
-	if (saveCloud)
-	{
-		stringstream stream;
-		stream << "inputCloud" << filesSaved << ".pcd";
-		string filename = stream.str();
-		if (io::savePCDFile(filename, *cloud, true) == 0)
-		{
-			filesSaved++;
-			cout << "Saved " << filename << "." << endl;
-		}
-		else PCL_ERROR("Problem saving %s.\n", filename.c_str());
- 
-		saveCloud = false;
-	}
-}
-int main(){
-		openniGrabber = new OpenNIGrabber();
-		if (openniGrabber == 0)
-			return -1;
-		boost::function<void (const PointCloud<PointXYZRGBA>::ConstPtr&)> f =
-			boost::bind(&grabberCallback, _1);
-		openniGrabber->registerCallback(f);
+namespace Camera{
+  OpenNIProvider::OpenNIProvider(const std::string& ID)
+    :
+      ImageProvider(ID),
+      _capture(CV_CAP_OPENNI)
+  {
+    if(!_capture.isOpened()){
+      throw std::string("couldn't open the capture device");
+    }
+  }
+
+  Image OpenNIProvider::getFrame() const {
+    Image::Matrix depthMap, rgb;
+    std::cout << "I'm taking a photo\n";
+    _capture.grab();
+    _capture.retrieve(depthMap, CV_CAP_OPENNI_DEPTH_MAP);
+    _capture.retrieve(rgb, CV_CAP_OPENNI_BGR_IMAGE);
+    return Image(depthMap, rgb);
+  }
 }

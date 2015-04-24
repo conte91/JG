@@ -10,7 +10,7 @@ namespace Camera{
     public:
       typedef boost::shared_ptr<ImageProvider> Ptr;
       ImageProvider(const std::string& ID);
-      virtual Image getFrame() const=0;
+      virtual Image getFrame() const =0;
       virtual ~ImageProvider()=0;
   };
 }

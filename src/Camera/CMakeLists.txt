@@ -3,7 +3,7 @@ message("OpenCV LIBRARIES: ${OpenCV_LIBRARIES}")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-add_library(camera Image.cpp CameraView.cpp ImageConsumer.cpp ImageProvider.cpp DummyConsumer.cpp DummyProvider.cpp)
+add_library(camera Image.cpp CameraView.cpp ImageConsumer.cpp ImageProvider.cpp DummyConsumer.cpp DummyProvider.cpp OpenniProvider.cpp)
 
 target_link_libraries(camera ${OpenCV_LIBRARIES})
 
