@@ -79,7 +79,7 @@ namespace InterProcessCommunication{
   bool RobotData::isDirty(int row, int column){
     return shelf.bins[xyToBin(row, column)].dirty;
   }
-  
+
   APC::OrderStatus RobotData::getWorkOrder(){
     return this->workOrder;
   }

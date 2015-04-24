@@ -24,6 +24,7 @@ namespace APC{
       /** Take a new order and recompute it if needed; then put it again into the quueueueueueueueueueueueueueueueueeueueue*/
       Order x=order.top();
       order.pop();
+      std::cout << "<------------------------------->\n";
 
       if(r.isDirty(x.bin[0], x.bin[1])){
         robot.moveToBin(x.bin[0], x.bin[1]);
