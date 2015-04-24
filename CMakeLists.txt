@@ -2,6 +2,8 @@ PROJECT("Amazon Picking Challenge")
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
+SET(OPENCV_EXTRA_MODULES_PATH "./opencv_contrib/modules")
+
 IF( NOT(DEFINED NO_EORL))
   IF( CMAKE_SIZEOF_VOID_P MATCHES 8 )
     MESSAGE("Sorry, only 32 bit architectures are supported :( Try again in a few years..")

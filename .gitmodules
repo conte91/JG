@@ -1,0 +1,3 @@
+[submodule "Misc/opencv_contrib"]
+	path = Misc/opencv_contrib
+	url = https://github.com/Itseez/opencv_contrib

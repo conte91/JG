@@ -10,7 +10,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
-#include <opencv2/rgbd/rgbd.hpp>
+#include <opencv2/rgbd.hpp>
 
 
 #include "db_linemod.h"
@@ -188,9 +188,9 @@ int main(int argc, char* argv[])
     { 
         if(is_directory(p))
         {
-         //std::cout<<p.filename().string()<<"\n";
+         std::cout<<p.filename().string()<<"\n";
          //TODO: For Now only Crayola is Loaded...Remove it in the future
-         if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && 
+         if( /*(p.filename().string().compare("crayola_64_ct") !=0) &&*/ (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && 
          (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0))
             continue;
          
@@ -328,7 +328,7 @@ bool updateGiorgio(cv::Mat& rgb, const cv::Mat& depth_meter,
    cv::Mat_<cv::Vec3f> depth_real_ref_raw;
    cv::Mat_<float> K;
    K_depth_.convertTo(K, CV_32F);
-   cv::depthTo3d(depth_meter, K, depth_real_ref_raw);
+   cv::rgbd::depthTo3d(depth_meter, K, depth_real_ref_raw);
    
    /** The buffer with detected objects and their info */
     std::vector <object_recognition_core::db::ObjData> objs_;
@@ -368,7 +368,7 @@ bool updateGiorgio(cv::Mat& rgb, const cv::Mat& depth_meter,
       cv::waitKey();
       
       cv::Mat_<cv::Vec3f> depth_real_model_raw;
-      cv::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
+      cv::rgbd::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
       
       //prepare the bounding box for the model and reference point clouds
       cv::Rect_<int> rect_model(0, 0, depth_real_model_raw.cols, depth_real_model_raw.rows);
