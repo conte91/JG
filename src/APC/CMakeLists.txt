@@ -1,3 +1,5 @@
+FIND_PACKAGE(PCL REQUIRED)
+FIND_PACKAGE(assimp REQUIRED)
 add_library(workorder SHARED Order.cpp )
 SET_TARGET_PROPERTIES(workorder PROPERTIES COMPILE_FLAGS "-fPIC" )
 
@@ -11,4 +13,4 @@ SET_TARGET_PROPERTIES( apc PROPERTIES COMPILE_FLAGS "-fPIC" )
 #Necessary as this library will be linked to a shared object later
 SET_TARGET_PROPERTIES( apc_main PROPERTIES COMPILE_FLAGS "-fPIC" )
 
-target_link_libraries(apc_main apc camera recognition robotdata)
+target_link_libraries(apc_main apc camera recognition robotdata ${PCL_LIBRARIES} ${assimp_LIBRARIES})

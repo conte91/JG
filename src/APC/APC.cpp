@@ -6,6 +6,7 @@
 #include <Camera/DummyConsumer.h>
 #include <Camera/DummyProvider.h>
 #include <Camera/OpenniProvider.h>
+#include <Camera/OpenniWaitProvider.h>
 #include <APC/Order.h>
 #include <APC/ReadWorkOrder.h>
 #include <APC/ScanBins.h>
@@ -13,6 +14,8 @@
 #include <APC/Shelf.h>
 #include <APC/OrderBin.h>
 #include <Parser/RobotData.h>
+//#include <XnOpenNI.h>
+//#include <openni2/OpenNI.h>
 
 namespace APC{
   /** Base idea:
@@ -41,7 +44,14 @@ namespace APC{
     std::string profile(argv[2]);
     Camera::ImageProvider::Ptr x;
     try{
-      x=Camera::ImageProvider::Ptr(new Camera::OpenNIProvider());
+      //OpenNI::Initialize();
+      if(argc==4 && std::string("-w")==argv[3]){
+        x=Camera::ImageProvider::Ptr(new Camera::OpenNIWaitProvider());
+      }
+      else{
+        x=Camera::ImageProvider::Ptr(new Camera::OpenNIProvider());
+      }
+
     }
     catch(std::string what){
       std::cerr << "Error: " << what << ".\n Type OK to continue working with a dummy (NULL) provider.\n";

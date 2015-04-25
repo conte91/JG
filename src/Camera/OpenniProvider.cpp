@@ -8,9 +8,12 @@ namespace Camera{
       ImageProvider(ID),
       _capture(CV_CAP_OPENNI)
   {
-    if(!_capture.isOpened()){
-      throw std::string("couldn't open the capture device");
-    }
+  //  if(!_capture.isOpened()){
+  //    _capture.open(cv::CV_CAP_OPENNI2);
+      if(!_capture.isOpened()){
+        throw std::string("couldn't open the capture device");
+      }
+    //}
   }
 
   Image OpenNIProvider::getFrame() const {

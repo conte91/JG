@@ -1,10 +1,18 @@
 #include <fstream>
 #include <Parser/RobotData.h>
-#include <Camera/Recognition.h>
+#include <Camera/GiorgioUtils.h>
+#include <Camera/Renderer3d.h>
 #include <C5G/Pose.h>
+#include <Eigen/Core>
+//#include <Eigen/Matrix>
 #include <opencv2/opencv.hpp>
+#include <Camera/RecognitionData.h>
 
 namespace Camera{
+  C5G::Pose recognizeBalls(int row, int column);
+
+
+
   void updateGiorgio(int row, int column){
     using InterProcessCommunication::RobotData;
     std::cout << "------1--------------------------------------------\n";
@@ -29,7 +37,11 @@ namespace Camera{
         cv::waitKey(0);
         std::cout << "---------------------------------------------------\n";
 
-      } else {
+      } 
+      else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
+        auto thePose=RecognitionData::getInstance().recognize(r.getFrame(row, column), name);
+      }
+      else {
         /** Everything else shall be recognized by hand */
         std::cout << "I'm sorry baby, you have to take it by urself\n";
       }
