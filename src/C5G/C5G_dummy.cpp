@@ -11,7 +11,7 @@ namespace C5G{
     std::cout << "Relative movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }
 
-  Pose C5G::safePose(){
+  const Pose C5G::safePose(){
     static const Pose thesafePose(0.3, 0, 0.7, 0, 0, 0);
     return thesafePose;
   }
