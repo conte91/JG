@@ -35,7 +35,7 @@ namespace C5G{
     if(_currentMovementMode==MOVING_GLOBAL){
       /** We were in global mode; save current position in order to restore it when needed */
       _lastGlobalPose=ORL2Pose(current_position[0]);
-      _currentMovementMode==MOVING_RELATIVE;
+      _currentMovementMode=MOVING_RELATIVE;
     }
     ORL_cartesian_position  target_pos=pose2ORL(p);
     std::cout << "Setting the position to: " << p << "\n";
@@ -80,8 +80,6 @@ namespace C5G{
     if(_currentMovementMode==MOVING_GLOBAL){
       /** Save the current position configuration, so that we can go in a software-faken relative mode */
       _currentMovementMode=MOVING_RELATIVE;
-      _lastGlobalPose=
-
 
     }
     std::cout << "Relative movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";

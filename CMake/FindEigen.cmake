@@ -54,7 +54,6 @@ set(Eigen_VERSION_STRING "3.2.2")
 
 # handle the QUIETLY and REQUIRED arguments and set Eigen_FOUND to TRUE if
 # all listed variables are TRUE
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(Eigen
                                   REQUIRED_VARS Eigen_INCLUDE_DIRS
                                   VERSION_VAR Eigen_VERSION_STRING)

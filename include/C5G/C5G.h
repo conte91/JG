@@ -21,8 +21,7 @@ namespace C5G{
       C5G(const std::string& ip, const std::string& sys_id, bool mustInit=true);
       ~C5G();
 
-      static Pose safePose();
-
+      static const Pose safePose();
       void init();
       void standby();
       void moveCartesian(const Pose& p);
