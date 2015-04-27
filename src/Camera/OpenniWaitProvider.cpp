@@ -15,6 +15,8 @@ namespace Camera{
       "||   Position the camera and press Enter..   ||"
       "==============================================="
       "\n";
+    std::string s;
+    std::cin >> s;
     return OpenNIProvider::getFrame();
   }
 }

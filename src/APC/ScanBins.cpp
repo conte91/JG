@@ -21,7 +21,7 @@ namespace APC{
         whereToGo.gamma=0;
 
         /** Go to the safe pose */
-        Pose p=C5G::C5G::safePose;
+        Pose p=C5G::C5G::safePose();
         robot.moveCartesianGlobal(p);
 
         /** Approach the shelf */

@@ -3,6 +3,7 @@
 
 std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
   os << "{("<< x.x << "," << x.y << "," << x.z << ");(" << x.alpha << "," << x.beta << "," << x.gamma << ")}" ;
+  return os;
 }
 
 namespace C5G{
