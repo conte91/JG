@@ -17,6 +17,7 @@ namespace APC{
 
   typedef std::priority_queue<Order> OrderStatus;
 
-
+  std::ostream& operator<< (std::ostream& out, const Order& in);
+  std::ostream& operator<< (std::ostream& out, const OrderStatus& in);
 }
 

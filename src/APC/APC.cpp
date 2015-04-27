@@ -1,9 +1,12 @@
 #include <APC/APC.h>
+#include <APC/Robot.h>
 #include <C5G/C5G.h>
 #include <C5G/Pose.h>
 #include <C5G/Grasp.h>
 #include <Camera/DummyConsumer.h>
 #include <Camera/DummyProvider.h>
+#include <Camera/OpenniProvider.h>
+#include <Camera/OpenniWaitProvider.h>
 #include <APC/Order.h>
 #include <APC/ReadWorkOrder.h>
 #include <APC/ScanBins.h>
@@ -11,6 +14,8 @@
 #include <APC/Shelf.h>
 #include <APC/OrderBin.h>
 #include <Parser/RobotData.h>
+//#include <XnOpenNI.h>
+//#include <openni2/OpenNI.h>
 
 namespace APC{
   /** Base idea:
@@ -37,7 +42,31 @@ namespace APC{
 
     std::string ip(argv[1]);
     std::string profile(argv[2]);
-    C5G robot(ip, profile, false);
+    Camera::ImageProvider::Ptr x;
+    try{
+      //OpenNI::Initialize();
+      if(argc==4 && std::string("-w")==argv[3]){
+        x=Camera::ImageProvider::Ptr(new Camera::OpenNIWaitProvider());
+      }
+      else{
+        x=Camera::ImageProvider::Ptr(new Camera::OpenNIProvider());
+      }
+
+    }
+    catch(std::string what){
+      std::cerr << "Error: " << what << ".\n Type OK to continue working with a dummy (NULL) provider.\n";
+      std::string aaa;
+      std::cin >> aaa;
+      if(aaa=="OK"){
+        x=Camera::ImageProvider::Ptr(new Camera::DummyProvider());
+      }
+      else{
+        return -1;
+      }
+    }
+
+    //Camera::DummyConsumer img(x); 
+    Robot robot(ip, profile, false, x);
     try{
       robot.init();
     }
@@ -45,7 +74,6 @@ namespace APC{
       std::cerr << ex << "\n";
       return -2;
     }
-
 
     boost::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
     Camera::DummyConsumer img(x); 
@@ -64,27 +92,25 @@ namespace APC{
     readWorkOrder();
 
     std::cout << "After loading:\n" << rData << "\n";
-    std::vector<std::string> workOrder=rData.getWorkOrder();
+    auto workOrder=rData.getWorkOrder();
 
-    std::cout << "Work order: " ;
-    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
-     std::cout << *i << ",";
-    }
-    std::cout << "\n";
-    for(std::vector<std::string>::iterator i=workOrder.begin(); i!=workOrder.end(); ++i){
-      orderBin.push(Order(*i));
-    }
+    orderBin=workOrder;
+    std::cout << "Items to take: " << orderBin << "\n";
 
     try{
       while(!orderBin.empty()){
-        updateBins(orderBin);
+        std::cout << "Updating bins..\n";
+        updateBins(orderBin, robot);
+        std::cout << "Finished updating.\n";
+        std::cout << "Remaining order bin: ----------\n" << orderBin << "\n---------\n";
         Order x=orderBin.top();
         orderBin.pop();
+        std::cout << "Best order: " << x << "----------\n";
         if(x.grasp.score < Order::MIN_SCORE_WE_CAN_MANAGE){
           throw std::string("Remaining items are too much difficult to take!");
         }
         std::cout << "Trying to grasp item: " << x.object << std::endl;
-        Grasp& todoGrasp=x.grasp;
+        Grasp todoGrasp=x.grasp;
         robot.moveCartesianGlobal(Shelf::getBinSafePose(x.bin[0], x.bin[1]));
         robot.setZero();
         robot.executeGrasp(todoGrasp);

@@ -5,6 +5,7 @@
 
 namespace Camera{
 
+//SUGGESTION: compile me
   CameraView::CameraView(boost::shared_ptr<const ImageProvider> prov, const std::string& ID)
   : ImageConsumer(prov, ID), _ID(ID){
     cv::namedWindow(_ID+"::depth");

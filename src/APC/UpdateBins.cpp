@@ -1,9 +1,11 @@
 #include <APC/UpdateBins.h>
+#include <APC/Robot.h>
 #include <APC/Grasper.h>
 #include <Parser/RobotData.h>
+#include <Camera/Recognition.h>
 
 namespace APC{
-  void updateBins(OrderStatus& order){
+  void updateBins(OrderStatus& order, Robot& robot){
     /** Dunque..
      * We have to update the data on all the bins with the score
      * of the best grasp!
@@ -19,19 +21,21 @@ namespace APC{
     InterProcessCommunication::RobotData& r=InterProcessCommunication::RobotData::getInstance();
 
     while(!order.empty()){
-      /** Take a new order and recompute it if needed; then put it again into the queueueue*/
+      /** Take a new order and recompute it if needed; then put it again into the quueueueueueueueueueueueueueueueueeueueue*/
       Order x=order.top();
       order.pop();
+      std::cout << "<------------------------------->\n";
 
       if(r.isDirty(x.bin[0], x.bin[1])){
-        /**
-         * moveToBin(x.bin[0], x.bin[1])
-         * RobotData.bin[].photo=takePhoto();
-         * updateGiorgio()
-         */
-          /** We moved things, lets'a update the bin content */
-          x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
+        robot.moveToBin(x.bin[0], x.bin[1]);
+        //SUGGESTION: mostrare foto di bin imshow
+        r.setPhoto(x.bin[0], x.bin[1],robot.takePhoto());
+        Camera::updateGiorgio(x.bin[0], x.bin[1]);
       }
+       
+      /** We moved things, lets'a update the bin content */
+      std::cout << "Computing best grasp for order " << x << "\n";
+      x.grasp=APC::getBestGrasp(x.object, x.bin[0], x.bin[1]);
       neworder.push(x);
     }
     order=neworder;

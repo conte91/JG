@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/shared_ptr.hpp>
 #include "ImageProvider.h"
+#include "Image.h"
 
 namespace Camera{
   /** Virtual class for a generic camera user. */
@@ -13,6 +14,7 @@ namespace Camera{
       virtual ~ImageConsumer()=0;
       virtual void update()=0;
       virtual void setProvider(boost::shared_ptr<const ImageProvider> provider);
+      Image getFrame();
   };
 
 }

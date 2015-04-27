@@ -23,7 +23,7 @@ int main(int argc, char** argv){
   Camera::DummyConsumer img(x); 
   try{
     robot.init();
-    APC::ScanBins(robot, img);
+    APC::ScanBins(robot);
   }
   catch(std::string e){
     std::cerr << e << "\n";
