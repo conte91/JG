@@ -1,6 +1,7 @@
 # import RobotData as robotData
 from copy import deepcopy
 import numpy as np
+import math
 from random import random
 
 GRASP_ERROR_LIMIT = 1
@@ -177,13 +178,16 @@ class KivaBin(object):
 
     def __repr__(self):
         return "KivaBin(\n\t" + '\n\t'.join([
-            repr(item) for item in self.items[:5]
+            repr(item) for item in self.items
         ]) + "\n)"
 
     def getBinItems(self):
         return self.items
 
     def removeItem(self, item):
+        if item not in self.items:
+            raise Exception("""trying to remove a non existing
+                            item from shelf model""")
         ind = self.items.index(item)
         self.items.pop(ind)
 
@@ -204,7 +208,7 @@ class Item(object):
         return hash(hash(self.name) + sum(self.pose.values()))
 
     def __repr__(self):
-        return "Item("+self.name+" at " + repr(self.pose.values) + ")"
+        return "Item("+self.name+")"
 
     def __eq__(self, other):
         return (self.name, self.pose) == (other.name, other.pose)
@@ -253,13 +257,16 @@ def getBestGrasp(targetItem, targetBin):
     targetItem.transform(transformationMatrix)
 
     grasps = targetItem.getGrasps()
-
+    grasps.insert(0, None)
     bestGrasp = max(grasps, key=lambda x:
                     calculateGraspScore(x, targetItem, targetBin))
+    print grasps.index(bestGrasp)
     return bestGrasp
 
 
 def calculateGraspScore(grasp, targetItem, targetBin):
+    if grasp is None:
+        return 0
     scores = dict()
     leftoverBin = deepcopy(targetBin)
     leftoverBin.removeItem(targetItem)
@@ -355,12 +362,26 @@ if __name__ == '__main__':
 
         grasps = []
         for j in range(4):
-            grasps.append(dummyGrasp)
+            graspPose = originPose
+            # translate the grasp xyz to the item
+            for axis in ['x','y','z']:
+                graspPose[key] += fineShape[key]
+
+            SIDES = [ math.pi * a/2 for a in range(-1,3)]
+
+            for axis in ['a','b','g']:
+                graspPose[a] +=
+                graspPose[a] +=
+                graspPose[a] +=
+
+            frontGrasp = Grasp(originPose, originPose, 0, 100000)
+            grasps.append(graspPose)
+
         itemsDatabase[pickableObjectName] = Item(pickableObjectName, originPose,
                                                  roughShape, fineShape, grasps)
 
     # the item will be passed by the function
-    targetItem = itemsDatabase.keys()[0]
+    targetItem = 'highland_6539_self_stick_notes'
 
     # fake
     # robotData will be filled by the c cod c code
