@@ -40,6 +40,7 @@
 #include <string>
 
 #include <opencv2/core/core.hpp>
+#include <boost/shared_ptr.hpp>
 
 class Renderer;
 
@@ -68,7 +69,8 @@ public:
   /**
    * @param file_path the path of the mesh to render
    */
-  RendererIterator(Renderer * renderer, size_t n_points);
+  //RendererIterator(Renderer * renderer, size_t n_points);
+  RendererIterator(std::shared_ptr<Renderer> renderer, size_t n_points);
 
   /** Iterate to get to a different view
    * We don't implement the postfix operator on purpose
@@ -159,7 +161,8 @@ public:
   /** The index of the view point we are at now */
   size_t index_;
   /** The renderer object containing the scene and that will render images */
-  Renderer* renderer_;
+//  Renderer* renderer_;
+   std::shared_ptr<Renderer> renderer_;
   /** Values for the angle sampling in degrees */
   int angle_min_, angle_max_, angle_step_, angle_;
   /** Values for the scale sampling */

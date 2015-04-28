@@ -45,18 +45,18 @@ namespace Camera{
       /** LINE-MOD detector */
       cv::Ptr<cv::linemod::Detector> detector_ ;
       /** The renderer initialized with objects meshes, per object*/
-      std::map<std::string, RendererIterator*> renderer_iterators_;
+      std::map<std::string, std::shared_ptr<RendererIterator> > renderer_iterators_;
       /** maps to cache the poses **/
       std::map<std::string,std::vector<float> > dist_map;
+      std::map<std::string,std::vector<cv::Mat> > _hueHistMap;
 
       bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, 
-      cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, RendererIterator*>& renderer_iterators_, 
-      std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
-      std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
-      cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick);
-
+          cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
+          std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
+          std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
+          cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick);
     public:
-      static RecognitionData& getInstance();
-      C5G::Pose recognize(const Image& frame, std::string what);
+        static RecognitionData& getInstance();
+        C5G::Pose recognize(const Image& frame, std::string what);
   };
 }

@@ -75,6 +75,9 @@ namespace object_recognition_core
       cv::Matx33f r;
       cv::Vec3f t;
       bool check_done;
+      
+      //< Overload to get the smallest/bigger Obj confidence
+      inline bool operator< (const ObjData& rhs) const { return (this->match_sim < rhs.match_sim) ; }
     };
   }
 }

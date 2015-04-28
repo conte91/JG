@@ -89,7 +89,7 @@ float getL2distClouds(const std::vector<cv::Vec3f> &model, const std::vector<cv:
   int counter = 0;
   float ratio_inliers = 0.0f;
   //std::cout<<"@L2 dist_mean: "<<dist_mean<<"\n";
-  float dist_expected = 0.015f;//dist_mean * 3.0f;
+  float dist_expected = dist_mean * 3.0f;//0.015f;//
   //std::cout<<"@L2 dist_expected: "<<dist_expected<<"\n";
   dist_mean = 0.0f;
 
@@ -117,7 +117,7 @@ float getL2distClouds(const std::vector<cv::Vec3f> &model, const std::vector<cv:
 
    std::cout<<"@L2 dist_mean: "<<dist_mean<<"\n";
    std::cout<<"@L2 float(nbr_inliers): "<<float(nbr_inliers)<<"\n";
-  if (counter > 0)
+  if (counter > 0 )//&& nbr_inliers > 0)
   {
     dist_mean /= float(nbr_inliers);
     //std::cout<<"@L2 dist_mean: "<<dist_mean<<"\n";
@@ -139,11 +139,11 @@ float icpCloudToCloud(const std::vector<cv::Vec3f> &pts_ref, std::vector<cv::Vec
   cv::Vec3f T_optimal;
 
   //the number of desired iterations defined depending on the mode
-  int icp_it_th = 35; //maximal number of iterations
+  int icp_it_th = 70;//35; //maximal number of iterations
   if (mode == 1)
-    icp_it_th = 4; //minimal number of iterations
+    icp_it_th = 35;//4 //minimal number of iterations
   else if (mode == 2)
-    icp_it_th = 4;
+    icp_it_th = 35;//4
 
   //desired distance between two point clouds
   const float dist_th = 0.012f;
@@ -152,9 +152,9 @@ float icpCloudToCloud(const std::vector<cv::Vec3f> &pts_ref, std::vector<cv::Vec
   px_inliers_ratio = getL2distClouds(pts_model, pts_ref, dist_mean, mode);
   //The difference between two previously obtained mean distances between the reference and the model point clouds
   float dist_diff = std::numeric_limits<float>::max();
-  std::cout<<"1o L2--------"<<"\n";
-   std::cout<<"dist_mean: "<<dist_mean<<"\n";
-   std::cout<<"dist_diff: "<<dist_diff<<"\n";  
+//  std::cout<<"@ICP 1o L2--------"<<"\n";
+//   std::cout<<"dist_mean: "<<dist_mean<<"\n";
+//   std::cout<<"dist_diff: "<<dist_diff<<"\n";  
   //the number of performed iterations
   int iter = 0;
   while (( ((dist_mean > dist_th) && (dist_diff > 0.0001f)) || (mode == 1) ) && (iter < icp_it_th))
@@ -192,17 +192,17 @@ float icpCloudToCloud(const std::vector<cv::Vec3f> &pts_ref, std::vector<cv::Vec
 
     //compute the distance between the transformed and ref point clouds
     dist_diff = dist_mean;
-      std::cout<<"2 Before L2--------"<<"\n";
-      std::cout<<"dist_mean: "<<dist_mean<<"\n";
-      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
+//      std::cout<<"@ICP 2 Before L2--------"<<"\n";
+//      std::cout<<"dist_mean: "<<dist_mean<<"\n";
+//      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
     px_inliers_ratio = getL2distClouds(pts_model, pts_ref, dist_mean, mode);
-      std::cout<<"3 After L2--------"<<"\n";
-      std::cout<<"dist_mean: "<<dist_mean<<"\n";
-      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
+//      std::cout<<"@ICP 3 After L2--------"<<"\n";
+//      std::cout<<"dist_mean: "<<dist_mean<<"\n";
+//      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
     dist_diff -= dist_mean;
-      std::cout<<"4--------"<<"\n";
-      std::cout<<"dist_mean: "<<dist_mean<<"\n";
-      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
+//      std::cout<<"@ICP 4--------"<<"\n";
+//      std::cout<<"dist_mean: "<<dist_mean<<"\n";
+//      std::cout<<"dist_diff: "<<dist_diff<<"\n";  
 
     //update the translation matrix: turn to opposite direction at first and then do translation
     T = R_optimal * T;
@@ -210,7 +210,7 @@ float icpCloudToCloud(const std::vector<cv::Vec3f> &pts_ref, std::vector<cv::Vec
     cv::add(T, T_optimal, T);
     //update the rotation matrix
     R = R_optimal * R;
-    std::cout << " it " << iter << "/" << icp_it_th << " : " << std::fixed << dist_mean << " " << dist_diff << " " << px_inliers_ratio << " " << pts_model.size() << std::endl;
+    std::cout << " @ICP it " << iter << "/" << icp_it_th << " : " << std::fixed << dist_mean << " " << dist_diff << " " << px_inliers_ratio << " " << pts_model.size() << std::endl;
   }
 
     //std::cout << " icp " << mode << " " << dist_min << " " << iter << "/" << icp_it_th  << " " << px_inliers_ratio << " " << d_diff << " " << std::endl;
