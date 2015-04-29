@@ -90,8 +90,7 @@ namespace InterProcessCommunication{
     x.bin[1]=column;
     this->workOrder.push(x);
   }
-
-
+  Camera::Viewer RobotData::demoViewer("APC");
 
   RobotData::~RobotData() {
     std::cout << "Your mom is being destructed\n";
