@@ -6,7 +6,7 @@
 namespace Camera{
   class OpenNIProvider : public ImageProvider {
     public:
-      OpenNIProvider(const std::string& ID="OpenNIProvider");
+      OpenNIProvider(const std::string& ID="OpenniStreamProvider");
       virtual Image getFrame() const;
 
     private:
