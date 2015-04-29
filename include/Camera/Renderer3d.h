@@ -44,6 +44,7 @@
 #include <GL/gl.h>
 
 #include "renderer.h"
+#include <boost/shared_ptr.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,14 +109,16 @@ protected:
   double focal_length_x_, focal_length_y_, near_, far_;
   float angle_;
 
-  Model* model_;
+//  Model* model_;
+  boost::shared_ptr<Model> model_;
   GLuint scene_list_;
 
   /** stream for storing the logs from Assimp */
   aiLogStream* ai_stream_;
 
   /** Private implementation of the renderer (GLUT or OSMesa) */
-  Renderer3dImpl* renderer_;
+//  Renderer3dImpl* renderer_;
+  boost::shared_ptr<Renderer3dImpl> renderer_;
 };
 
 #endif /* ORK_RENDERER_RENDERER3D_H_ */

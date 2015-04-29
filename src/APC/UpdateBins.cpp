@@ -29,7 +29,10 @@ namespace APC{
       if(r.isDirty(x.bin[0], x.bin[1])){
         robot.moveToBin(x.bin[0], x.bin[1]);
         //SUGGESTION: mostrare foto di bin imshow
-        r.setPhoto(x.bin[0], x.bin[1],robot.takePhoto());
+        Image photo = robot.takePhoto()
+        r.setPhoto(x.bin[0], x.bin[1],photo);
+        r.demoViewer.showImage(photo);
+        r.demoViewer.setTitle("new Data");
         Camera::updateGiorgio(x.bin[0], x.bin[1]);
       }
        

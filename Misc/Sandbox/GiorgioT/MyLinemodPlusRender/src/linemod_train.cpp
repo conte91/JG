@@ -80,7 +80,8 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
                                                           std::map<std::string,std::vector<cv::Mat> >& Rmap,
                                                           std::map<std::string,std::vector<cv::Mat> >& Tmap,
                                                           std::map<std::string,std::vector<cv::Mat> >& Kmap,
-                                                          std::map<std::string,std::vector<float> >& dist_map)
+                                                          std::map<std::string,std::vector<float> >& dist_map,
+                                                          std::map<std::string,std::vector<cv::Mat> >& HueHist)
 {
 //std::cout<<"-1"<<"\n";
   cv::Ptr<cv::linemod::Detector> detector = new cv::linemod::Detector;
@@ -167,6 +168,21 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
       dist_map[class_id_tmp].push_back( d );
     }
     
+    /**Read HueHist**/
+    n = fs["Hue"];                         // Read string sequence - Get node
+    if (n.type() != cv::FileNode::SEQ)
+    {
+      std::cerr << "strings is not a sequence! FAIL" << std::endl;
+      return 0;
+    }
+    //std::cout<<"7"<<"\n";
+    it = n.begin(), it_end = n.end(); // Go through the node
+    for (; it != it_end; )//++it)
+    {
+      cv::Mat m; it >> m;
+      HueHist[class_id_tmp].push_back( m );
+    }
+    
     //++num_classes;
   }
   
@@ -194,12 +210,13 @@ static void writeLinemod(const cv::Ptr<cv::linemod::Detector>& detector, const s
 
 static void writeLinemodAndPoses(const cv::Ptr<cv::linemod::Detector>& detector, const std::string& filename, const std::string& mesh_file_path,
                                  const std::vector<cv::Mat>& R, const std::vector<cv::Mat>& T,
-                                 const std::vector<cv::Mat>& Ks, const std::vector<float>& dist)
+                                 const std::vector<cv::Mat>& Ks, const std::vector<float>& dist, const std::vector<cv::Mat>& HueHist)
 {
   cv::FileStorage fs(filename, cv::FileStorage::WRITE);
   detector->write(fs);
 
   std::vector<std::string> ids = detector->classIds();
+  std::cout<<"Num Classes of the detector to write down: "<<(int)ids.size()<<"\n";
   fs << "classes" << "[";
   for (int i = 0; i < (int)ids.size(); ++i)
   {
@@ -209,6 +226,7 @@ static void writeLinemodAndPoses(const cv::Ptr<cv::linemod::Detector>& detector,
   }
   fs << "]"; // classes
   
+  //TODO: Safe only if 1 class in the detector !!!!
   for (int i = 0; i < (int)ids.size(); ++i)
   {
   //save : R, T, dist, and Ks for that class
@@ -239,6 +257,13 @@ static void writeLinemodAndPoses(const cv::Ptr<cv::linemod::Detector>& detector,
       fs << Ks[Ks_idx];
     }
     fs << "]";
+    
+    fs << "Hue" << "[";
+    for (int Hue_idx=0;Hue_idx<HueHist.size();++Hue_idx)
+    {
+      fs << HueHist[Hue_idx];
+    }
+    fs << "]";
   }
   
   fs << "mesh_file_path" << mesh_file_path ;
@@ -252,7 +277,7 @@ int main(int argc, char* argv[])
 
     if(argc!=4)
     {
-      std::cout<<"Usage: ./"<<argv[0]<<" "<<"path/to/objs_folders"<<" "<< "visualize as 0(false) 1(true)"<<" Object Name to Train"<<"\n";
+      std::cout<<"Usage: ./"<<argv[0]<<" "<<"path/to/objs_folders"<<" "<< "visualize as 0(false) 1(true)"<<" [Object Name to Train]!!Not Used Anymore!!"<<"\n";
       return -1;
     }
 
@@ -270,6 +295,7 @@ int main(int argc, char* argv[])
     std::vector<cv::Mat>  Ts_;
     std::vector<float>  distances_;
     std::vector<cv::Mat>  Ks_;
+    std::vector<cv::Mat>  HueHist_;
 
     int renderer_n_points_;
     int renderer_angle_step_;
@@ -314,8 +340,9 @@ int main(int argc, char* argv[])
         {
         
             //TODO: For Now only Crayola is Loaded...Remove it in the future
-            if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && 
-         (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0))
+            if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && 
+                  (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0)
+                  && (p.filename().string().compare("mark_twain_huckleberry_finn") !=0) )
                continue;
          
         
@@ -324,7 +351,7 @@ int main(int argc, char* argv[])
             Ts_.clear();
             distances_.clear();
             Ks_.clear();
-        
+            HueHist_.clear();
             //set the object id as the name of the object itself
             object_id_ = p.filename().string();
             std::cout<<object_id_<<"\n";
@@ -385,37 +412,45 @@ int main(int argc, char* argv[])
           //*detector_ //= *detector_ptr;
 
           // the model name can be specified on the command line.
-          Renderer3d renderer = Renderer3d(mesh_path.string());
-          renderer.set_parameters(renderer_width_, renderer_height_, renderer_focal_length_x_,
-                                  renderer_focal_length_y_, renderer_near_, renderer_far_);
+//          Renderer3d renderer = Renderer3d(mesh_path.string());
+//          renderer.set_parameters(renderer_width_, renderer_height_, renderer_focal_length_x_,
+//                                  renderer_focal_length_y_, renderer_near_, renderer_far_);
+         boost::shared_ptr<Renderer3d> rendererPtr (new Renderer3d(mesh_path.string()));
+         rendererPtr->set_parameters(renderer_width_, renderer_height_, renderer_focal_length_x_, renderer_focal_length_y_, renderer_near_, renderer_far_);
 
           //cancella il file letto  
           //std::remove(objsfolder_path.c_str());
 
-          RendererIterator renderer_iterator = RendererIterator(&renderer, renderer_n_points_);
-          //set the RendererIterator parameters
-          renderer_iterator.angle_step_ = renderer_angle_step_;
-          renderer_iterator.radius_min_ = float(renderer_radius_min_);
-          renderer_iterator.radius_max_ = float(renderer_radius_max_);
-          renderer_iterator.radius_step_ = float(renderer_radius_step_);
+//          RendererIterator renderer_iterator = RendererIterator(&renderer, renderer_n_points_);
+//          //set the RendererIterator parameters
+//          renderer_iterator.angle_step_ = renderer_angle_step_;
+//          renderer_iterator.radius_min_ = float(renderer_radius_min_);
+//          renderer_iterator.radius_max_ = float(renderer_radius_max_);
+//          renderer_iterator.radius_step_ = float(renderer_radius_step_);
+
+         boost::shared_ptr<RendererIterator> rendererIteratorPtr (new RendererIterator(rendererPtr, renderer_n_points_));   
+         rendererIteratorPtr->angle_step_ = renderer_angle_step_;
+         rendererIteratorPtr->radius_min_ = float(renderer_radius_min_);
+         rendererIteratorPtr->radius_max_ = float(renderer_radius_max_);
+         rendererIteratorPtr->radius_step_ = float(renderer_radius_step_);
 
           cv::Mat image, depth, mask;
           cv::Matx33d R;
           cv::Vec3d T;
           cv::Matx33f K;
-          for (size_t i = 0; !renderer_iterator.isDone(); ++i, ++renderer_iterator)
+          for (size_t i = 0; !rendererIteratorPtr->isDone(); ++i, ++(*rendererIteratorPtr) )
           {
             std::stringstream status;
             status << "Loading images " << (i+1) << "/"
-                << renderer_iterator.n_templates();
+                << rendererIteratorPtr->n_templates();
             std::cout << status.str();
 
             cv::Rect rect;
-            renderer_iterator.render(image, depth, mask, rect);
+            rendererIteratorPtr->render(image, depth, mask, rect);
 
-            R = renderer_iterator.R_obj();
-            T = renderer_iterator.T();
-            float distance = fabs(renderer_iterator.D_obj() - float(depth.at<ushort>(depth.rows/2.0f, depth.cols/2.0f)/1000.0f));
+            R = rendererIteratorPtr->R_obj();
+            T = rendererIteratorPtr->T();
+            float distance = fabs(rendererIteratorPtr->D_obj() - float(depth.at<ushort>(depth.rows/2.0f, depth.cols/2.0f)/1000.0f));
             K = cv::Matx33f(float(renderer_focal_length_x_), 0.0f, float(rect.width)/2.0f, 0.0f, float(renderer_focal_length_y_), float(rect.height)/2.0f, 0.0f, 0.0f, 1.0f);
 
             std::vector<cv::Mat> sources(2);
@@ -438,17 +473,51 @@ int main(int argc, char* argv[])
               }
             }
       //#endif
+      
+            if(image.empty())
+            {
+               // Delete the status   
+               for (size_t j = 0; j < status.str().size(); ++j)
+                std::cout << '\b';
+               std::cout<<"Empty Image"<<"\n";
+               continue;
+            }
+            
 
             int template_in = detector_->addTemplate(sources, object_id_, mask); //object id as string
             if (template_in == -1)
             {
                // Delete the status
-               
                for (size_t j = 0; j < status.str().size(); ++j)
                 std::cout << '\b';
-                std::cout<<template_in<<"\n";
+               std::cout<<template_in<<"\n";
                continue;
             }
+            
+            /*****COMPUTE HUE HISTOGRAM*******/
+            //Conversione RBG -> HSV
+            cv::Mat hsv_mat;
+	         cv::cvtColor(image, hsv_mat, CV_BGR2HSV);
+	         std::vector<cv::Mat> hsv_planes;
+	         cv::split( hsv_mat, hsv_planes );
+	
+	         //discretizzai valori di Hue a 30 livelli (Bins)
+	         int Hbins = 30;
+	         int histSize = Hbins; //per Histogramma 1D
+	         // Hue varia da 0 a 179 compreso
+          	float hranges[] = { 0, 180 };
+          	const float* histRange = { hranges };
+          	cv::Mat Hue_Hist;
+//          	cv::imshow("mask",mask);
+//          	cv::waitKey();
+            //Compute Hist only on the mask
+          	cv::calcHist( &hsv_planes[0], 1, 0, mask, Hue_Hist, 1, &histSize, &histRange, true, false );
+          	//normalizza da 0 100.0
+          	cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
+          	//store the Hue Hist of that template
+          	HueHist_.push_back(Hue_Hist);
+            /*****END COMPUTE HUE HISTOGRAM*******/
+
 
             // Also store the pose of each template
             Rs_.push_back(cv::Mat(R));
@@ -467,24 +536,30 @@ int main(int argc, char* argv[])
           fs::path saveLinemodPath = p / fs::path(object_id_+"_Linemod.yml");
           //writeLinemod(detector_,saveLinemodPath.string());
           writeLinemodAndPoses(detector_, saveLinemodPath.string(), mesh_path.string(),
-                               Rs_, Ts_, Ks_, distances_);
+                               Rs_, Ts_, Ks_, distances_, HueHist_);
                                
            std::cout<<std::endl;
            std::cout<<"Rs_.size() "<< Rs_.size()<<"\n";  
-           std::cout<<"Rs_[7] "<< Rs_[7]<<"\n";                    
+           std::cout<<"Rs_[7] "<< Rs_[7]<<"\n";
+           std::cout<<"HueHist_.size() "<< HueHist_.size()<<"\n";  
+           std::cout<<"HueHist_[178] "<< HueHist_[178]<<"\n";                       
           //DEBUG
+          std::cout<<"#DEBUG READ Back the just written data#"<<"\n";
           std::map<std::string,std::vector<cv::Mat> > Rmap;
           std::map<std::string,std::vector<cv::Mat> > Tmap;
           std::map<std::string,std::vector<cv::Mat> > Kmap;
+          std::map<std::string,std::vector<cv::Mat> > HueHistmap;
           std::map<std::string,std::vector<float> > dist_map;
           std::string mesh_file_path_debug;
           //reading...
-          readLinemodAndPoses(saveLinemodPath.string(), mesh_file_path_debug ,Rmap,Tmap,Kmap,dist_map);
+          readLinemodAndPoses(saveLinemodPath.string(), mesh_file_path_debug ,Rmap,Tmap,Kmap,dist_map,HueHistmap);
           
           std::cout<<"Rmap[object_id_].size() "<< Rmap[object_id_].size()<<"\n";
           std::cout<<"Rmap[object_id_][7] "<< Rmap[object_id_][7]<<"\n";
           std::cout<<"Tmap[object_id_].size() "<< Tmap[object_id_].size()<<"\n";
           std::cout<<"Kmap[object_id_].size() "<< Kmap[object_id_].size()<<"\n";
+          std::cout<<"HueHistmap[object_id_].size() "<< HueHistmap[object_id_].size()<<"\n";
+          std::cout<<"HueHistmap[object_id_][178] "<< HueHistmap[object_id_][178]<<"\n";        
           std::cout<<"dist_map[object_id_].size() "<< dist_map[object_id_].size()<<"\n";
           std::cout<<"mesh_file_path_debug "<< mesh_file_path_debug<<"\n";
           

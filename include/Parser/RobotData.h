@@ -8,6 +8,7 @@ namespace InterProcessCommunication{
     public:
       static const int ROW_N=4;
       static const int COL_N=3;
+      static Camera::Viewer demoViewer;
       static RobotData& getInstance();
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);

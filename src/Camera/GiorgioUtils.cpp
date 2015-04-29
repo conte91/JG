@@ -39,7 +39,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RendererIterator::RendererIterator(Renderer *renderer, size_t n_points)
+//RendererIterator::RendererIterator(Renderer *renderer, size_t n_points)
+RendererIterator::RendererIterator(std::shared_ptr<Renderer> renderer, size_t n_points)
     :
       n_points_(n_points),
       index_(0),

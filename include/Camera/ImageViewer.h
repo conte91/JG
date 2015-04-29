@@ -9,7 +9,6 @@ namespace Camera{
 
     private:
       void updateMyself();
-      cv::namedWindow _imgRGB, _imgDEPTH;
       std::string _title;
       Image& _what;
       std::string _ID;

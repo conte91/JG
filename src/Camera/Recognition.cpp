@@ -2,6 +2,7 @@
 #include <Parser/RobotData.h>
 #include <Camera/GiorgioUtils.h>
 #include <Camera/Renderer3d.h>
+#include <Camera/ImageViewer.h>
 #include <C5G/Pose.h>
 #include <Eigen/Core>
 //#include <Eigen/Matrix>
@@ -15,7 +16,6 @@ namespace Camera{
 
   void updateGiorgio(int row, int column){
     using InterProcessCommunication::RobotData;
-    std::cout << "------1--------------------------------------------\n";
     RobotData& r=RobotData::getInstance();
     for(int i=0; i<RobotData::MAX_ITEM_N; ++i){
       std::string name =r.getBinItem(row, column, i);
@@ -28,14 +28,6 @@ namespace Camera{
         //SUGGESTION: draw object skeleton
         r.setObjPose(row, column, i, thePose);
         std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
-        std::cout << "---------------------------------------------------\n";
-        //Image p = r.getFrame(row,column);
-        //Image p=r.Bin[binN].photo;
-        cv::Mat p = cv::imread("/tmp/1915776_395888948483_2139832_n.jpg");
-        cv::namedWindow("changeMe", cv::WINDOW_AUTOSIZE);
-        cv::imshow("changeMe",p);
-        cv::waitKey(0);
-        std::cout << "---------------------------------------------------\n";
 
       } 
       else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
@@ -45,7 +37,8 @@ namespace Camera{
         /** Everything else shall be recognized by hand */
         std::cout << "I'm sorry baby, you have to take it by urself\n";
       }
-
+      r.demoViewer.showImage(r.Bin[binN].photo);
+      r.demoViewer.setTitle("Pose is: _____");
     }
 
     r.setDirty(row, column, false);
