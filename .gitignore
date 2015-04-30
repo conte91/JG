@@ -68,3 +68,9 @@ srv_gen
 
 
 .idea/
+
+#local tests data
+nonGitTestBed/
+
+#rope
+.ropeproject
