@@ -103,10 +103,13 @@ add_definitions(${PCL_DEFINITIONS})
 #INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/include )
 #link_directories( ${CMAKE_BINARY_DIR}/bin)
 #set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+FIND_PACKAGE(assimp REQUIRED)
+INCLUDE_DIRECTORIES(${ASSIMP_INCLUDE_DIRS})
+MESSAGE("THEFUCK: ${assimp_LIBS}")
 add_executable( LineModTraining src/linemod_train.cpp ${LineModTrainigSRC}) #${NAME_SRC} ${NAME_HEADERS} )
-target_link_libraries( LineModTraining ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${Boost_LIBRARIES} freeimage)
+target_link_libraries( LineModTraining ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${Boost_LIBRARIES} freeimage ${ASSIMP_LIBRARIES})
 
 add_executable( LineModDetection  src/MyLinemod_detect.cpp src/linemod_icp.cpp ${LineModTrainigSRC})
-target_link_libraries( LineModDetection ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${Boost_LIBRARIES} ${PCL_LIBRARIES} freeimage)
+target_link_libraries( LineModDetection ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${Boost_LIBRARIES} ${PCL_LIBRARIES} freeimage opencv_rgbd ${ASSIMP_LIBRARIES})
  #/opt/ros/hydro/lib/libopencv_rgbd.so
 
