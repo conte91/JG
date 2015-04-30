@@ -28,7 +28,6 @@ namespace Camera{
         //SUGGESTION: draw object skeleton
         r.setObjPose(row, column, i, thePose);
         std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
-
       } 
       else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
         auto thePose=RecognitionData::getInstance().recognize(r.getFrame(row, column), name);
@@ -37,12 +36,10 @@ namespace Camera{
         /** Everything else shall be recognized by hand */
         std::cout << "I'm sorry baby, you have to take it by urself\n";
       }
-      r.demoViewer.showImage(r.Bin[binN].photo);
+      r.demoViewer.showImage(r.getPhoto(row,column));
       r.demoViewer.setTitle("Pose is: _____");
     }
-
     r.setDirty(row, column, false);
-        
   }
 
 

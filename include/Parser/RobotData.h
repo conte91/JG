@@ -1,5 +1,6 @@
 #pragma once
 #include <Camera/Image.h>
+#include <Camera/ImageViewer.h>
 #include <APC/Order.h>
 #include <C5G/Pose.h>
 
@@ -8,7 +9,7 @@ namespace InterProcessCommunication{
     public:
       static const int ROW_N=4;
       static const int COL_N=3;
-      static Camera::Viewer demoViewer;
+      static Camera::ImageViewer demoViewer;
       static RobotData& getInstance();
       std::string getBinItem(int row, int column, int item);
       void setBinItem(int row,int column,int item,const std::string& val);
@@ -18,8 +19,9 @@ namespace InterProcessCommunication{
       void setWorkOrder(int row,int column,const std::string& itemName);
       C5G::Pose getObjPose(int row, int column, int item) const;
       void setObjPose(int row,int column,int item,const C5G::Pose& val);
-      Camera::Image getFrame(int row, int column);
       void setPhoto(int row, int column, const Camera::Image& frame);
+      Camera::Image getFrame(int row, int column);
+      Camera::Image getPhoto(int row, int column);
       static std::string xyToName(int row, int column);
       int getCurrentRow();
       int getCurrentColumn();
