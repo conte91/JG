@@ -300,6 +300,7 @@ if __name__ == '__main__':
 
     pickableObjects = {
         'munchkin_white_hot_duck_bath_toy': (150, 160, 80),
+        'champion_copper_plus_spark_plug': (95, 20, 22),
         'mark_twain_huckleberry_finn': (128, 250, 16),
         'sharpie_accent_tank_style_highlighters': (120, 130, 20),
         'genuine_joe_plastic_stir_sticks': (144, 97, 108),

@@ -14,6 +14,8 @@ namespace C5G {
     double beta;
     double gamma;
 
+    Pose whichisRelativeTo(const Pose& p);
+
     /** Basic operations */
     Pose operator+(const Pose& o) const;
     Pose(/* In meters */ double x, double y, double z, /* In radians */ double alpha, double beta, double gamma, /* Override default units */bool useMMDeg=false);
