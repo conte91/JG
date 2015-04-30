@@ -90,7 +90,7 @@ namespace InterProcessCommunication{
     x.bin[1]=column;
     this->workOrder.push(x);
   }
-  Camera::Viewer RobotData::demoViewer("APC");
+  Camera::ImageViewer RobotData::demoViewer("APC");
 
   RobotData::~RobotData() {
     std::cout << "Your mom is being destructed\n";
@@ -106,6 +106,10 @@ namespace InterProcessCommunication{
 
   void RobotData::setPhoto(int row, int column, const Camera::Image& frame){
     shelf.bins[xyToBin(row, column)].photo=frame;
+  }
+  Camera::Image RobotData::getPhoto(int row, int column){
+    //ppporco
+    return this->getFrame(row,column);
   }
   Camera::Image RobotData::getFrame(int row, int column){
     return shelf.bins[xyToBin(row,column)].photo;
