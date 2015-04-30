@@ -1,4 +1,5 @@
 #include <fstream>
+#include <stdexcept>
 #include <Parser/RobotData.h>
 #include <Camera/GiorgioUtils.h>
 #include <Camera/Renderer3d.h>
@@ -15,6 +16,11 @@ namespace Camera{
 
 
   void updateGiorgio(int row, int column){
+    std::map<std::string, C5G::Pose> dovesono;
+    dovesono["expo_dry_erase_board_eraser"]=C5G::Pose({1.25,-0.20, 0.20,0,0,0});
+    dovesono["champion_copper_plus_spark_plug"]=C5G::Pose({1.25,-0.20, -0.20,0,0,0});
+    dovesono["rollodex_mesh_collection_jumbo_pencil_cup"]=C5G::Pose({1.25,0.20, 0.20,0,0,0});
+    dovesono["kygen_squeakin_eggs_plush_puppies"]=C5G::Pose({1.25,0.20, 0.20,0,0,0});
     using InterProcessCommunication::RobotData;
     RobotData& r=RobotData::getInstance();
     for(int i=0; i<RobotData::MAX_ITEM_N; ++i){
@@ -29,12 +35,17 @@ namespace Camera{
         r.setObjPose(row, column, i, thePose);
         std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
       } 
-      else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
-        auto thePose=RecognitionData::getInstance().recognize(r.getFrame(row, column), name);
-      }
       else {
-        /** Everything else shall be recognized by hand */
-        std::cout << "I'm sorry baby, you have to take it by urself\n";
+
+        try{
+          auto thePose=dovesono.at(name);
+          r.setObjPose(row,column,i,thePose);
+        }
+        catch(std::out_of_range sc){
+          /** Everything else shall be recognized by hand */
+          std::cout << "I'm sorry baby, you have to take it by urself\n";
+        }
+
       }
       r.demoViewer.showImage(r.getPhoto(row,column));
       r.demoViewer.setTitle("Pose is: _____");
