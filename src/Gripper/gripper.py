@@ -1,6 +1,6 @@
-# import RobotData as robotData
 from copy import deepcopy
 import numpy as np
+# import math
 from random import random
 
 GRASP_ERROR_LIMIT = 1
@@ -12,6 +12,28 @@ def distance(p0, p1):
     for i in range(dimensions):
         squares += (p0[i] - p1[i]) ** 2
     return pow(squares, 1/dimensions)
+
+
+def generatePotentialGrasps(originalGrasp, itemPose):
+    grasps = []
+    # rot = np.matrix( math.cos(angle))
+    # trans = generateTranslationMatrix(itemPose)
+    for _ in range(4):
+        graspPose = originPose
+        # translate the grasp xyz to the item
+        for axis in ['x', 'y', 'z']:
+            graspPose[pickableObjectName] += fineShape[pickableObjectName]
+
+        # SIDES = [math.pi * a/2 for a in range(-1, 3)]
+
+        # for axis in ['a', 'b', 'g']:
+        #     graspPose[a] += 1/0
+        #     graspPose[a] += 1/0
+        #     graspPose[a] += 1/0
+
+        # frontGrasp = Grasp(originPose, originPose, 0, 100000)
+        grasps.append(graspPose)
+    return grasps
 
 
 class Shape(object):
@@ -32,7 +54,7 @@ class Shape(object):
 
 
 def project(point, vector):
-    print "TODO: floating point ops fuckup"
+    print "TODO: floating point operations fuckups"
     x, y, z = range(3)
     n = d = 0.
     result = 0.
@@ -48,19 +70,19 @@ def project(point, vector):
 
 def intersectCuboidCuboid(cube0, cube1):
     x, y, z = range(3)
-    print("TODO check for negative coords")
+    print "intersectCuboidCuboid should return a value"
 
     # calculate vertex (lower upper right left)
     ur0 = cube0[1]
     ul0 = (cube0[0][x], cube0[1][y])
     lr0 = cube0[0]
-    ll0 = (cube0[1][x], cube0[0][y])
+    # ll0 = (cube0[1][x], cube0[0][y])
     ur0 = cube0[1]
 
     ur1 = cube1[1]
     ul1 = (cube1[0][x], cube1[1][y])
     lr1 = cube1[0]
-    ll1 = (cube1[1][x], cube1[0][y])
+    # ll1 = (cube1[1][x], cube1[0][y])
     ur1 = cube1[1]
     # calculate axes
     axis00 = ur0 - ul0
@@ -68,12 +90,21 @@ def intersectCuboidCuboid(cube0, cube1):
     axis10 = ur1 - ul1
     axis11 = ur1 - lr1
 
-    # for cube 
     for axis in [axis00, axis01, axis10, axis11]:
-        v00 = project(ur0, axis)
-        v01 = project(vertex, axis)
-        v10 = project(vertex, axis)
-        v11 = project(vertex, axis)
+        projectedPoints0 = [project(vertex, axis) for vertex in cube0]
+        projectedPoints1 = [project(vertex, axis) for vertex in cube1]
+
+        minCube0 = min(projectedPoints0)
+        maxCube0 = max(projectedPoints0)
+        minCube1 = min(projectedPoints1)
+        maxCube1 = max(projectedPoints1)
+        if minCube0 < maxCube1 and minCube1 < maxCube0:
+            # there is an intersection on this axis
+            pass
+        else:
+            # there is a plane separating the cubes
+            return False
+    return True
 
 
 class PrimitiveShape(object):
@@ -200,12 +231,15 @@ class RobotData(object):
             repr(item) for item in self.itemDatabase.values()[:5]
         ])+'...'
 
-    def getBin(self, binName):
-        print "using fake values for", binName
-        # legge da file /tmp/robot.data
-        #
-        # legge da file
-        return KivaBin(self.itemDatabase.values()[4:9])
+    def getBin(self):
+        with open("/tmp/robot.data") as robotData:
+            binItems = robotData.read().split("\n")[:-1]
+        # binItems = [item.split for item in binItems.split()]
+        result = {}
+        for item in binItems:
+            itemName, itemPose = item.split(" ", 1)
+            result[itemName] = tuple(itemPose.split(" "))
+        return KivaBin(result)
 
     def getItemTemplate(self, itemName):
         return self.itemDatabase[itemName]
@@ -223,19 +257,25 @@ class KivaBin(object):
 
     def __repr__(self):
         return "KivaBin(\n\t" + '\n\t'.join([
-            repr(item) for item in self.items[:5]
+            repr(item) for item in self.items
         ]) + "\n)"
 
     def getBinItems(self):
         return self.items
 
     def removeItem(self, item):
+        if item not in self.items:
+            raise Exception("""trying to remove a non existing
+                            item from shelf model""")
         ind = self.items.index(item)
         self.items.pop(ind)
 
-    def getItemPose(self, itemName):
-        dx, dy, dz, da, db, dg = [100*random() for i in range(6)]
-        return {'x': dx, 'y': dy, 'z': dz, 'a': da, 'b': db, 'g': dg}
+    def getItemPose(self, item):
+        return item.pose
+        #itemName = item.name
+        #x, y, z, a, b, g = self.items[itemName]
+        #pose = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'g': g}
+        #return pose
 
 
 class Item(object):
@@ -250,7 +290,7 @@ class Item(object):
         return hash(hash(self.name) + sum(self.pose.values()))
 
     def __repr__(self):
-        return "Item("+self.name+" at " + repr(self.pose.values) + ")"
+        return "Item("+self.name+")"
 
     def __eq__(self, other):
         return (self.name, self.pose) == (other.name, other.pose)
@@ -285,27 +325,36 @@ class Grasp(object):
         return volume
 
 
-def getBestGrasp(targetItem, targetBin):
+def getBestGrasp(targetItem):
     """
     args:
         (str) targetItem  :   item to pick
-        (str) targetBin   :   bin where to pick the item
     """
     targetItem = robotData.getItemTemplate(targetItem)
-    targetBin = robotData.getBin(targetBin)
+    targetBin = robotData.getBin()
+
+    itemPose = targetBin.getItemPose(targetItem)
+    if min(itemPose) < -1000:
+        # -1000 as pose means item not found
+        return -100000
+
+    #used return for testing
+    return itemPose
 
     # adapt the item template to the real item
-    transformationMatrix = targetBin.getItemPose(targetItem)
     targetItem.transform(transformationMatrix)
 
     grasps = targetItem.getGrasps()
-
+    grasps.insert(0, None)
     bestGrasp = max(grasps, key=lambda x:
                     calculateGraspScore(x, targetItem, targetBin))
+    print grasps.index(bestGrasp)
     return bestGrasp
 
 
 def calculateGraspScore(grasp, targetItem, targetBin):
+    if grasp is None:
+        return 0
     scores = dict()
     leftoverBin = deepcopy(targetBin)
     leftoverBin.removeItem(targetItem)
@@ -338,8 +387,9 @@ def isDoable(grasp, targetItem):
         return False
     return True
 
-print project((2, 6), (3, 4))
-if __name__ == '__main__' and False:
+if __name__ == '__main__':
+
+
     grasps = dict()
     itemsDatabase = dict()
     originPose = {'x': 0, 'y': 0, 'z': 0, 'a': 0, 'b': 0, 'g': 0, }
@@ -380,7 +430,6 @@ if __name__ == '__main__' and False:
     ]
     """
 
-    print "fineShapes are fake"
     dummyGrasp = Grasp(originPose, originPose, 0, 100000)
     print "using dummy grasps"
 
@@ -391,31 +440,29 @@ if __name__ == '__main__' and False:
         ]
     dummyShape = Shape(fakeCuboids)
     dummyPose = originPose
+    # end placeholders
 
     for pickableObjectName in pickableObjects.keys():
         # adding some fake grasps
-        roughElements = [
-            Cuboid((1, 1, 1), pickableObjects[pickableObjectName]),
-            Cuboid(originXYZ, pickableObjects[pickableObjectName])
-        ]
+        roughElements = [Cuboid(originXYZ, pickableObjects[pickableObjectName])]
         roughShape = Shape(roughElements)
+        print "fineShapes are fake"
         fineShape = Shape(fakeCuboids)
 
-        grasps = []
-        for j in range(4):
-            grasps.append(dummyGrasp)
+        grasps = [] #TODO init as generatePotentialGrasps()
+
         itemsDatabase[pickableObjectName] = Item(pickableObjectName, originPose,
                                                  roughShape, fineShape, grasps)
 
     # the item will be passed by the function
-    targetItem = itemsDatabase.keys()[0]
+    targetItem = 'highland_6539_self_stick_notes'
 
     # fake
     # robotData will be filled by the c cod c code
     robotData = RobotData(itemsDatabase)
-    # rm me
-    kivaBin = "bin_F"
 
     # score = calculateGraspScore(targetItem.grasps[0], targetItem, kivaBin)
-    score = getBestGrasp(targetItem, kivaBin)
+    score = getBestGrasp(targetItem)
     print "score", score
+    with open("/tmp/grasp.result","w") as output:
+        output.write(getBestGrasp(targetItem, targetBin))
