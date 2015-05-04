@@ -17,17 +17,17 @@ namespace Camera{
     ///cv::putText(_toRender.rgb, _title+" RGB", {0,0});
     ///cv::putText(_toRender.depth, _title+" DEPTH", {0,0});
 
-    cv::destroyAllWindows();
+    //cv::destroyAllWindows();
     cv::imshow(_ID+" (RGB)", _toRender.rgb);
     cv::imshow(_ID+" (DEPTH)", _toRender.depth);
     std::cout <<
-      "**********************************************"
+      "\n**********************************************\n"
       << _title <<
-      "**********************************************";
+      "\n**********************************************\n";
 
     //cv::putText(_ID+" (RGB)", _title+" RGB");
     //cv::putText(_ID+" (DEPTH)", _title+" DEPTH");
-    cv::waitKey(0);
+    cv::waitKey(1);
   }
 
   void ImageViewer::showImage(const Image& what){

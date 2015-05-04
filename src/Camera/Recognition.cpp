@@ -47,6 +47,7 @@ namespace Camera{
         catch(std::out_of_range sc){
           /** Everything else shall be recognized by hand */
           std::cout << "I'm sorry baby, you have to take it by urself\n";
+          //r.setObjPose(row, column, i, {-10000, 0, 0, 0, 0, 0});
         }
 
       }

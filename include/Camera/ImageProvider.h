@@ -5,7 +5,7 @@
 
 namespace Camera{
   class ImageProvider{
-    private:
+    protected:
       const std::string _id;
     public:
       typedef boost::shared_ptr<ImageProvider> Ptr;
