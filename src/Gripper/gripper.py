@@ -32,6 +32,51 @@ class Shape(object):
         return total
 
 
+def project(point, vector):
+    print "TODO: floating point ops fuckup"
+    x, y, z = range(3)
+    n = d = 0.
+    result = 0.
+
+    for axis in [x, y]:  # z]:
+        n += point[axis] * vector[axis]
+        d += vector[axis]**2
+    # edit vector inplace
+    vector = list(vector)
+    result = tuple([float(el) * (n/d) for el in vector])
+    return result
+
+
+def intersectCuboidCuboid(cube0, cube1):
+    x, y, z = range(3)
+    print("TODO check for negative coords")
+
+    # calculate vertex (lower upper right left)
+    ur0 = cube0[1]
+    ul0 = (cube0[0][x], cube0[1][y])
+    lr0 = cube0[0]
+    ll0 = (cube0[1][x], cube0[0][y])
+    ur0 = cube0[1]
+
+    ur1 = cube1[1]
+    ul1 = (cube1[0][x], cube1[1][y])
+    lr1 = cube1[0]
+    ll1 = (cube1[1][x], cube1[0][y])
+    ur1 = cube1[1]
+    # calculate axes
+    axis00 = ur0 - ul0
+    axis01 = ur0 - lr0
+    axis10 = ur1 - ul1
+    axis11 = ur1 - lr1
+
+    # for cube 
+    for axis in [axis00, axis01, axis10, axis11]:
+        v00 = project(ur0, axis)
+        v01 = project(vertex, axis)
+        v10 = project(vertex, axis)
+        v11 = project(vertex, axis)
+
+
 class PrimitiveShape(object):
     def __init__(self):
         print "primitive shape can only be extended"
@@ -45,6 +90,7 @@ class PrimitiveShape(object):
         if names == ["Cuboid", "Cuboid"]:
             thisCuboid = self.vertices
             otherCuboid = otherShape.vertices
+            overlap = 0
             x, y, z = range(3)
 
             x0 = min(thisCuboid[0][x], otherCuboid[0][x])
@@ -299,7 +345,8 @@ def isDoable(grasp, targetItem):
         return False
     return True
 
-if __name__ == '__main__':
+print project((2, 6), (3, 4))
+if __name__ == '__main__' and False:
     grasps = dict()
     itemsDatabase = dict()
     originPose = {'x': 0, 'y': 0, 'z': 0, 'a': 0, 'b': 0, 'g': 0, }
