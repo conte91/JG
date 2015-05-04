@@ -189,8 +189,11 @@ namespace C5G{
 
   void C5G::executeGrasp(const Grasp& g){
     std::cout << "Executing grasp for object " << g.object << "\n";
-    //moveCartesianGlobal(Shelf.getBinSafePose(
-
+#IMPLEMENT ME
+    moveCartesianGlobal(Shelf.getBinSafePose(row, column))
+    moveCartesianGlobal(g.approach.whichisRelativeTo(cameraFrame));
+    moveCartesianGlobal(g.grasp.whichisRelativeTo(cameraFrame));
+    setGripping(g.maxForce);
   }
 
   void C5G::setGripping(double strength){
