@@ -9,7 +9,7 @@ message("OpenCV LIBRARIES: ${OpenCV_LIBRARIES}")
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${FREEIMAGE_INCLUDE_DIRS})
 
-add_library(camera SHARED Image.cpp CameraView.cpp ImageConsumer.cpp ImageProvider.cpp DummyConsumer.cpp DummyProvider.cpp OpenniProvider.cpp OpenniWaitProvider.cpp RecognitionData.cpp GiorgioUtils.cpp Renderer3d.cpp model.cpp renderer3d_impl_glut.cpp linemod_icp.cpp ) 
+add_library(camera SHARED Image.cpp CameraView.cpp ImageConsumer.cpp ImageProvider.cpp DummyConsumer.cpp DummyProvider.cpp OpenniProvider.cpp OpenniStreamProvider.cpp OpenniWaitProvider.cpp RecognitionData.cpp GiorgioUtils.cpp Renderer3d.cpp model.cpp renderer3d_impl_glut.cpp linemod_icp.cpp ImageViewer.cpp ) 
 
 target_link_libraries(camera ${OpenCV_LIBRARIES} ${assimp_LIBRARIES} ${PCL_LIBRARIES} ${GLUT_LIBRARIES} ${FREEIMAGE_LIBRARIES} opencv_rgbd)
 

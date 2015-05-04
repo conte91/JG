@@ -35,6 +35,9 @@ namespace Camera{
         r.setObjPose(row, column, i, thePose);
         std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
       } 
+//      else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
+//        auto thePose=RecognitionData::getInstance().recognize(r.getFrame(row, column), name);
+//      }
       else {
 
         try{

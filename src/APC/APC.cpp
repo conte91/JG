@@ -6,6 +6,7 @@
 #include <Camera/DummyConsumer.h>
 #include <Camera/DummyProvider.h>
 #include <Camera/OpenniProvider.h>
+#include <Camera/OpenniStreamProvider.h>
 #include <Camera/OpenniWaitProvider.h>
 #include <APC/Order.h>
 #include <APC/ReadWorkOrder.h>
@@ -45,7 +46,10 @@ namespace APC{
     Camera::ImageProvider::Ptr x;
     try{
       //OpenNI::Initialize();
-      if(argc==4 && std::string("-w")==argv[3]){
+      if(argc==5 && std::string("-s")==argv[3]){
+        x=Camera::ImageProvider::Ptr(new Camera::OpenniStreamProvider(std::string(argv[4])));
+      }
+      else if(argc==4 && std::string("-w")==argv[3]){
         x=Camera::ImageProvider::Ptr(new Camera::OpenNIWaitProvider());
       }
       else{
