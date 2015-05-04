@@ -12,6 +12,7 @@ namespace Camera{
       void updateMyself();
       std::string _title;
       Image _what;
+      Image _toRender;
       std::string _ID;
   };
 }

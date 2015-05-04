@@ -340,10 +340,10 @@ int main(int argc, char* argv[])
         {
         
             //TODO: For Now only Crayola is Loaded...Remove it in the future
-            if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && 
-                  && (p.filename().string().compare("champion_copper_plus_spark_plug")!=0) && (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0)
-                  && (p.filename().string().compare("mark_twain_huckleberry_finn") !=0) )
+            if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0)  
+                  && (p.filename().string().compare("champion_copper_plus_spark_plug")!=0) && (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0) && (p.filename().string().compare("mark_twain_huckleberry_finn") !=0) ) {
                continue;
+            }
          
         
             //clear old values

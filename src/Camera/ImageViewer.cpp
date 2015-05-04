@@ -13,9 +13,13 @@ namespace Camera{
       cv::namedWindow(_ID+" (DEPTH)", cv::WINDOW_AUTOSIZE);
   }
   void ImageViewer::updateMyself(){
+    _toRender=_what;
+    ///cv::putText(_toRender.rgb, _title+" RGB", {0,0});
+    ///cv::putText(_toRender.depth, _title+" DEPTH", {0,0});
+
     cv::destroyAllWindows();
-    cv::imshow(_ID+" (RGB)", _what.rgb);
-    cv::imshow(_ID+" (DEPTH)", _what.depth);
+    cv::imshow(_ID+" (RGB)", _toRender.rgb);
+    cv::imshow(_ID+" (DEPTH)", _toRender.depth);
     std::cout <<
       "**********************************************"
       << _title <<
