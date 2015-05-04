@@ -21,7 +21,7 @@ namespace APC{
     C5G::Pose approach, gPose;
     double theForceMayBeWithYou;
     double score;
-    system(("python ./grasper.py "+what).c_str());
+    system(("python ./gripper.py "+what).c_str());
     {
       std::ifstream resultFile("/tmp/grasp.result");
       resultFile >> approach.x >> approach.y >> approach.z >> approach.alpha >> approach.beta >> approach.gamma ;
