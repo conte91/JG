@@ -1,29 +1,37 @@
-#include "Image.h"
-#include <cv/highgui.h>
+#include <iostream>
+#include <Camera/Image.h>
+#include <Camera/ImageViewer.h>
+#include <highgui.h>
 
 namespace Camera{
   ImageViewer::ImageViewer(const std::string& ID)
     :
-      _ID(ID)
+      _ID(ID),
+      _what()
   {
       cv::namedWindow(_ID+" (RGB)", cv::WINDOW_AUTOSIZE);
       cv::namedWindow(_ID+" (DEPTH)", cv::WINDOW_AUTOSIZE);
   }
   void ImageViewer::updateMyself(){
-    cv::destroyAllWindows(0);
+    cv::destroyAllWindows();
     cv::imshow(_ID+" (RGB)", _what.rgb);
     cv::imshow(_ID+" (DEPTH)", _what.depth);
-    cv::putText(_ID+" (RGB)", _title+" RGB");
-    cv::putText(_ID+" (DEPTH)", _title+" DEPTH");
+    std::cout <<
+      "**********************************************"
+      << _title <<
+      "**********************************************";
+
+    //cv::putText(_ID+" (RGB)", _title+" RGB");
+    //cv::putText(_ID+" (DEPTH)", _title+" DEPTH");
     cv::waitKey(0);
   }
 
-  void showImage(const Image& what){
+  void ImageViewer::showImage(const Image& what){
     _what=what;
     updateMyself();
   }
 
-  void setTitle(const std::string& title){
+  void ImageViewer::setTitle(const std::string& title){
     _title=title;
     updateMyself();
   }

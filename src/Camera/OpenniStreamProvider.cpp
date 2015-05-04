@@ -12,9 +12,9 @@ namespace Camera{
   Image OpenniStreamProvider::getFrame() const {
     std::cout << "Waiting for a frame to arrive..\n";
     system("touch /tmp/shameonme");
+    while(!system("ls /tmp/shameonme > /dev/null"));
     Image::Matrix rgb=cv::imread(_path+"/rgb.png", 0);
     Image::Matrix depthMap=cv::imread(_path+"/depth.png", 1);
-    while(system("ls /tmp/shameonme > /dev/null"));
     return Image(depthMap, rgb);
 	}
   OpenniStreamProvider::~OpenniStreamProvider(){};

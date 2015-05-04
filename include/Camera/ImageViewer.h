@@ -11,7 +11,7 @@ namespace Camera{
     private:
       void updateMyself();
       std::string _title;
-      Image& _what;
+      Image _what;
       std::string _ID;
   };
 }
