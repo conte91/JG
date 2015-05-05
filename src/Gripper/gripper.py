@@ -339,7 +339,8 @@ def getBestGrasp(targetItem):
         return -100000
 
     #used return for testing
-    return itemPose
+    fakeRetr = itemPose.values() + itemPose.values() + [1337, 31337]
+    return fakeRetr
 
     # adapt the item template to the real item
     targetItem.transform(transformationMatrix)
@@ -462,7 +463,8 @@ if __name__ == '__main__':
     robotData = RobotData(itemsDatabase)
 
     # score = calculateGraspScore(targetItem.grasps[0], targetItem, kivaBin)
-    score = getBestGrasp(targetItem)
-    print "score", score
+    bestGrasp = getBestGrasp(targetItem)
+    print "grasp", bestGrasp
     with open("/tmp/grasp.result","w") as output:
-        output.write(scork)
+        grasp = ' '.join([str(z) for z in bestGrasp])
+        output.write(grasp)
