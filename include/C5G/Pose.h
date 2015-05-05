@@ -16,7 +16,7 @@ namespace C5G {
     double beta;
     double gamma;
 
-    Pose whichIsRelativeTo(const Pose& origin);
+    Pose whichIsRelativeTo(const Pose& origin) const ;
 
     static Pose transform2Pose(const Eigen::Affine3f& x);
     /** Basic operations */

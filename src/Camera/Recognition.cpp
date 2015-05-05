@@ -28,13 +28,13 @@ namespace Camera{
       if(name==""){
         continue;
       }
-      if(name=="kygen_squeakin_eggs_plush_puppies"){
-        std::cout << "Searching for a ball..\n";
-        auto thePose=recognizeBalls(row, column);
-        //SUGGESTION: draw object skeleton
-        r.setObjPose(row, column, i, thePose);
-        std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
-      } 
+      //if(name=="kygen_squeakin_eggs_plush_puppies"){
+      //  std::cout << "Searching for a ball..\n";
+      //  auto thePose=recognizeBalls(row, column);
+      //  //SUGGESTION: draw object skeleton
+      //  r.setObjPose(row, column, i, thePose);
+      //  std::cout << "Done. Ball pose: " << r.getObjPose(row, column, i) << "\n";
+      //} 
 //      else if(name=="genuine_joe_plastic_stir_sticks" || name=="highland_6539_self_stick_notes" || name=="paper_mate_12_count_mirado_black_warrior"){
 //        auto thePose=RecognitionData::getInstance().recognize(r.getFrame(row, column), name);
 //      }
@@ -47,7 +47,7 @@ namespace Camera{
         catch(std::out_of_range sc){
           /** Everything else shall be recognized by hand */
           std::cout << "I'm sorry baby, you have to take it by urself\n";
-          //r.setObjPose(row, column, i, {-10000, 0, 0, 0, 0, 0});
+          r.setObjPose(row, column, i, {-10000, 0, 0, 0, 0, 0});
         }
 
       }

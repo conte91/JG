@@ -5,6 +5,8 @@ namespace C5G{
 
   struct Grasp{
     std::string object;
+    int row;
+    int column;
     Pose approach;
     Pose grasp;
     double score;

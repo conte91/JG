@@ -17,6 +17,7 @@ namespace APC{
       static const double WIDTH;
       static const double BIN_DEPTH;
       static const double SECURITY_DISTANCE;
+      static const Pose CAMERA_POSE;
       static const Pose BIN0;
 
       static Pose getBinPose(int i, int j);

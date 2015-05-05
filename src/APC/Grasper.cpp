@@ -28,7 +28,7 @@ namespace APC{
       resultFile >> gPose.x >> gPose.y >> gPose.z >> gPose.alpha >> gPose.beta >> gPose.gamma ;
       resultFile >> theForceMayBeWithYou >> score;
     }
-    C5G::Grasp x({what, approach, gPose, theForceMayBeWithYou, score});
+    C5G::Grasp x({what, row, column, approach, gPose, theForceMayBeWithYou, score});
     return x;
 
 #if 0

@@ -1,5 +1,6 @@
 #include <C5G/Pose.h>
 #include <APC/Shelf.h>
+#include <cmath>
 
 namespace APC {
 
@@ -22,6 +23,8 @@ namespace APC {
 
   /** Position of bin A wrt the origin of the shelf */
   const Pose Shelf::BIN0(0, -0.15, 1.83, 0, 0, 0);
+
+  const Pose Shelf::CAMERA_POSE(1.90, 0, 0, 0, 0, -M_PI/2);
 
   Pose Shelf::getBinPose(int i, int j){
     return Shelf::BIN0+Pose(0, -i*BIN_WIDTH, -j*BIN_HEIGHT, 0, 0, 0);

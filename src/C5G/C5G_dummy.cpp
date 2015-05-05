@@ -43,12 +43,14 @@ namespace C5G{
   void C5G::setGripping(double strength){
     std::cout << "Closing the plier with strength " << strength << "\n";
   }
+#if 0
   void C5G::executeGrasp(const Grasp& g){
     moveCartesian(g.approach);
     moveCartesian(g.grasp);
     setGripping(g.forceMax);
     moveCartesian(g.approach);
   }
+#endif
   C5G::~C5G(){
     standby();
   }

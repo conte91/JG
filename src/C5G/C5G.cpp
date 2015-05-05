@@ -187,15 +187,6 @@ namespace C5G{
     standby();
   }
 
-  void C5G::executeGrasp(const Grasp& g){
-    std::cout << "Executing grasp for object " << g.object << "\n";
-#IMPLEMENT ME
-    moveCartesianGlobal(Shelf.getBinSafePose(row, column))
-    moveCartesianGlobal(g.approach.whichisRelativeTo(cameraFrame));
-    moveCartesianGlobal(g.grasp.whichisRelativeTo(cameraFrame));
-    setGripping(g.maxForce);
-  }
-
   void C5G::setGripping(double strength){
     std::cout << "Closing the plier with strength " << strength << "\n";
     boost::this_thread::sleep_for(boost::chrono::milliseconds(500));

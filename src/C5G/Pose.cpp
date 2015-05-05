@@ -8,7 +8,7 @@ std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
 
 namespace C5G{
 
-  Pose Pose::whichIsRelativeTo(const Pose& origin){
+  Pose Pose::whichIsRelativeTo(const Pose& origin) const {
     //std::cout << "getSQReferenceFrame\n";
     Eigen::Affine3f transformation = Eigen::Affine3f::Identity();
     /** Apply Euler angle rotations */

@@ -5,6 +5,8 @@
 //
 pcl::PointXYZRGB pointToXYZ(const Image& frame, int x, int y){
 
+  depth=frame.depth.at<double>(x,y);
+
   pcl::PointXYZRGB pt ;
   // Use correct principal point from calibration
   float center_x = cam_model_.cx();

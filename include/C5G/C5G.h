@@ -30,7 +30,6 @@ namespace C5G{
       void setGripping(double strength);
       void moveCartesianGlobal(const Pose& p);
       void moveAdditive();
-      void executeGrasp(const Grasp&);
 
   };
 }
