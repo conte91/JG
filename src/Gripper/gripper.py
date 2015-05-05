@@ -465,4 +465,4 @@ if __name__ == '__main__':
     score = getBestGrasp(targetItem)
     print "score", score
     with open("/tmp/grasp.result","w") as output:
-        output.write(getBestGrasp(targetItem, targetBin))
+        output.write(scork)
