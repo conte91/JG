@@ -374,16 +374,8 @@ def getBestGrasp(targetItemName):
 
     if min(itemPose) < -1000:
         # -1000 as pose means item not found
-<<<<<<< HEAD
-        return -100000
-
-    #used return for testing
-    fakeRetr = itemPose.values() + itemPose.values() + [1337, 31337]
-    return fakeRetr
-=======
         global VERY_NEGATIVE_NUMBER
         return VERY_NEGATIVE_NUMBER
->>>>>>> gripper
 
     # adapt the item template to the real item
     grasps = targetItem.getGrasps()
@@ -439,76 +431,9 @@ if __name__ == '__main__':
     originXYZ = (0, 0, 0)
     # end globals
 
-<<<<<<< HEAD
-    pickableObjects = {
-        'munchkin_white_hot_duck_bath_toy': (150, 160, 80),
-        'champion_copper_plus_spark_plug': (95, 20, 22),
-        'mark_twain_huckleberry_finn': (128, 250, 16),
-        'sharpie_accent_tank_style_highlighters': (120, 130, 20),
-        'genuine_joe_plastic_stir_sticks': (144, 97, 108),
-        'safety_works_safety_glasses': (220, 55, 115),
-        'rollodex_mesh_collection_jumbo_pencil_cup':  (100, 136, 100),
-        'dr_browns_bottle_brush': (350, 140, 50),
-        'kygen_squeakin_eggs_plush_puppies': (240, 60, 130),
-        'kong_duck_dog_toy': (170, 110, 70),
-        'mommys_helper_outlet_plugs': (190, 60, 90),
-        'highland_6539_self_stick_notes': (150, 40, 50),
-        'expo_dry_erase_board_eraser': (130, 35, 55),
-        'paper_mate_12_count_mirado_black_warrior': (195, 20, 50),
-        'laugh_out_loud_joke_book': (180, 10, 110),
-        'stanley_66_052': (195, 20, 100),
-        'mead_index_cards': (130, 78, 23),
-        'elmers_washable_no_run_school_glue': (65, 150, 35),
-    }
-
-    """
-        ['champion_copper_plus_spark_plug', ],
-        ['cheezit_big_original', ],
-        ['crayola_64_ct', ],
-        ['dove_beauty_bar', ],
-        ['feline_greenies_dental_treats', ],
-        ['first_years_take_and_toss_straw_cups', ],
-        ['kong_air_dog_squeakair_tennis_ball', ],
-        ['kong_sitting_frog_dog_toy', ],
-        ['one_with_nature_soap_dead_sea_mud', ],
-        ['oreo_mega_stuf', ],
-    ]
-    """
-
-    dummyGrasp = Grasp(originPose, originPose, 0, 100000)
-    print "using dummy grasps"
-
-    # creating some placeholders
-    fakeCuboids = [
-        Cuboid(originXYZ, (1, 2, 1)),
-        Cuboid(originXYZ, (2, 2, 3)),
-        ]
-    dummyShape = Shape(fakeCuboids)
-    dummyPose = originPose
-    # end placeholders
-
-    for pickableObjectName in pickableObjects.keys():
-        # adding some fake grasps
-        roughElements = [Cuboid(originXYZ, pickableObjects[pickableObjectName])]
-        roughShape = Shape(roughElements)
-        print "fineShapes are fake"
-        fineShape = Shape(fakeCuboids)
-
-        grasps = [] #TODO init as generatePotentialGrasps()
-
-        itemsDatabase[pickableObjectName] = Item(pickableObjectName, originPose,
-                                                 roughShape, fineShape, grasps)
-
-    # the item will be passed by the function
-    targetItem = 'highland_6539_self_stick_notes'
-
-    # fake
-    # robotData will be filled by the c cod c code
-    robotData = RobotData(itemsDatabase)
-
-    # score = calculateGraspScore(targetItem.grasps[0], targetItem, kivaBin)
-    bestGrasp = getBestGrasp(targetItem)
-    print "grasp", bestGrasp
-    with open("/tmp/grasp.result","w") as output:
-        grasp = ' '.join([str(z) for z in bestGrasp])
-        output.write(grasp)
+    targetItem = 'mead_index_cards'  # sys.argv[1]
+    robotData = RobotData()
+    score = getBestGrasp(targetItem)
+    print "best score is:", score
+    with open("/tmp/grasp.result", "w") as output:
+        output.write(getBestGrasp(targetItem))

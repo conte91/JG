@@ -1,3 +1,5 @@
+#include <boost/program_options.hpp>
+
 #include <APC/APC.h>
 #include <APC/Robot.h>
 #include <C5G/C5G.h>
@@ -19,6 +21,7 @@
 //#include <openni2/OpenNI.h>
 
 namespace APC{
+
   /** Base idea:
    * Start with scanning all bins. In this way each bin has a recorded image, and each order is marked as "dirty".
    * while(!finished):
@@ -35,21 +38,29 @@ namespace APC{
     using C5G::Pose;
     using C5G::Grasp;
     using C5G::C5G;
-    if(argc<3){
-      std::cerr << "Usage: " << argv[0] << " server profile\n";
-      std::cerr  << "Example: " << argv[0] << " 172.22.178.102 CNTRLC5G_2200102\n";
-      return -1;
-    }
 
-    std::string ip(argv[1]);
-    std::string profile(argv[2]);
+    std::string ip;
+    std::string profile;
+
+    namespace po=boost::program_options;
+    po::options_description desc("Allowed options");
+    desc.add_options() 
+      ("help", "print help message")
+      ("ip,i", po::value<std::string>(&ip)->required(), "IP address to connect to")
+      ("profile,p", po::value<std::string>(&profile)->required(), "profile name")
+      ("stream,s", po::value<std::string>(), "stream to a directory")
+      ("wait,w" , "wait before taking shoots");
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
     Camera::ImageProvider::Ptr x;
     try{
-      //OpenNI::Initialize();
-      if(argc==5 && std::string("-s")==argv[3]){
-        x=Camera::ImageProvider::Ptr(new Camera::OpenniStreamProvider(std::string(argv[4])));
+      if(vm.count("stream")){
+        x=Camera::ImageProvider::Ptr(new Camera::OpenniStreamProvider(vm["stream"].as<std::string>()));
       }
-      else if(argc==4 && std::string("-w")==argv[3]){
+      else if(vm.count("wait")){
         x=Camera::ImageProvider::Ptr(new Camera::OpenNIWaitProvider());
       }
       else{

@@ -1,4 +1,4 @@
-find_package(Boost COMPONENTS system thread REQUIRED)
+find_package(Boost COMPONENTS system program_options thread REQUIRED)
 
 add_executable(provamain main.cpp)
 include_directories(${Boost_INCLUDE_DIRS})

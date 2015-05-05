@@ -29,7 +29,7 @@ namespace APC{
       resultFile >> gPose.x >> gPose.y >> gPose.z >> gPose.alpha >> gPose.beta >> gPose.gamma ;
       resultFile >> theForceMayBeWithYou >> score;
     }
-#if 1
+#if 0
     approach.x=1.50;
     approach.y=0.30;
     approach.z=0.5;
