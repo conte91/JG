@@ -1,9 +1,17 @@
 from copy import deepcopy
+import transformations as tr
 import numpy as np
 # import math
-from random import random
 
 GRASP_ERROR_LIMIT = 1
+VERY_NEGATIVE_NUMBER = -313373
+
+
+def changeReference(pose0, newReferenceFrame):
+    x, y, z, a, b, g = newReferenceFrame
+    rotMatrix = tr.euler_matrix(a, b, g)
+    tranMatrix = tr.translation_matrix([x, y, z])
+    print rotMatrix, tranMatrix
 
 
 def distance(p0, p1):
@@ -12,28 +20,6 @@ def distance(p0, p1):
     for i in range(dimensions):
         squares += (p0[i] - p1[i]) ** 2
     return pow(squares, 1/dimensions)
-
-
-def generatePotentialGrasps(originalGrasp, itemPose):
-    grasps = []
-    # rot = np.matrix( math.cos(angle))
-    # trans = generateTranslationMatrix(itemPose)
-    for _ in range(4):
-        graspPose = originPose
-        # translate the grasp xyz to the item
-        for axis in ['x', 'y', 'z']:
-            graspPose[pickableObjectName] += fineShape[pickableObjectName]
-
-        # SIDES = [math.pi * a/2 for a in range(-1, 3)]
-
-        # for axis in ['a', 'b', 'g']:
-        #     graspPose[a] += 1/0
-        #     graspPose[a] += 1/0
-        #     graspPose[a] += 1/0
-
-        # frontGrasp = Grasp(originPose, originPose, 0, 100000)
-        grasps.append(graspPose)
-    return grasps
 
 
 class Shape(object):
@@ -222,9 +208,63 @@ class Sphere(PrimitiveShape):
 
 
 class RobotData(object):
-    # fake
-    def __init__(self, itemDatabase):
-        self.itemDatabase = itemDatabase
+    def __init__(self):
+        itemsDatabase = dict()
+
+        pickableObjects = {
+            'munchkin_white_hot_duck_bath_toy': (150, 160, 80),
+            'mark_twain_huckleberry_finn': (128, 250, 16),
+            'sharpie_accent_tank_style_highlighters': (120, 130, 20),
+            'genuine_joe_plastic_stir_sticks': (144, 97, 108),
+            'safety_works_safety_glasses': (220, 55, 115),
+            'rollodex_mesh_collection_jumbo_pencil_cup':  (100, 136, 100),
+            'dr_browns_bottle_brush': (350, 140, 50),
+            'kygen_squeakin_eggs_plush_puppies': (240, 60, 130),
+            'kong_duck_dog_toy': (170, 110, 70),
+            'mommys_helper_outlet_plugs': (190, 60, 90),
+            'highland_6539_self_stick_notes': (150, 40, 50),
+            'expo_dry_erase_board_eraser': (130, 35, 55),
+            'paper_mate_12_count_mirado_black_warrior': (195, 20, 50),
+            'laugh_out_loud_joke_book': (180, 10, 110),
+            'stanley_66_052': (195, 20, 100),
+            'mead_index_cards': (130, 78, 23),
+            'elmers_washable_no_run_school_glue': (65, 150, 35),
+        }
+
+        """
+            ['champion_copper_plus_spark_plug', ],
+            ['cheezit_big_original', ],
+            ['crayola_64_ct', ],
+            ['dove_beauty_bar', ],
+            ['feline_greenies_dental_treats', ],
+            ['first_years_take_and_toss_straw_cups', ],
+            ['kong_air_dog_squeakair_tennis_ball', ],
+            ['kong_sitting_frog_dog_toy', ],
+            ['one_with_nature_soap_dead_sea_mud', ],
+            ['oreo_mega_stuf', ],
+        ]
+        """
+        print "using dummy grasps"
+        dummyGrasp = Grasp(originPose, originPose, 0, 100000)
+        print "fineShapes are fake"
+        fakeCuboids = [
+            Cuboid(originXYZ, (1, 2, 1)),
+            Cuboid(originXYZ, (2, 2, 3)),
+        ]
+        # dummyShape = Shape(fakeCuboids)
+        # dummyPose = originPose
+        # end placeholders
+
+        for objName in pickableObjects.keys():
+            roughElements = [Cuboid(originXYZ, pickableObjects[objName])]
+            roughShape = Shape(roughElements)
+            fineShape = Shape(fakeCuboids)
+
+            grasps = [dummyGrasp]  # TODO init as generatePotentialGrasps()
+
+            itemsDatabase[objName] = Item(objName, originPose, roughShape,
+                                          fineShape, grasps)
+        self.itemsDatabase = itemsDatabase
 
     def __repr__(self):
         return '\n'.join([
@@ -232,17 +272,17 @@ class RobotData(object):
         ])+'...'
 
     def getBin(self):
-        with open("/tmp/robot.data") as robotData:
-            binItems = robotData.read().split("\n")[:-1]
+        with open("/tmp/robot.data") as dataFile:
+            binItems = dataFile.read().split("\n")[:-1]
         # binItems = [item.split for item in binItems.split()]
         result = {}
         for item in binItems:
             itemName, itemPose = item.split(" ", 1)
-            result[itemName] = tuple(itemPose.split(" "))
+            result[itemName] = tuple([float(n) for n in itemPose.split(" ")])
         return KivaBin(result)
 
     def getItemTemplate(self, itemName):
-        return self.itemDatabase[itemName]
+        return self.itemsDatabase[itemName]
 
     def removeItem(self, item):
         raise Exception("can't remove item from the database!")
@@ -270,37 +310,33 @@ class KivaBin(object):
         ind = self.items.index(item)
         self.items.pop(ind)
 
-    def getItemPose(self, item):
-        return item.pose
-        #itemName = item.name
-        #x, y, z, a, b, g = self.items[itemName]
-        #pose = {'x': x, 'y': y, 'z': z, 'a': a, 'b': b, 'g': g}
-        #return pose
+    def getItemPose(self, itemName):
+        return self.items[itemName]
 
 
 class Item(object):
     def __init__(self, name, pose, roughShape, fineShape, grasps):
-        self.name = name
-        self.pose = pose
-        self.roughShape = roughShape
-        self.fineShape = fineShape
-        self.grasps = grasps
+        self._name = name
+        self._pose = pose
+        self._roughShape = roughShape
+        self._fineShape = fineShape
+        self._grasps = grasps
 
     def __hash__(self):
-        return hash(hash(self.name) + sum(self.pose.values()))
+        return hash(hash(self._name) + sum(self._pose.values()))
 
     def __repr__(self):
-        return "Item("+self.name+")"
+        return "Item(" + self._name + " at " + repr(self._pose) + ")"
 
     def __eq__(self, other):
-        return (self.name, self.pose) == (other.name, other.pose)
+        return (self._name, self._pose) == (other._name, other._pose)
 
-    def transform(self, transformationMatrix):
-        for key in transformationMatrix.keys():
-            self.pose[key] += transformationMatrix[key]
+    def setPose(self, newPose):
+        self._pose = newPose
 
     def getGrasps(self):
-        return self.grasps
+        grasps = [changeReference(grasp, self._pose) for grasp in self._grasps]
+        return grasps
 
 
 class Grasp(object):
@@ -325,27 +361,34 @@ class Grasp(object):
         return volume
 
 
-def getBestGrasp(targetItem):
+def getBestGrasp(targetItemName):
     """
     args:
         (str) targetItem  :   item to pick
     """
-    targetItem = robotData.getItemTemplate(targetItem)
     targetBin = robotData.getBin()
+    # load the item from shapes db
+    targetItem = robotData.getItemTemplate(targetItemName)
+    itemPose = targetBin.getItemPose(targetItemName)
+    targetItem.setPose(itemPose)
 
-    itemPose = targetBin.getItemPose(targetItem)
     if min(itemPose) < -1000:
         # -1000 as pose means item not found
+<<<<<<< HEAD
         return -100000
 
     #used return for testing
     fakeRetr = itemPose.values() + itemPose.values() + [1337, 31337]
     return fakeRetr
+=======
+        global VERY_NEGATIVE_NUMBER
+        return VERY_NEGATIVE_NUMBER
+>>>>>>> gripper
 
     # adapt the item template to the real item
-    targetItem.transform(transformationMatrix)
-
     grasps = targetItem.getGrasps()
+
+    # force best graps to be None if <0 ? TODO checkme
     grasps.insert(0, None)
     bestGrasp = max(grasps, key=lambda x:
                     calculateGraspScore(x, targetItem, targetBin))
@@ -355,7 +398,7 @@ def getBestGrasp(targetItem):
 
 def calculateGraspScore(grasp, targetItem, targetBin):
     if grasp is None:
-        return 0
+        return -0
     scores = dict()
     leftoverBin = deepcopy(targetBin)
     leftoverBin.removeItem(targetItem)
@@ -380,6 +423,7 @@ def isDoable(grasp, targetItem):
     Checks if the gripper can grasp the item ignoring the environment
     we only allow GRASP_ERROR_LIMIT error
     """
+    global GRASP_ERROR_LIMIT
     runningSum = 0
     for key in grasp.gripPose.keys():
         runningSum += (grasp.gripPose[key] + targetItem.pose[key]) ** 2
@@ -390,12 +434,12 @@ def isDoable(grasp, targetItem):
 
 if __name__ == '__main__':
 
-
-    grasps = dict()
-    itemsDatabase = dict()
-    originPose = {'x': 0, 'y': 0, 'z': 0, 'a': 0, 'b': 0, 'g': 0, }
+    # globals
+    originPose = tuple([0]*6)
     originXYZ = (0, 0, 0)
+    # end globals
 
+<<<<<<< HEAD
     pickableObjects = {
         'munchkin_white_hot_duck_bath_toy': (150, 160, 80),
         'champion_copper_plus_spark_plug': (95, 20, 22),
