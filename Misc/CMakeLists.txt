@@ -1,3 +1,6 @@
+FIND_PACKAGE(Eigen REQUIRED)
+INCLUDE_DIRECTORIES(${Eigen_INCLUDE_DIRS})
+
 add_subdirectory("leap")
 add_subdirectory("Test_C5G")
 add_subdirectory("Test_scanBins")
