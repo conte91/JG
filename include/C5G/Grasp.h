@@ -9,9 +9,9 @@ namespace C5G{
     int column;
     Pose approach;
     Pose grasp;
-    double score;
     // REMOVED double forceMin;
     double forceMax;
+    double score;
   };
 
 }

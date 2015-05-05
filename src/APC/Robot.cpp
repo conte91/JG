@@ -3,7 +3,7 @@
 #include <Camera/ImageProvider.h>
 namespace APC{
     void Robot::moveToBin(int row, int column){
-      moveCartesianGlobal(Shelf::getBinSafePose(row, column));
+      moveCartesianGlobal(Shelf::getBinSafePose(row, column).whichIsRelativeTo(Shelf::POSE));
     }
     Robot::Robot(const std::string& ip, const std::string& sys_id, bool mustInit, const Camera::ImageProvider::Ptr& camera)
     :

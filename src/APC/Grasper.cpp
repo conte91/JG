@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <C5G/Pose.h>
 #include <C5G/Grasp.h>
 #include <APC/Grasper.h>
 #include <Parser/RobotData.h>
@@ -28,7 +29,14 @@ namespace APC{
       resultFile >> gPose.x >> gPose.y >> gPose.z >> gPose.alpha >> gPose.beta >> gPose.gamma ;
       resultFile >> theForceMayBeWithYou >> score;
     }
+#if 1
+    approach.x=1.50;
+    approach.y=0.30;
+    approach.z=0.5;
+
+#endif
     C5G::Grasp x({what, row, column, approach, gPose, theForceMayBeWithYou, score});
+    //std::cout << "\nFinished computing grasp. New grasp: " << approach //<< "," << gPose << "," << theForceMayBeWithYou << ","<< score << "\n";
     return x;
 
 #if 0

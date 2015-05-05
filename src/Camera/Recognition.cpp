@@ -17,10 +17,10 @@ namespace Camera{
 
   void updateGiorgio(int row, int column){
     std::map<std::string, C5G::Pose> dovesono;
-    dovesono["expo_dry_erase_board_eraser"]=C5G::Pose({1.25,-0.20, 0.20,0,0,0});
-    dovesono["champion_copper_plus_spark_plug"]=C5G::Pose({1.25,-0.20, -0.20,0,0,0});
-    dovesono["rollodex_mesh_collection_jumbo_pencil_cup"]=C5G::Pose({1.25,0.20, 0.20,0,0,0});
-    dovesono["kygen_squeakin_eggs_plush_puppies"]=C5G::Pose({1.25,0.20, 0.20,0,0,0});
+    dovesono["expo_dry_erase_board_eraser"]=C5G::Pose({1.20,-0.30, 0.15,0,0,0});
+    dovesono["champion_copper_plus_spark_plug"]=C5G::Pose({1.20,-0.30, -0.45,0,0,0});
+    dovesono["rollodex_mesh_collection_jumbo_pencil_cup"]=C5G::Pose({1.20,0.30, 0.30,0,0,0});
+    dovesono["kygen_squeakin_eggs_plush_puppies"]=C5G::Pose({1.20,0.30, 0.30,0,0,0});
     using InterProcessCommunication::RobotData;
     RobotData& r=RobotData::getInstance();
     for(int i=0; i<RobotData::MAX_ITEM_N; ++i){
