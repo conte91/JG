@@ -3,6 +3,7 @@
 #include <C5G/Pose.h>
 #include <Camera/GiorgioUtils.h>
 #include <Camera/Renderer3d.h>
+#include <Camera/ImageWMask.h>
 #include <Camera/Recognition.h>
 
 namespace Camera{
@@ -50,13 +51,15 @@ namespace Camera{
       std::map<std::string,std::vector<float> > dist_map;
       std::map<std::string,std::vector<cv::Mat> > _hueHistMap;
 
-      bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, 
+      bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, const cv::Mat& mask, 
           cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
           std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
           std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
           cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick);
+        static std::string current_default_path;
     public:
         static RecognitionData& getInstance();
-        C5G::Pose recognize(const Image& frame, std::string what);
+        static void setModelPath(const std::string& path);
+        C5G::Pose recognize(const ImageWMask& frame, std::string what);
   };
 }

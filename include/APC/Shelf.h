@@ -18,10 +18,14 @@ namespace APC{
       static const double BIN_DEPTH;
       static const double SECURITY_DISTANCE;
       static const Pose CAMERA_POSE;
+      static const Pose POSE_FOR_THE_PHOTOS;
       static const Pose BIN0;
 
       static Pose getBinPose(int i, int j);
 
       static Pose getBinSafePose(int i, int j);
+
+      static constexpr const auto& getBinCornerPose=getBinPose;
+      static constexpr const auto& getBinCenterPose=getBinSafePose;
   };
 }

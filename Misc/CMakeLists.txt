@@ -6,9 +6,11 @@ add_subdirectory("Test_C5G")
 add_subdirectory("Test_scanBins")
 add_subdirectory("DemoC5GOpen")
 add_subdirectory("Test_condition_variables")
+add_subdirectory("Taratura_shelf")
 add_subdirectory("Sandbox/provamain/")
 add_subdirectory("Sandbox/GiorgioT/MyLinemodPlusRender/")
 add_subdirectory("OpenNI_Streaming_pleasedontlookatme/")
+add_subdirectory("Test_Giorgio/")
 
 #include(${OpenCV_CONFIG_PATH}/OpenCVConfig.cmake)
 #Set all of the opencv contrib stuff not to compile, EXCEPT for rgbd

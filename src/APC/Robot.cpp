@@ -12,8 +12,13 @@ namespace APC{
      {
       }
 
-    Camera::Image Robot::takePhoto(){
-      return this->_provider->getFrame();
+    Camera::Image Robot::takePhoto(CameraIndex direction){
+      if(direction==CameraIndex::LEFT){
+        return this->_provider->getFrame();
+      }
+      else{
+        throw std::string("Taking a photo from the right camera is not supported, sorry!\n");
+      }
     }
 
     void Robot::executeGrasp(const ::C5G::Grasp& g){

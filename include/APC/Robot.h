@@ -11,9 +11,14 @@ namespace APC{
     private:
       Camera::ImageProvider::Ptr _provider;
     public:
+      enum class CameraIndex
+      {
+        LEFT,
+        RIGHT
+      };
       void moveToBin(int row, int column);
       Robot(const std::string& ip, const std::string& sys_id, bool mustInit, const Camera::ImageProvider::Ptr& provider);
-      Camera::Image takePhoto();
+      Camera::Image takePhoto(CameraIndex direction=CameraIndex::LEFT);
       void executeGrasp(const ::C5G::Grasp&);
   };
 }

@@ -19,13 +19,19 @@
 
 #include <Camera/Renderer3d.h>
 #include <Camera/GiorgioUtils.h>
+#include <Camera/GLUTInit.h>
+
 static double _threshold;
 static cv::Mat K_depth_;
 static float px_match_min_;
 static float icp_dist_min_;
 static float th_obj_dist_;
 
+
 namespace Camera{
+
+  std::string RecognitionData::current_default_path;
+
 static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& filename, std::string& mesh_file_path,
     std::map<std::string,std::vector<cv::Mat> >& Rmap,
     std::map<std::string,std::vector<cv::Mat> >& Tmap,
@@ -147,7 +153,7 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
    * I know this. But it's 3 days to the deadline and I don't have enough time to explain to the "developer" who made        *
    * this crap how crappy his crap is. Just don't touch it and it shall work.                                                *
    ***************************************************************************************************************************/
-  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_meter, 
+  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_meter, const cv::Mat& filter_mask,
       cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
       std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
       std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
@@ -201,8 +207,12 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 
     std::cout<<"matching..."<<"\n";
     std::vector<cv::linemod::Match> matches;
+//BEGIN ADDS
+    std::vector<cv::Mat> theMasks;
+    theMasks.push_back(filter_mask);
     //TODO: Use also mask to represents a valid pixel in order to reduce the search space !!!
-    detector_->match(sources, _threshold, matches,vect_objs_to_pick);
+    detector_->match(sources, _threshold, matches,vect_objs_to_pick, cv::noArray(), theMasks);
+//END ADDS
 
     std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
 
@@ -467,10 +477,12 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
       renderer_focal_length_y_ (525.0),
       icp_dist_min_ (0.06f),
       th_obj_dist_(0.04f),
-      objsfolder_path(DEFAULT_OBJFOLDER_PATH),
+      objsfolder_path(current_default_path),
       detector_ (cv::linemod::getDefaultLINEMOD()),
       _threshold(91.0f)
   {
+
+    GLUTInit::init();
 
     /** Don't know a better way */
     double inputData[3][3]= {{ dfx_, 0, dcx_},{ 0, dfy_, dcy_},{ 0, 0, 1 }};
@@ -569,12 +581,12 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 
   }
 
-  C5G::Pose RecognitionData::recognize(const Image& frame, std::string what){
+  C5G::Pose RecognitionData::recognize(const ImageWMask& frame, std::string what){
 
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;
     cv::Mat pose;
-    updateGiorgio(frame.rgb, frame.depth, detector_, renderer_iterators_, _Rmap, _Tmap, _Kmap, _distMap, pose, vect_objs_to_pick);
+    updateGiorgio(frame.rgb, frame.depth, frame.mask, detector_, renderer_iterators_, _Rmap, _Tmap, _Kmap, _distMap, pose, vect_objs_to_pick);
     return matrixToPose(pose);
   }
 
@@ -591,4 +603,7 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
     return C5G::Pose(m.at<double>(0,3),m.at<double>(1,3),m.at<double>(2,3), theta1, theta2, theta3);
   }
 
+  void RecognitionData::setModelPath(const std::string& path){
+    current_default_path=path;
+  }
 }

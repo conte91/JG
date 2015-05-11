@@ -26,6 +26,8 @@ namespace APC {
 
   const Pose Shelf::CAMERA_POSE(1.90, 0, 0, 0, 0, M_PI);
 
+  const Pose Shelf::POSE_FOR_THE_PHOTOS(0.396, 0, 1.320, 0, 0, 0);
+
   Pose Shelf::getBinPose(int i, int j){
     return (Shelf::BIN0+Pose(0, -i*BIN_WIDTH, -j*BIN_HEIGHT, 0, 0, 0));
   }
