@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <boost/asio/ip/tcp.hpp>
 #include <Camera/Image.h>
 #include <Camera/ImageProvider.h>
 #include <C5G/C5G.h>
