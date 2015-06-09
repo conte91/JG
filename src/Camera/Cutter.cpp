@@ -21,7 +21,7 @@ namespace Camera{
     using std::min;
     using std::max;
     Image::Matrix theMask(cv::Mat::zeros(input.rgb.rows, input.rgb.cols, CV_8U));
-    theMask(cv::Rect(min(x0, x1), min(y0, y1),abs(x0-x1),abs(y0-y1))).setTo(255);
+    theMask.colRange(min(x0,x1), max(x0,x1)).rowRange(min(y0,y1),max(y0,y1)).setTo(255);
     return theMask;
   }
 }
