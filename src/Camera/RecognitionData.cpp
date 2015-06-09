@@ -521,6 +521,24 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 
     /*** Init Process at Start-Up: only Once !!! ***/
 
+    fs::path objNamesPath=fs::path(objsfolder_path) / fs::path("names.txt");
+    if(!fs::exists(objNamesPath) || !fs::is_regular_file(objNamesPath)){
+      throw objNamesPath.string() + " does not exist";
+    }
+    std::set<std::string> objNames;
+    std::cout << "Reading model names from " << objNamesPath << "..\n";
+    {
+      std::ifstream names(objNamesPath.string());
+      while(names.good()){
+        std::string s;
+        names >> s;
+        std::cout << "Will elaborate directory: " << s << "\n";
+        objNames.insert(s);
+      }
+      if(!names.eof()){
+        throw std::string("Could not read model names.");
+      }
+    }
 
     //Load the detector_ with the objects in the DB
     //iterate over the Training Database
@@ -533,10 +551,9 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
       {
         std::cout<<p.filename().string()<<"\n";
         //TODO: For Now only Crayola is Loaded...Remove it in the future
-        if( (p.filename().string().compare("crayola_64_ct") !=0) && (p.filename().string().compare("genuine_joe_plastic_stir_sticks") !=0) && 
-            (p.filename().string().compare("highland_6539_self_stick_notes") !=0)  && (p.filename().string().compare("paper_mate_12_count_mirado_black_warrior") !=0)
-            && (p.filename().string().compare("mark_twain_huckleberry_finn") !=0) )
+        if(objNames.find(p.filename().string()) == objNames.end()){
           continue;
+        }
 
         //object_id
         std::string object_id_ = p.filename().string();
