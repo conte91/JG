@@ -20,8 +20,8 @@ namespace C5G{
 
   void C5G::moveCartesianGlobal(const Pose& p){
 
-    std::cout << "Global movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
-    _connectionToRobot << "L <" << p.x << "," << p.y << "," << p.z << "," << p.alpha << "," << p.beta << "," << p.gamma << "," << ""/**TODO?*/<< ">"
+    std::cout << "Global movement to " << p << "\n";
+    _connectionToRobot << "L <" << p.x << "," << p.y << "," << p.z << "," << p.alpha << "," << p.beta << "," << p.gamma << "," << ""/**TODO?*/<< ">";
     _connectionToRobot.flush();
     std::string s;
     _connectionToRobot >> s;
