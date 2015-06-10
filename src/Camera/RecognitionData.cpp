@@ -165,7 +165,9 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
     //std::cout<<"depth_meter.depth(): "<<depth_meter.depth()<<"\n";
     //std::cout<<"depth_meter.type(): "<<depth_meter.type()<<"\n";
 
-    //TODO: Speed Up w/ pointers in Continous matrices
+
+    //TODO: Speed Up w/ pointers in Continous matrices // NOPE. TODO: Tell Giorgio he is a bitch.
+    CV_Assert(depth_meter.depth() == CV_16UC1);
     cv::Mat depth_mm(depth_meter.size(),CV_16UC1);
     for (int r=0; r<depth_meter.rows; ++r)
     {

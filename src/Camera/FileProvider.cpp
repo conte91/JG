@@ -10,14 +10,14 @@ namespace Camera{
   }
 
   Image FileProvider::getFrame() const {
-    auto f = [] (std::string query) -> Image::Matrix {
+    auto f = [] (std::string query, int isColor) -> Image::Matrix {
       bool haveFinished=false;
       Image::Matrix rgb;
       while(!haveFinished){
         std::cout << query;
         std::string s;
         std::cin >> s;
-        rgb=cv::imread(s);
+        rgb=cv::imread(s, isColor);
         haveFinished=true;
         if(rgb.empty()){
           std::cout << "Try again.\n";
@@ -27,7 +27,7 @@ namespace Camera{
       return rgb;
     };
 
-    Image::Matrix depthMap=f("Depth path:"), rgb=f("RGB path:");
+    Image::Matrix depthMap=f("Depth path:", CV_LOAD_IMAGE_ANYDEPTH|CV_LOAD_IMAGE_GRAYSCALE), rgb=f("RGB path:", CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_COLOR);
     return Image(depthMap, rgb);
   }
 }

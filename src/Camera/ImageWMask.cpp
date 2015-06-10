@@ -13,6 +13,8 @@ namespace Camera{
   Image(d,r),
   mask(m)
   {
+    CV_Assert(m.depth()==CV_8U && m.channels()==1);
+    CV_Assert(m.rows==ALLOWED_HEIGHT && m.cols==ALLOWED_WIDTH);
   }
 
   ImageWMask::ImageWMask()
