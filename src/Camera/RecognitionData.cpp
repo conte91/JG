@@ -32,7 +32,7 @@ namespace Camera{
 
   std::string RecognitionData::current_default_path;
 
-static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& filename, std::string& mesh_file_path,
+static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& filename, std::string& mesh_file_path,
     std::map<std::string,std::vector<cv::Mat> >& Rmap,
     std::map<std::string,std::vector<cv::Mat> >& Tmap,
     std::map<std::string,std::vector<cv::Mat> >& Kmap,
@@ -40,7 +40,7 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
     std::map<std::string,std::vector<cv::Mat> >& HueHist)
 {
   //std::cout<<"-1"<<"\n";
-  cv::Ptr<cv::linemod::Detector> detector = new cv::linemod::Detector;
+  std::shared_ptr<cv::linemod::Detector> detector (new cv::linemod::Detector);
   cv::FileStorage fs(filename, cv::FileStorage::READ);
   detector->read(fs.root());
   //std::cout<<"0"<<"\n";
@@ -167,13 +167,16 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 
 
     //TODO: Speed Up w/ pointers in Continous matrices // NOPE. TODO: Tell Giorgio he is a bitch.
+    CV_Assert(filter_mask.depth() == CV_8UC1);
+    CV_Assert(depth_meter.depth() == CV_16UC1);
     CV_Assert(depth_meter.depth() == CV_16UC1);
     cv::Mat depth_mm(depth_meter.size(),CV_16UC1);
+#if 0
     for (int r=0; r<depth_meter.rows; ++r)
     {
       for (int c=0; c<depth_meter.cols; ++c)
       {
-        float px = depth_meter.at<float>(r,c);
+        float px = depth_meter.at<uint16_t>(r,c);
         if(std::isfinite(px))
         {
           uint16_t p = static_cast<uint16_t>(px*1000.0);
@@ -186,6 +189,9 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 
       }
     }
+#else
+    depth_meter.copyTo(depth_mm);
+#endif
 
 
     if (detector_->classIds().empty())
@@ -212,7 +218,12 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
 //BEGIN ADDS
     std::vector<cv::Mat> theMasks;
     theMasks.push_back(filter_mask);
+    theMasks.push_back(filter_mask);
     //TODO: Use also mask to represents a valid pixel in order to reduce the search space !!!
+    CV_Assert(sources.size()==theMasks.size());
+    for(int i=0; i<sources.size(); ++i){
+      CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
+    }
     detector_->match(sources, _threshold, matches,vect_objs_to_pick, cv::noArray(), theMasks);
 //END ADDS
 
@@ -569,7 +580,7 @@ static cv::Ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& fil
         std::string mesh_file_path;
         std::string saveLinemodPathString(saveLinemodPath.string());
         //reading...
-        cv::Ptr<cv::linemod::Detector> detector = readLinemodAndPoses(saveLinemodPathString,mesh_file_path,_Rmap,_Tmap,_Kmap,_distMap,_hueHistMap);
+        std::shared_ptr<cv::linemod::Detector> detector = readLinemodAndPoses(saveLinemodPathString,mesh_file_path,_Rmap,_Tmap,_Kmap,_distMap,_hueHistMap);
         //DEBUG
         std::cout<<"\tnumTemplates: "<<detector->numTemplates()<<"\n";
         std::cout<<"\tmesh_file_path_debug: "<< mesh_file_path<<"\n";
