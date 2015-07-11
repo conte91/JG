@@ -33,19 +33,19 @@
  *
  */
 
-#include <Camera/Renderer3d.h>
+#include <Recognition/Renderer3d.h>
 
 #include <iostream>
 #include <stdlib.h>
 
 #include <GL/gl.h>
 
-#include <Camera/model.h>
+#include <Recognition/model.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 //#if USE_GLUT
-#include <Camera/renderer3d_impl_glut.h>
+#include <Recognition/renderer3d_impl_glut.h>
 //#else
 //#include "renderer3d_impl_osmesa.h"
 //#endif

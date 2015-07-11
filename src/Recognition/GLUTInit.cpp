@@ -1,7 +1,7 @@
-#include <Camera/GLUTInit.h>
+#include <Recognition/GLUTInit.h>
 #include <GL/glut.h>
 
-namespace Camera{
+namespace Recognition{
   bool GLUTInit::alreadyInited=false;
 
   void GLUTInit::init(){

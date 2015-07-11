@@ -1,12 +1,12 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include <C5G/Pose.h>
-#include <Camera/GiorgioUtils.h>
-#include <Camera/Renderer3d.h>
+#include "GiorgioUtils.h"
+#include "Renderer3d.h"
 #include <Camera/ImageWMask.h>
-#include <Camera/Recognition.h>
+#include "Recognition.h"
 
-namespace Camera{
+namespace Recognition{
   class RecognitionData{
     private:
 
@@ -60,6 +60,6 @@ namespace Camera{
     public:
         static RecognitionData& getInstance();
         static void setModelPath(const std::string& path);
-        C5G::Pose recognize(const ImageWMask& frame, std::string what);
+        C5G::Pose recognize(const Camera::ImageWMask& frame, std::string what);
   };
 }

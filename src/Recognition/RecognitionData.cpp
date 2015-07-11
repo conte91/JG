@@ -1,5 +1,5 @@
 #include <Camera/Image.h>
-#include <Camera/RecognitionData.h>
+#include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
@@ -8,8 +8,8 @@
 #include <boost/filesystem.hpp>
 #include <cmath>
 #include <opencv2/rgbd.hpp>
-#include <Camera/db_linemod.h>
-#include <Camera/linemod_icp.h>
+#include <Recognition/db_linemod.h>
+#include <Recognition/linemod_icp.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/point_representation.h>
@@ -17,9 +17,9 @@
 #include <pcl/registration/icp.h>
 #include <pcl/visualization/cloud_viewer.h>
 
-#include <Camera/Renderer3d.h>
-#include <Camera/GiorgioUtils.h>
-#include <Camera/GLUTInit.h>
+#include <Recognition/Renderer3d.h>
+#include <Recognition/GiorgioUtils.h>
+#include <Recognition/GLUTInit.h>
 
 static double _threshold;
 static cv::Mat K_depth_;
@@ -28,7 +28,7 @@ static float icp_dist_min_;
 static float th_obj_dist_;
 
 
-namespace Camera{
+namespace Recognition{
 
   std::string RecognitionData::current_default_path;
 
@@ -221,7 +221,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     theMasks.push_back(filter_mask);
     //TODO: Use also mask to represents a valid pixel in order to reduce the search space !!!
     CV_Assert(sources.size()==theMasks.size());
-    for(int i=0; i<sources.size(); ++i){
+    for(unsigned int i=0; i<sources.size(); ++i){
       CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
     }
     detector_->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
@@ -246,7 +246,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     std::vector<std::vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr > > vectVectPCPtr;
 
     vectVectPCPtr.resize(matches.size());
-    for(int ix =0; ix<matches.size(); ++ix)
+    for(unsigned int ix =0; ix<matches.size(); ++ix)
     {
       vectVectPCPtr[ix].resize(3); //1)Model,2)Ref,3)Aligned PC
     }
@@ -366,7 +366,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
       modelCloudPtr->is_dense = true;
 
       //TODO: Speed Up using Mat pointers
-      for(int ii=0;ii<modelCloudPtr->points.size();++ii)
+      for(unsigned int ii=0;ii<modelCloudPtr->points.size();++ii)
       {
         modelCloudPtr->points[ii].x =  pts_real_model_temp[ii][0];
         modelCloudPtr->points[ii].y =  pts_real_model_temp[ii][1];
@@ -386,7 +386,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
       refCloudPtr->is_dense = true;
 
       //TODO: Speed Up using Mat pointers
-      for(int ii=0;ii<refCloudPtr->points.size();++ii)
+      for(unsigned int ii=0;ii<refCloudPtr->points.size();++ii)
       {
         refCloudPtr->points[ii].x =  pts_real_ref_temp[ii][0];
         refCloudPtr->points[ii].y =  pts_real_ref_temp[ii][1];
@@ -440,7 +440,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
       vectVectPCPtr[iter][1] = refCloudPtr;
 
       //Color the aligned PC
-      for(int ii=0;ii<finalModelCloudPtr->points.size();++ii)
+      for(unsigned int ii=0;ii<finalModelCloudPtr->points.size();++ii)
       {
 
 
@@ -624,7 +624,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
 
   }
 
-  C5G::Pose RecognitionData::recognize(const ImageWMask& frame, std::string what){
+  C5G::Pose RecognitionData::recognize(const Camera::ImageWMask& frame, std::string what){
 
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;

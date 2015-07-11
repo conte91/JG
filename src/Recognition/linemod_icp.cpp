@@ -15,7 +15,7 @@
  *
 */
 
-#include <Camera/linemod_icp.h>
+#include <Recognition/linemod_icp.h>
 #include <iostream>
 
 /** get 3D points out of the image */

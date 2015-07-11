@@ -1,16 +1,16 @@
 #include <fstream>
 #include <stdexcept>
 #include <Parser/RobotData.h>
-#include <Camera/GiorgioUtils.h>
-#include <Camera/Renderer3d.h>
+#include <Recognition/GiorgioUtils.h>
+#include <Recognition/Renderer3d.h>
 #include <Camera/ImageViewer.h>
 #include <C5G/Pose.h>
 #include <Eigen/Core>
 //#include <Eigen/Matrix>
 #include <opencv2/opencv.hpp>
-#include <Camera/RecognitionData.h>
+#include <Recognition/RecognitionData.h>
 
-namespace Camera{
+namespace Recognition{
   C5G::Pose recognizeBalls(int row, int column);
 
 

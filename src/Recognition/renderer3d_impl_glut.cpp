@@ -39,7 +39,7 @@
 #include <GL/glu.h>
 #include <GL/glut.h>
 
-#include <Camera/renderer3d_impl_glut.h>
+#include "Recognition/renderer3d_impl_glut.h"
 
 Renderer3dImpl::Renderer3dImpl(const std::string & file_path, int width, int height) :
         Renderer3dImplBase(file_path, width, height),

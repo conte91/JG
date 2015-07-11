@@ -1,4 +1,9 @@
 MESSAGE("Using ${ROBOT_TYPE} C5G class")
+
+IF(NOT(DEFINED ROBOT_TYPE))
+  MESSAGE(FATAL_ERROR "You shall define one ROBOT_TYPE to use")
+ENDIF(NOT(DEFINED ROBOT_TYPE))
+
 if((${ROBOT_TYPE} STREQUAL "EORL"))
   find_package(eORL REQUIRED)
   include_directories(${eORL_INCLUDE_DIRS})

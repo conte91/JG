@@ -2,7 +2,7 @@
 #include <APC/Robot.h>
 #include <APC/Grasper.h>
 #include <Parser/RobotData.h>
-#include <Camera/Recognition.h>
+#include <Recognition/Recognition.h>
 
 namespace APC{
   void updateBins(OrderStatus& order, Robot& robot){
@@ -34,7 +34,7 @@ namespace APC{
         r.setPhoto(x.bin[0], x.bin[1],photo);
         r.demoViewer.showImage(photo);
         r.demoViewer.setTitle("new Data");
-        Camera::updateGiorgio(x.bin[0], x.bin[1]);
+        Recognition::updateGiorgio(x.bin[0], x.bin[1]);
       }
        
       /** We moved things, lets'a update the bin content */

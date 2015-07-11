@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Camera{
+namespace Recognition{
   class GLUTInit{
     private:
       static bool alreadyInited;

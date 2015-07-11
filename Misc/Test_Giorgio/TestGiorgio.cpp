@@ -3,7 +3,7 @@
 #include <Camera/Image.h>
 #include <Camera/Cutter.h>
 #include <Camera/ClickIndexTaker.h>
-#include <Camera/RecognitionData.h>
+#include <Recognition/RecognitionData.h>
 #include <Camera/ImageProvider.h>
 #include <Camera/OpenniProvider.h>
 #include <Camera/DummyProvider.h>
@@ -20,7 +20,7 @@ int main(int argc, char** argv){
 
   }
 
-  Camera::RecognitionData::setModelPath(std::string(argv[1]));
+  Recognition::RecognitionData::setModelPath(std::string(argv[1]));
   std::cout << "Welcome to the object recognition program!\n";
 
   std::cout << "Initializing camera..\n";
@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 
   bool haveFinished=false;
   while(!haveFinished){
-    Camera::RecognitionData& mySister=Camera::RecognitionData::getInstance();
+    Recognition::RecognitionData& mySister=Recognition::RecognitionData::getInstance();
 
     std::string s;
     Camera::Image x=camera->getFrame();
