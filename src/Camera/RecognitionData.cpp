@@ -214,7 +214,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     //   cv::waitKey();
 
     std::cout<<"matching..."<<"\n";
-    std::vector<cv::linemod::Match> matches;
+    std::vector<cv::linemod::Match> nonconst_matches;
 //BEGIN ADDS
     std::vector<cv::Mat> theMasks;
     theMasks.push_back(filter_mask);
@@ -224,7 +224,10 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     for(int i=0; i<sources.size(); ++i){
       CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
     }
-    detector_->match(sources, _threshold, matches,vect_objs_to_pick, cv::noArray(), theMasks);
+    detector_->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
+    /** Just to be sure it's not changed in the Rastafari loop */
+    const std::vector<cv::linemod::Match>& matches=nonconst_matches;
+
 //END ADDS
 
     std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
@@ -265,6 +268,8 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
       // Fill the Pose object
       cv::Matx33d R_match = Rs_.at(match.class_id)[match.template_id].clone();
       cv::Vec3d T_match = Ts_.at(match.class_id)[match.template_id].clone();
+      std::cout << "Rotation matrix: \n" << R_match << "\n";
+      std::cout << "Translation vector:\n" << T_match << "\n";
       float D_match = distances_.at(match.class_id)[match.template_id];
       cv::Mat K_match = Ks_.at(match.class_id)[match.template_id];  
 
@@ -283,7 +288,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
       cv::Mat mask_copy; mask.copyTo(mask_copy);
       cvtColor(mask_copy,mask_copy,CV_GRAY2BGR);
       cv::imshow("mask",mask_copy);
-      cv::waitKey();
+      cv::waitKey(1);
 
       cv::Mat_<cv::Vec3f> depth_real_model_raw;
       cv::rgbd::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
@@ -316,7 +321,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
 
       cv::imshow("rgb",rgb);
 
-      cv::waitKey();
+      cv::waitKey(1);
       //prepare the model data: from the match
       cv::Mat_<cv::Vec3f> depth_real_model = depth_real_model_raw(rect_model);
 
@@ -460,6 +465,14 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     }//END BOOST_FOREACH
 
 
+    /** Take the best match and return it as a position */
+    const cv::linemod::Match& match=matches[0];
+    cv::Mat R_match = Rs_.at(match.class_id)[match.template_id].clone();
+    cv::Mat T_match = Ts_.at(match.class_id)[match.template_id].clone();
+    Pose=cv::Mat::zeros(4,4, CV_64F);
+    R_match.copyTo(Pose(cv::Rect(0,0,3,3)));
+    T_match.copyTo(Pose(cv::Rect(3,0,1,3)));
+    Pose.at<double>(3,3)=1;
     return true;
   }
 
@@ -624,6 +637,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     /** Implements the refined algorithm from extracting euler angles from rotation matrix
      * see Mike Day, Insomniac Games, "Extracting Euler Angles from a Rotation Matrix"
      */
+    CV_Assert(m.cols==4 && m.rows==4);
     double theta1=atan2(m.at<double>(1,2),m.at<double>(2,2));
     double c2=hypot(m.at<double>(0,0),m.at<double>(0,1));
     double theta2=atan2(-m.at<double>(0,2),c2);
