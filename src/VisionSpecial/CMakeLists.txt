@@ -1,1 +1,1 @@
-CONFIGURE_FILE(hopersolepalle.py ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} COPYONLY)
+COPY_TO_LIB(hopersolepalle.py)
