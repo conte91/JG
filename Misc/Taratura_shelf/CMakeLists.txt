@@ -8,3 +8,6 @@ target_link_libraries(setup_shelf_camera_position ${Boost_LIBRARIES} ${OpenCV_LI
 
 add_executable(setup_shelf_position taratura_posizioni.cpp)
 target_link_libraries(setup_shelf_position c5g apc)
+
+add_executable(taratura_griglia taratura_griglia.cpp)
+target_link_libraries(taratura_griglia img img_manipulation camera apc )

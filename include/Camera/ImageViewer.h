@@ -10,6 +10,7 @@ namespace Camera{
     public:
       void showImage(const Image& what);
       ImageViewer(const std::string& ID);
+      ~ImageViewer();
       void setTitle(const std::string& title);
 
     private:

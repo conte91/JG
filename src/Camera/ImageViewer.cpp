@@ -12,6 +12,11 @@ namespace Camera{
       cv::namedWindow(_ID+" (RGB)", cv::WINDOW_AUTOSIZE);
       cv::namedWindow(_ID+" (DEPTH)", cv::WINDOW_AUTOSIZE);
   }
+
+  ImageViewer::~ImageViewer(){
+      cv::destroyWindow(_ID+" (RGB)");
+      cv::destroyWindow(_ID+" (DEPTH)");
+  }
   void ImageViewer::updateMyself(){
     _toRender=_what;
     ///cv::putText(_toRender.rgb, _title+" RGB", {0,0});

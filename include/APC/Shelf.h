@@ -13,8 +13,9 @@ namespace APC{
       static const Pose POSE;
       static const double BIN_HEIGHT;
       static const double BIN_WIDTH;
-      static const unsigned int HEIGHT;
-      static const unsigned int WIDTH;
+      /** Size of the shelf in #bins */
+      static constexpr unsigned int HEIGHT=4;
+      static constexpr unsigned int WIDTH=3;
       static const double BIN_DEPTH;
       static const double SECURITY_DISTANCE;
       static const Pose CAMERA_POSE;

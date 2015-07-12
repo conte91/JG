@@ -9,10 +9,6 @@ namespace APC {
   /** Pose of the front-left corner of the shelf relative to the robot */
   const Pose Shelf::POSE(0.792, 0.454, 0.836, 0, 0, 0);
 
-  /** Size of the shelf in #bins */
-  const unsigned int Shelf::HEIGHT=4;
-  const unsigned int Shelf::WIDTH=3;
-
   /** Size of a single bin */
   const double Shelf::BIN_HEIGHT=0.3;
   const double Shelf::BIN_WIDTH=0.3;
