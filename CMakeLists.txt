@@ -4,7 +4,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g3 -gdwarf-2")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -gdwarf-2")
-ADD_DEFINITIONS("-std=c++11 -Wall -Wno-deprecated-declarations")
+ADD_DEFINITIONS("-std=c++11 -Wall -Wno-deprecated-declarations -Wno-reorder")
 SET(C_MAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wall)
 SET(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wall)
 IF( NOT(DEFINED NO_EORL))

@@ -1,7 +1,7 @@
 #pragma once
 #include <opencv2/core/core.hpp>
 
-namespace Camera{
+namespace Img{
   struct Image{
       typedef cv::Mat Matrix;
       static const int ALLOWED_WIDTH;

@@ -1,4 +1,4 @@
-#include <Camera/Image.h>
+#include <Img/Image.h>
 #include <Camera/FileProvider.h>
 #include <opencv2/opencv.hpp>
 
@@ -9,7 +9,7 @@ namespace Camera{
   {
   }
 
-  Image FileProvider::getFrame() const {
+  Img::Image FileProvider::getFrame() const {
     auto f = [] (std::string query, int isColor) -> Image::Matrix {
       bool haveFinished=false;
       Image::Matrix rgb;

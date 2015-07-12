@@ -1,5 +1,5 @@
 #include <Camera/ImageProvider.h>
-#include <Camera/Image.h>
+#include <Img/Image.h>
 
 namespace Camera{
   ImageProvider::ImageProvider(const std::string& ID)

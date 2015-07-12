@@ -1,6 +1,7 @@
-#include <Camera/IndexTaker.h>
+#include <Img/Manipulation/IndexTaker.h>
 
-namespace Camera{
+namespace Img{
+  namespace Manipulation{
     int IndexTaker::getX1() const{
       return _x1;
     }
@@ -13,4 +14,5 @@ namespace Camera{
     int IndexTaker::getY2() const{
       return _y2;
     }
+  }
 }

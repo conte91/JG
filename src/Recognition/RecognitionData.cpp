@@ -1,4 +1,3 @@
-#include <Camera/Image.h>
 #include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
@@ -253,10 +252,10 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
 
     BOOST_FOREACH(const cv::linemod::Match & match, matches) {
 
+#if 0
       const std::vector<cv::linemod::Template>& templates =
         detector_->getTemplates(match.class_id, match.template_id);
 
-#if 0
       // DEBUG
       drawResponse(templates, num_modalities, rgb,
           cv::Point(match.x, match.y), detector_->getT(0));
@@ -624,7 +623,7 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
 
   }
 
-  C5G::Pose RecognitionData::recognize(const Camera::ImageWMask& frame, std::string what){
+  C5G::Pose RecognitionData::recognize(const Img::ImageWMask& frame, std::string what){
 
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;

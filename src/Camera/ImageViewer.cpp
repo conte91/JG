@@ -1,5 +1,5 @@
 #include <iostream>
-#include <Camera/Image.h>
+#include <Img/Image.h>
 #include <Camera/ImageViewer.h>
 #include <highgui.h>
 

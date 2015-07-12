@@ -3,7 +3,7 @@
 #include <C5G/Pose.h>
 #include "GiorgioUtils.h"
 #include "Renderer3d.h"
-#include <Camera/ImageWMask.h>
+#include <Img/ImageWMask.h>
 #include "Recognition.h"
 
 namespace Recognition{
@@ -60,6 +60,6 @@ namespace Recognition{
     public:
         static RecognitionData& getInstance();
         static void setModelPath(const std::string& path);
-        C5G::Pose recognize(const Camera::ImageWMask& frame, std::string what);
+        C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
   };
 }

@@ -1,5 +1,5 @@
 #include <Camera/OpenniStreamProvider.h>
-#include <Camera/Image.h>
+#include <Img/Image.h>
 
 namespace Camera{
   OpenniStreamProvider::OpenniStreamProvider(const std::string& path, const std::string& ID)
@@ -10,7 +10,7 @@ namespace Camera{
     std::cout << ImageProvider::_id << ": set default image path to " << _path+"/rgb.png" << " and "<< _path+"/depth.png" << "\n";
   };
 	
-  Image OpenniStreamProvider::getFrame() const {
+  Img::Image OpenniStreamProvider::getFrame() const {
     std::cout << "Waiting for a frame to arrive..\n";
     system("touch /tmp/shameonme");
     std::cout << "Lock acquired. Waiting for release..\n";

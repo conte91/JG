@@ -5,7 +5,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
-#include <Camera/Image.h>
+#include <Img/Image.h>
 #include <Parser/RobotData.h>
 #include <C5G/Grasp.h>
 
@@ -104,14 +104,14 @@ namespace InterProcessCommunication{
   void RobotData::operator=(RobotData const&) {}; // Don't implement
   RobotData::RobotData(RobotData const&) {};              // Don't Implement
 
-  void RobotData::setPhoto(int row, int column, const Camera::Image& frame){
+  void RobotData::setPhoto(int row, int column, const Img::Image& frame){
     shelf.bins[xyToBin(row, column)].photo=frame;
   }
-  Camera::Image RobotData::getPhoto(int row, int column){
+  Img::Image RobotData::getPhoto(int row, int column){
     //ppporco
     return this->getFrame(row,column);
   }
-  Camera::Image RobotData::getFrame(int row, int column){
+  Img::Image RobotData::getFrame(int row, int column){
     return shelf.bins[xyToBin(row,column)].photo;
   }
 }

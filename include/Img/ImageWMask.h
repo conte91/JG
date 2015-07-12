@@ -1,6 +1,6 @@
 #include "Image.h"
 
-namespace Camera{
+namespace Img{
   struct ImageWMask : public Image {
     Matrix mask;
     ImageWMask (const Matrix& d, const Matrix& r, const Matrix& m);

@@ -1,6 +1,6 @@
-#include <Camera/ImageWMask.h>
+#include <Img/ImageWMask.h>
 
-namespace Camera{
+namespace Img{
   ImageWMask::ImageWMask(const Image& src, const Matrix& m)
   :
   Image(src.depth,src.rgb),

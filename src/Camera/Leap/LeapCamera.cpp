@@ -22,7 +22,7 @@ namespace Camera{
     std::cout << _myID << ": starting listening for camera events...\n";
   }
 
-  const Image& LeapCamera::getLastFrame(){
+  const Img::Image& LeapCamera::getLastFrame(){
     return _lastImage;
   }
 
@@ -62,7 +62,7 @@ namespace Camera{
 
     cv::Mat rgb_black = cv::Mat( image.height(), image.width(), CV_8UC3 );
     opencvImg.data = (unsigned char*)image.data();
-    _lastImage=Image(opencvImg, rgb_black);
+    _lastImage=Img::Image(opencvImg, rgb_black);
   }
 
   void LeapCamera::onFocusGained( const Leap::Controller &controller)

@@ -1,4 +1,4 @@
-#include <Camera/Image.h>
+#include <Img/Image.h>
 #include <Camera/OpenniProvider.h>
 #include <opencv2/opencv.hpp>
 
@@ -16,7 +16,7 @@ namespace Camera{
     //}
   }
 
-  Image OpenNIProvider::getFrame() const {
+  Img::Image OpenNIProvider::getFrame() const {
     Image::Matrix depthMap, rgb;
     std::cout << "I'm taking a photo\n";
     _capture.grab();

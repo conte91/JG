@@ -61,7 +61,7 @@ namespace Recognition{
   C5G::Pose recognizeBalls(int row, int column){
     using InterProcessCommunication::RobotData;
     RobotData& r=RobotData::getInstance();
-    Camera::Image p=r.getFrame(row, column);
+    Img::Image p=r.getFrame(row, column);
     cv::imwrite("/tmp/myballs.png", p.rgb);
     system("python ./hopersolepalle.py");
     double x, y, z, a, b, g;

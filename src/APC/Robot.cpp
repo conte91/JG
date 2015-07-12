@@ -12,7 +12,7 @@ namespace APC{
      {
       }
 
-    Camera::Image Robot::takePhoto(CameraIndex direction){
+    Img::Image Robot::takePhoto(CameraIndex direction){
       if(direction==CameraIndex::LEFT){
         return this->_provider->getFrame();
       }

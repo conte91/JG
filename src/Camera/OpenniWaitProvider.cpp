@@ -1,4 +1,4 @@
-#include <Camera/Image.h>
+#include <Img/Image.h>
 #include <Camera/OpenniWaitProvider.h>
 #include <opencv2/opencv.hpp>
 
@@ -9,7 +9,7 @@ namespace Camera{
   {
   }
 
-  Image OpenNIWaitProvider::getFrame() const {
+  Img::Image OpenNIWaitProvider::getFrame() const {
     std::cout << 
       "==============================================="
       "||   Position the camera and press Enter..   ||"

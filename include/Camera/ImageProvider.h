@@ -1,11 +1,12 @@
 #pragma once
 #include <string>
 #include <boost/shared_ptr.hpp>
-#include "Image.h"
+#include <Img/Image.h>
 
 namespace Camera{
   class ImageProvider{
     protected:
+      typedef Img::Image Image;
       const std::string _id;
     public:
       typedef boost::shared_ptr<ImageProvider> Ptr;

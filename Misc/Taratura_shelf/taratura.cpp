@@ -38,7 +38,7 @@ int main(int argc, char** argv){
   boost::shared_ptr<Camera::ImageProvider> camera(new Camera::OpenniStreamProvider());
   APC::Robot robot(ip, profile, false, camera);
 
-  Camera::Image photo_l, photo_r;
+  Img::Image photo_l, photo_r;
   try{
     robot.init();
     robot.moveCartesianGlobal(APC::Shelf::POSE_FOR_THE_PHOTOS);

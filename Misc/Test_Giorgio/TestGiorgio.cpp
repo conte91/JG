@@ -1,8 +1,8 @@
 #include <iostream>
 #include <cstdlib>
-#include <Camera/Image.h>
-#include <Camera/Cutter.h>
-#include <Camera/ClickIndexTaker.h>
+#include <Img/Image.h>
+#include <Img/Manipulation/Cutter.h>
+#include <Img/Manipulation/ClickIndexTaker.h>
 #include <Recognition/RecognitionData.h>
 #include <Camera/ImageProvider.h>
 #include <Camera/OpenniProvider.h>
@@ -53,10 +53,10 @@ int main(int argc, char** argv){
     Recognition::RecognitionData& mySister=Recognition::RecognitionData::getInstance();
 
     std::string s;
-    Camera::Image x=camera->getFrame();
+    Img::Image x=camera->getFrame();
 
-    Camera::ClickIndexTaker taker(x);
-    Camera::ImageWMask finalFrame(x, Camera::getMask(x, taker.getX1(), taker.getY1(), taker.getX2(), taker.getY2()));
+    Img::Manipulation::ClickIndexTaker taker(x);
+    Img::ImageWMask finalFrame(x, Img::Manipulation::getMask(x, taker.getX1(), taker.getY1(), taker.getX2(), taker.getY2()));
 
     std::cout << "Which object do you want to recognize?\n";
     std::cin >> s;

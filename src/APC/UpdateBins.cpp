@@ -30,7 +30,7 @@ namespace APC{
 
         std::cout << "Going to bin " << x.bin[0] << "," << x.bin[1] << " to take a photo\n";
         robot.moveToBin(x.bin[0], x.bin[1]);
-        Camera::Image photo = robot.takePhoto();
+        Img::Image photo = robot.takePhoto();
         r.setPhoto(x.bin[0], x.bin[1],photo);
         r.demoViewer.showImage(photo);
         r.demoViewer.setTitle("new Data");

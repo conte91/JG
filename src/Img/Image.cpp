@@ -1,6 +1,6 @@
-#include <Camera/Image.h>
+#include <Img/Image.h>
 
-namespace Camera{
+namespace Img{
 
   const int Image::ALLOWED_WIDTH=640;
   const int Image::ALLOWED_HEIGHT=480;
