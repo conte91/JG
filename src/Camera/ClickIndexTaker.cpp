@@ -14,9 +14,6 @@ namespace Camera{
   void ClickIndexTaker::updateCoords(int row, int column){
     cv::namedWindow("Choose two points..", cv::WINDOW_AUTOSIZE);
     cv::imshow("Choose two points..", _data.rgb);
-    cv::Mat sblargaba=cv::imread("/home/simo/kinectData/rgb.png");
-    cv::namedWindow("mySister", cv::WINDOW_AUTOSIZE);;
-    cv::imshow("mySister", sblargaba);
     cv::waitKey(1);
 
     std::array<std::mutex, 2>  clicks;
