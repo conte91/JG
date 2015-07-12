@@ -12,8 +12,8 @@ namespace APC{
     Pose p=Shelf::POSE;
 
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
-    for(int j=0; j<Shelf::HEIGHT; ++j){
-      for(int i=0; i<Shelf::WIDTH; ++i){
+    for(unsigned int j=0; j<Shelf::HEIGHT; ++j){
+      for(unsigned int i=0; i<Shelf::WIDTH; ++i){
         /** First, move globally into the safe pose of each bin */
         Pose whereToGo=Shelf::getBinSafePose(i, j)+Shelf::POSE;
         whereToGo.alpha=0;
