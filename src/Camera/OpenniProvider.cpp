@@ -13,6 +13,14 @@ namespace Camera{
       if(!_capture.isOpened()){
         throw std::string("couldn't open the capture device");
       }
+      if(!_capture.get( CV_CAP_PROP_OPENNI_REGISTRATION ) ){
+        std::cout << "Setting OPENNI registration flag,,\n";
+        _capture.set(CV_CAP_PROP_OPENNI_REGISTRATION,1);
+        if(!_capture.get( CV_CAP_PROP_OPENNI_REGISTRATION ) ){
+          throw std::string("couldn't set registration flag");
+        }
+      }
+
     //}
   }
 
