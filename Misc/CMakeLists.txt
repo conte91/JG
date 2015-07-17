@@ -12,6 +12,7 @@ add_subdirectory("Sandbox/GiorgioT/MyLinemodPlusRender/")
 add_subdirectory("Sandbox/TCPtest/")
 add_subdirectory("OpenNI_Streaming_pleasedontlookatme/")
 add_subdirectory("Test_Giorgio/")
+add_subdirectory("Test_depth/")
 
 #include(${OpenCV_CONFIG_PATH}/OpenCVConfig.cmake)
 #Set all of the opencv contrib stuff not to compile, EXCEPT for rgbd
