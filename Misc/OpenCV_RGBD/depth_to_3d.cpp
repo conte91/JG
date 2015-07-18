@@ -104,6 +104,7 @@ namespace rgbd
     // Figure out the interesting indices
     size_t n_points;
 
+    /** Creates 3 vectors of coordinates (u,v,z) in the camera frame */
     if (depth.depth() == CV_16U)
       n_points = convertDepthToFloat<ushort>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else if (depth.depth() == CV_16S)

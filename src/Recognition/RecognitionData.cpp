@@ -165,7 +165,6 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     //std::cout<<"depth_meter.type(): "<<depth_meter.type()<<"\n";
 
 
-    //TODO: Speed Up w/ pointers in Continous matrices // NOPE. TODO: Tell Giorgio he is a bitch.
     CV_Assert(filter_mask.depth() == CV_8UC1);
     CV_Assert(depth_meter.depth() == CV_16UC1);
     CV_Assert(depth_meter.depth() == CV_16UC1);
@@ -202,23 +201,14 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
 
     std::vector<cv::Mat> sources;
 
-    //TODO: Resize color to 640x480 if neeeded
-    std::cout<<"rgb.size(): [cols,rows] "<<rgb.size()<<"\n";
     sources.push_back(rgb);
     sources.push_back(depth_mm);
 
-    //   cv::imshow("rgb2",sources[0]);
-    //   std::cout<<"sources[1].size()"<<sources[1].size()<<"\n";
-    //   
-    //   cv::waitKey();
-
-    std::cout<<"matching..."<<"\n";
+    std::cout<<"Matching..."<<"\n";
     std::vector<cv::linemod::Match> nonconst_matches;
-//BEGIN ADDS
     std::vector<cv::Mat> theMasks;
     theMasks.push_back(filter_mask);
     theMasks.push_back(filter_mask);
-    //TODO: Use also mask to represents a valid pixel in order to reduce the search space !!!
     CV_Assert(sources.size()==theMasks.size());
     for(unsigned int i=0; i<sources.size(); ++i){
       CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
@@ -226,17 +216,15 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     detector_->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
     /** Just to be sure it's not changed in the Rastafari loop */
     const std::vector<cv::linemod::Match>& matches=nonconst_matches;
-
-//END ADDS
-
     std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
-
-    int num_modalities = (int) detector_->getModalities().size();
+    if(matches.size() == 0){
+      return false;
+    }
 
     cv::Mat_<cv::Vec3f> depth_real_ref_raw;
     cv::Mat_<float> K;
     K_depth_.convertTo(K, CV_32F);
-    cv::rgbd::depthTo3d(depth_meter, K, depth_real_ref_raw);
+    cv::rgbd::depthTo3d(depth_mm, K, depth_real_ref_raw);
 
     /** The buffer with detected objects and their info */
     std::vector <object_recognition_core::db::ObjData> objs_;
@@ -251,18 +239,6 @@ static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::str
     }
 
     BOOST_FOREACH(const cv::linemod::Match & match, matches) {
-
-#if 0
-      const std::vector<cv::linemod::Template>& templates =
-        detector_->getTemplates(match.class_id, match.template_id);
-
-      // DEBUG
-      drawResponse(templates, num_modalities, rgb,
-          cv::Point(match.x, match.y), detector_->getT(0));
-
-      cv::imshow("rgb",rgb);
-      cv::waitKey();  
-#endif
 
       // Fill the Pose object
       cv::Matx33d R_match = Rs_.at(match.class_id)[match.template_id].clone();
