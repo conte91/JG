@@ -1,3 +1,4 @@
+#include <Camera/OpenniWaitProvider.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <string>
@@ -37,19 +38,14 @@ void doSomething(int event, int x, int y, int flags, void* stafava){
 }
 
 int main(){
-  cv::VideoCapture capture(CV_CAP_OPENNI);
-  if(!capture.isOpened()){
-    std::cerr << "Could open the capture device\n";
-    return -1;
-  }
+  using Camera::OpenNIWaitProvider;
 
-  std::cout << "Position the camera and press enter..\n";
-  std::string s;
-  std::cin >> s;
+  OpenNIWaitProvider p;
 
-  capture.grab();
-  capture.retrieve(d, CV_CAP_OPENNI_DEPTH_MAP);
-  capture.retrieve(r, CV_CAP_OPENNI_BGR_IMAGE);
+  Img::Image i=p.getFrame();
+
+  r=i.rgb;
+  d=i.depth;
 
   std::cout << "Frame taken.\nRGB of type " << type2str(r.type()) << " and size " << r.rows << "x" << r.cols << ".\nDepth of type: " << type2str(d.type())  << "and size " << r.rows << "x" << r.cols << ".\n";
 

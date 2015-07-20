@@ -1,3 +1,4 @@
+#include "OpenniProvider.h"
 #include "WaitProvider.h"
 
 namespace Camera{
