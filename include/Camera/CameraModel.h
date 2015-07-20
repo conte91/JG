@@ -1,15 +1,34 @@
 #pragma once
-#include "Image.h"
-#include <pcl/point_types.h>
-#include <image_geometry/pinhole_camera_model.h>
+#include <Img/Image.h>
 
-class CameraModel {
-  public:
-    static const Pose cameraPose({ 2.20, 0, 0, 0, 0, 3.14159});
+namespace Camera{
+  class CameraModel {
+    public:
+      /** Returns the 3x3 internal calibration matrix of the camera */
+      cv::Mat getIntrinsic() const;
 
+      /** Reads a model from a JSON file.
+       * @param filename the name of the file to read from 
+       */
+      static CameraModel fromFile(const std::string& filename);
 
-    pcl::PointXYZRGB pointToXYZ(const Image& frame, int x, int y);
+      /** Writes a model to a JSON file.
+       * @param filename the name of the file to save to
+       */
+      void toFile(const std::string& filename) const;
 
-  private:
-    image_geometry::PinholeCameraModel _camModel;
-};
+      /** 
+       * @param fx Focal length (X)
+       * @param fy Focal length (Y)
+       * @param s Axis skew 
+       * @param xc Principal point offset (X)
+       * @param yc Principal point offset (Y)
+       */
+      CameraModel(float fx, float fy, float s, float xc, float yc);
+
+    private:
+      /** The intrinsic params of the camera */
+      cv::Mat _K;
+
+  };
+}
