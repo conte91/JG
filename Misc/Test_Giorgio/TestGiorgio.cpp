@@ -9,6 +9,7 @@
 #include <Camera/DummyProvider.h>
 #include <Camera/FileProvider.h>
 #include <Camera/OpenniWaitProvider.h>
+#include <Camera/CameraModel.h>
 
 int main(int argc, char** argv){
 
@@ -20,7 +21,6 @@ int main(int argc, char** argv){
 
   }
 
-  Recognition::RecognitionData::setModelPath(std::string(argv[1]));
   std::cout << "Welcome to the object recognition program!\n";
 
   std::cout << "Initializing camera..\n";
@@ -48,9 +48,10 @@ int main(int argc, char** argv){
   );
   std::cout << "Done.\n";
 
+  Recognition::RecognitionData mySister(std::string(argv[1]), Camera::CameraModel::fromFile("./camera_model.data"));
+
   bool haveFinished=false;
   while(!haveFinished){
-    Recognition::RecognitionData& mySister=Recognition::RecognitionData::getInstance();
 
     std::string s;
     Img::Image x=camera->getFrame();

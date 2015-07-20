@@ -1,8 +1,12 @@
 #pragma once
 #include <opencv2/opencv.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 #include <C5G/Pose.h>
+#include <Camera/CameraModel.h>
 #include "GiorgioUtils.h"
 #include "Renderer3d.h"
+
 #include <Img/ImageWMask.h>
 #include "Recognition.h"
 
@@ -11,16 +15,13 @@ namespace Recognition{
     private:
 
       static C5G::Pose matrixToPose(cv::Mat m);
-      RecognitionData();
+      typedef Camera::CameraModel CameraModel;
+      typedef pcl::PointCloud<pcl::PointXYZRGB> PCloud;
+
       //Depth Camera Matrix
-      //TODO: Safier to read it from the calibration file
-      const double dfx_;
-      const double dfy_;
-      const double dcx_;
-      const double dcy_;
-      const float px_match_min_ ;
+      const CameraModel _cameraModel;
+      const float px_match_min_;
       const float icp_dist_min_;
-      cv::Mat K_depth_;
 
       //Training Params
       const int renderer_n_points_ ;
@@ -41,7 +42,6 @@ namespace Recognition{
       std::map<std::string,std::vector<cv::Mat> > _Kmap;
       std::map<std::string,std::vector<float> > _distMap;
       const float _threshold; //"threshold", "Matching threshold, as a percentage", 93.0f
-      static const std::string DEFAULT_OBJFOLDER_PATH;
       std::string objsfolder_path;
       /** LINE-MOD detector */
       cv::Ptr<cv::linemod::Detector> detector_ ;
@@ -51,15 +51,26 @@ namespace Recognition{
       std::map<std::string,std::vector<float> > dist_map;
       std::map<std::string,std::vector<cv::Mat> > _hueHistMap;
 
-      bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, const cv::Mat& mask, 
+      /** Pose estimation using PCL ICP 
+       * @param pointsFromModel set of points of the ideal model (X,Y,Z)
+       * @param pointsFromReference set of points from the reference scene (X,Y,Z)
+       * @param finalTransformationMatrix output transformation matrix from ideal model to reference scene
+       * @param resultPointClouds array of returned point clouds, in order: model point cloud, reference (i.e. scene) point cloud, aligned model point cloud 
+       * @return true if ICP succeded, false otherwise
+       */
+      bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4d& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
+
+      bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, const cv::Mat& mask,
           cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
           std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
           std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
-          cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick);
-        static std::string current_default_path;
+          cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
     public:
-        static RecognitionData& getInstance();
-        static void setModelPath(const std::string& path);
-        C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
+      C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
+      /**
+       * @param trainPath path to the trained models data
+       * @param M camera model to use
+       */
+      RecognitionData(const std::string& trainPath, const CameraModel& m);
   };
 }
