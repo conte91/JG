@@ -525,7 +525,9 @@ namespace Recognition{
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;
     cv::Mat pose;
-    updateGiorgio(frame.rgb, frame.depth, frame.mask, detector_, renderer_iterators_, _Rmap, _Tmap, _Kmap, _distMap, pose, vect_objs_to_pick);
+    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, detector_, renderer_iterators_, _Rmap, _Tmap, _Kmap, _distMap, pose, vect_objs_to_pick)){
+      throw std::string("Could not match anything :(");
+    }
     return matrixToPose(pose);
   }
 
