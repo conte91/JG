@@ -29,13 +29,14 @@
 
 #include <Recognition/model.h>
 
-Model::Model()
+Mesh::Mesh(const std::string& file_path)
     :
       scene(NULL)
 {
+  LoadMesh(file_path);
 }
 
-Model::~Model()
+Mesh::~Mesh()
 {
   // cleanup - calling 'aiReleaseImport' is important, as the library
   // keeps internal resources until the scene is freed again. Not
@@ -44,14 +45,14 @@ Model::~Model()
 }
 
 void
-Model::LoadModel(const std::string & file_path)
+Mesh::LoadMesh(const std::string & file_path)
 {
   scene = aiImportFile(file_path.c_str(), aiProcessPreset_TargetRealtime_Quality);
   recursiveTextureLoad(scene, scene->mRootNode);
 }
 
 void
-Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
+Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
 {
   aiMatrix4x4 m = nd->mTransformation;
 
@@ -139,7 +140,7 @@ Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
 }
 
 void
-Model::get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo) const
+Mesh::get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo) const
 {
   aiMatrix4x4 prev; // Use struct keyword to show you want struct version of this, not normal typedef?
 
@@ -172,7 +173,7 @@ Model::get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* 
 }
 
 void
-Model::get_bounding_box(aiVector3D* min, aiVector3D* max) const
+Mesh::get_bounding_box(aiVector3D* min, aiVector3D* max) const
 {
   aiMatrix4x4 trafo;
   aiIdentityMatrix4(&trafo);
@@ -183,7 +184,7 @@ Model::get_bounding_box(aiVector3D* min, aiVector3D* max) const
 }
 
 void
-Model::recursive_render(const struct aiScene *sc, const aiNode* nd, const int j) const
+Mesh::recursive_render(const struct aiScene *sc, const aiNode* nd, const int j) const
 {
   unsigned int i;
   unsigned int n = 0, t;
@@ -270,7 +271,7 @@ Model::recursive_render(const struct aiScene *sc, const aiNode* nd, const int j)
 }
 
 void
-Model::Draw() const
+Mesh::Draw() const
 {
   //MYMOD recursive_render(scene, scene->mRootNode);
   recursive_render(scene, scene->mRootNode, 0);//outside recursive_render , the default param is 0

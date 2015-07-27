@@ -51,7 +51,7 @@ struct TextureAndPath
   aiString pathName;
 };
 
-class Model
+class Mesh
 {
 private:
   std::vector<TextureAndPath> texturesAndPaths;
@@ -66,12 +66,14 @@ private:
 
   void
   get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo) const;
-public:
-  Model();
-  ~Model();
 
   void
-  LoadModel(const std::string & fileName);
+  LoadMesh(const std::string & fileName);
+
+public:
+  Mesh(const std::string& file_path);
+  ~Mesh();
+
   void
   Draw() const;
 
