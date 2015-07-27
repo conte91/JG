@@ -7,11 +7,36 @@ GRASP_ERROR_LIMIT = 1
 VERY_NEGATIVE_NUMBER = -313373
 
 
-def changeReference(pose0, newReferenceFrame):
-    x, y, z, a, b, g = newReferenceFrame
-    rotMatrix = tr.euler_matrix(a, b, g)
-    tranMatrix = tr.translation_matrix([x, y, z])
-    print rotMatrix, tranMatrix
+def main():
+    global originPose
+    global originXYZ
+    global robotData
+
+    originPose = tuple([0]*6)
+    originXYZ = (0, 0, 0)
+    # end globals
+
+    targetItem = 'mead_index_cards'  # sys.argv[1]
+    robotData = RobotData()
+    score = getBestGrasp(targetItem)
+    print "best score is:", score
+    with open("/tmp/grasp.result", "w") as output:
+        output.write(repr(getBestGrasp(targetItem)))
+
+def rotTrans(pose):
+    x,y,z,a,b,g = pose
+    ones = np.eye(4)
+    rotMatrix = tr.euler_matrix(a,b,g)
+    transMatrix = tr.translation_matrix([x,y,z])
+    return rotMatrix + transMatrix - ones
+
+def changeReference(graspPose, itemPose):
+    x,y,z = graspPose
+    graspPose = (x, y, z, 0)
+    base_to_item = rotTrans(itemPose)
+    item_to_base = np.linalg.inv(base_to_item)
+    globalPose = np.multiply(item_to_base, graspPose)
+    return globalPose
 
 
 def distance(p0, p1):
@@ -230,37 +255,42 @@ class RobotData(object):
             'mead_index_cards': (130, 78, 23),
             'elmers_washable_no_run_school_glue': (65, 150, 35),
         }
+        graspsOf = {
+            'kygen_squeakin_eggs_plush_puppies': [(0, 0, 0),],
+            'sharpie_accent_tank_style_highlighters': [(0, 0, 0),],
+            'expo_dry_erase_board_eraser': [(0, 0, 0),],
+            'munchkin_white_hot_duck_bath_toy': [(0, 0, 0),],
+            'mark_twain_huckleberry_finn': [(0, 0, 0),],
+            'genuine_joe_plastic_stir_sticks': [(0, 0, 0),],
+            'safety_works_safety_glasses': [(0, 0, 0),],
+            'rollodex_mesh_collection_jumbo_pencil_cup':  [(0, 0, 0),],
+            'dr_browns_bottle_brush': [(0, 0, 0),],
+            'kong_duck_dog_toy': [(0, 0, 0),],
+            'mommys_helper_outlet_plugs': [(0, 0, 0),],
+            'highland_6539_self_stick_notes': [(0, 0, 0),],
+            'paper_mate_12_count_mirado_black_warrior': [(0, 0, 0),],
+            'laugh_out_loud_joke_book': [(0, 0, 0),],
+            'stanley_66_052': [(0, 0, 0),],
+            'mead_index_cards': [(0, 0, 0),],
+            'elmers_washable_no_run_school_glue': [(0, 0, 0),],
+        }
+        x, y, z =  range(3)
+        for key,val in graspsOf.iteritems():
+            newVal  = (val[0][x], -pickableObjects[key][y]/2, val[0][z])
+            graspsOf[key][0] = newVal
 
-        """
-            ['champion_copper_plus_spark_plug', ],
-            ['cheezit_big_original', ],
-            ['crayola_64_ct', ],
-            ['dove_beauty_bar', ],
-            ['feline_greenies_dental_treats', ],
-            ['first_years_take_and_toss_straw_cups', ],
-            ['kong_air_dog_squeakair_tennis_ball', ],
-            ['kong_sitting_frog_dog_toy', ],
-            ['one_with_nature_soap_dead_sea_mud', ],
-            ['oreo_mega_stuf', ],
-        ]
-        """
-        print "using dummy grasps"
-        dummyGrasp = Grasp(originPose, originPose, 0, 100000)
         print "fineShapes are fake"
         fakeCuboids = [
             Cuboid(originXYZ, (1, 2, 1)),
             Cuboid(originXYZ, (2, 2, 3)),
         ]
-        # dummyShape = Shape(fakeCuboids)
-        # dummyPose = originPose
-        # end placeholders
 
         for objName in pickableObjects.keys():
             roughElements = [Cuboid(originXYZ, pickableObjects[objName])]
             roughShape = Shape(roughElements)
             fineShape = Shape(fakeCuboids)
 
-            grasps = [dummyGrasp]  # TODO init as generatePotentialGrasps()
+            grasps = graspsOf[objName]
 
             itemsDatabase[objName] = Item(objName, originPose, roughShape,
                                           fineShape, grasps)
@@ -274,11 +304,8 @@ class RobotData(object):
     def getBin(self):
         with open("/tmp/robot.data") as dataFile:
             binItems = dataFile.read().split("\n")[:-1]
-        # binItems = [item.split for item in binItems.split()]
-        result = {}
-        for item in binItems:
-            itemName, itemPose = item.split(" ", 1)
-            result[itemName] = tuple([float(n) for n in itemPose.split(" ")])
+        binItems = [item.split(" ") for item in binItems]
+        result = { bitm[0]:tuple(map(float,bitm[1:])) for bitm in binItems}
         return KivaBin(result)
 
     def getItemTemplate(self, itemName):
@@ -304,11 +331,11 @@ class KivaBin(object):
         return self.items
 
     def removeItem(self, item):
-        if item not in self.items:
+        itemName = item._name
+        if itemName not self.items.has_key(itemName):
             raise Exception("""trying to remove a non existing
                             item from shelf model""")
-        ind = self.items.index(item)
-        self.items.pop(ind)
+        del self.items[itemName]
 
     def getItemPose(self, itemName):
         return self.items[itemName]
@@ -323,7 +350,7 @@ class Item(object):
         self._grasps = grasps
 
     def __hash__(self):
-        return hash(hash(self._name) + sum(self._pose.values()))
+        return hash(hash(self._name) + sum(self._pose))
 
     def __repr__(self):
         return "Item(" + self._name + " at " + repr(self._pose) + ")"
@@ -362,10 +389,6 @@ class Grasp(object):
 
 
 def getBestGrasp(targetItemName):
-    """
-    args:
-        (str) targetItem  :   item to pick
-    """
     targetBin = robotData.getBin()
     # load the item from shapes db
     targetItem = robotData.getItemTemplate(targetItemName)
@@ -374,13 +397,12 @@ def getBestGrasp(targetItemName):
 
     if min(itemPose) < -1000:
         # -1000 as pose means item not found
-        global VERY_NEGATIVE_NUMBER
         return VERY_NEGATIVE_NUMBER
 
     # adapt the item template to the real item
     grasps = targetItem.getGrasps()
 
-    # force best graps to be None if <0 ? TODO checkme
+    # force best graps to be None if <0
     grasps.insert(0, None)
     bestGrasp = max(grasps, key=lambda x:
                     calculateGraspScore(x, targetItem, targetBin))
@@ -416,24 +438,16 @@ def isDoable(grasp, targetItem):
     we only allow GRASP_ERROR_LIMIT error
     """
     global GRASP_ERROR_LIMIT
+    retr = True
     runningSum = 0
     for key in grasp.gripPose.keys():
         runningSum += (grasp.gripPose[key] + targetItem.pose[key]) ** 2
     grasp_error = np.sqrt(runningSum)
     if grasp_error > GRASP_ERROR_LIMIT:
-        return False
-    return True
+        retr = False
+    return retr
 
 if __name__ == '__main__':
-
-    # globals
-    originPose = tuple([0]*6)
-    originXYZ = (0, 0, 0)
-    # end globals
-
-    targetItem = 'mead_index_cards'  # sys.argv[1]
-    robotData = RobotData()
-    score = getBestGrasp(targetItem)
-    print "best score is:", score
-    with open("/tmp/grasp.result", "w") as output:
-        output.write(getBestGrasp(targetItem))
+    main()
+else:
+    print "u no run me"
