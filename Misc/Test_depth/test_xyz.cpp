@@ -57,7 +57,8 @@ int main(){
   using Camera::CameraModel;
 
   OpenNIWaitProvider p;
-  cam=std::shared_ptr<CameraModel>(new CameraModel(std::move(CameraModel::fromFile("camera_model.data"))));
+  cv::FileStorage fs("camera_model.data", cv::FileStorage::READ);
+  cam=std::shared_ptr<CameraModel>(new CameraModel(std::move(CameraModel::readFrom(fs["camera_model"]))));
 
   Img::Image i=p.getFrame();
 

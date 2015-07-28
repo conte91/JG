@@ -14,6 +14,8 @@ add_subdirectory("OpenNI_Streaming_pleasedontlookatme/")
 add_subdirectory("OpenCVCalib")
 add_subdirectory("Test_Giorgio/")
 add_subdirectory("Test_depth/")
+add_subdirectory("Test_storage/")
+
 
 #include(${OpenCV_CONFIG_PATH}/OpenCVConfig.cmake)
 #Set all of the opencv contrib stuff not to compile, EXCEPT for rgbd

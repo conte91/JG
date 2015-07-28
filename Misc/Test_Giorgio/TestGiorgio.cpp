@@ -47,8 +47,9 @@ int main(int argc, char** argv){
   } ()
   );
   std::cout << "Done.\n";
+  cv::FileStorage cameraFile("./camera_model.data", cv::FileStorage::READ);
 
-  Recognition::RecognitionData mySister(std::string(argv[1]), Camera::CameraModel::fromFile("./camera_model.data"));
+  Recognition::RecognitionData mySister(std::string(argv[1]), Camera::CameraModel::readFrom(cameraFile["camera_model"]));
 
   bool haveFinished=false;
   while(!haveFinished){

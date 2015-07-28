@@ -1,5 +1,6 @@
 #pragma once
 #include <Img/Image.h>
+#include <opencv2/core/operations.hpp>
 
 namespace Camera{
   class CameraModel {
@@ -7,15 +8,15 @@ namespace Camera{
       /** Returns the 3x3 internal calibration matrix of the camera */
       cv::Mat getIntrinsic() const;
 
-      /** Reads a model from a JSON file.
+      /** Reads a model from a YAML file.
        * @param filename the name of the file to read from 
        */
-      static CameraModel fromFile(const std::string& filename);
+      static CameraModel readFrom(const cv::FileNode& fs);
 
-      /** Writes a model to a JSON file.
+      /** Writes a model to a YAML file.
        * @param filename the name of the file to save to
        */
-      void toFile(const std::string& filename) const;
+      void writeTo(const std::string& name, cv::FileStorage& fs) const;
 
       /** 
        * @param fx Focal length (X)
@@ -31,4 +32,9 @@ namespace Camera{
       cv::Mat _K;
 
   };
+}
+
+namespace cv{
+  void write( FileStorage& fs, const std::string& name, const Camera::CameraModel& model);
+  void read(const FileNode& node, Camera::CameraModel& x, const Camera::CameraModel& default_value = Camera::CameraModel(0,0,0,0,0));
 }
