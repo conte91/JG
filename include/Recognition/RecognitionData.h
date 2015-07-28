@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include <opencv2/opencv.hpp>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -8,7 +9,9 @@
 #include "Renderer3d.h"
 
 #include <Img/ImageWMask.h>
+#include "GLUTInit.h"
 #include "Recognition.h"
+#include "Model.h"
 
 namespace Recognition{
   class RecognitionData{
@@ -18,38 +21,18 @@ namespace Recognition{
       typedef Camera::CameraModel CameraModel;
       typedef pcl::PointCloud<pcl::PointXYZRGB> PCloud;
 
+      GLUTInit _glutIniter;
+
       //Depth Camera Matrix
       const CameraModel _cameraModel;
       const float px_match_min_;
-      const float icp_dist_min_;
 
-      //Training Params
-      const int renderer_n_points_ ;
-      const int renderer_angle_step_ ;
-      const float renderer_radius_min_ ;
-      const float renderer_radius_max_ ;
-      const float renderer_radius_step_ ;
-      const int renderer_width_ ;
-      const int renderer_height_ ;
-      const float renderer_near_ ;
-      const float renderer_far_ ;
-      const float renderer_focal_length_x_ ;
-      const float renderer_focal_length_y_ ;
       const float th_obj_dist_; //"th_obj_dist", "Threshold on minimal distance between detected objects.", 0.04f);
-      /** Because a map to a struct was far too easy to implement*/
-      std::map<std::string,std::vector<cv::Mat> > _Rmap;
-      std::map<std::string,std::vector<cv::Mat> > _Tmap;
-      std::map<std::string,std::vector<cv::Mat> > _Kmap;
-      std::map<std::string,std::vector<float> > _distMap;
       const float _threshold; //"threshold", "Matching threshold, as a percentage", 93.0f
+
+      std::unordered_map<std::string, Model> _objectModels;
+
       std::string objsfolder_path;
-      /** LINE-MOD detector */
-      cv::Ptr<cv::linemod::Detector> detector_ ;
-      /** The renderer initialized with objects meshes, per object*/
-      std::map<std::string, std::shared_ptr<RendererIterator> > renderer_iterators_;
-      /** maps to cache the poses **/
-      std::map<std::string,std::vector<float> > dist_map;
-      std::map<std::string,std::vector<cv::Mat> > _hueHistMap;
 
       /** Pose estimation using PCL ICP 
        * @param pointsFromModel set of points of the ideal model (X,Y,Z)
@@ -60,11 +43,8 @@ namespace Recognition{
        */
       bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4d& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
 
-      bool updateGiorgio(const cv::Mat& rgb, const cv::Mat& depth_meter, const cv::Mat& mask,
-          cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
-          std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
-          std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
-          cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
+      bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
+      cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
     public:
       C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
       /**

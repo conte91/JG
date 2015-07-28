@@ -209,7 +209,7 @@ static void saveCameraParams( const string& filename,
 
     fs << "camera_matrix" << cameraMatrix;
 
-    fs << "camera_model" << Camera::CameraModel(cameraMatrix);
+    fs << "camera_model" << Camera::CameraModel(imageSize.width,imageSize.height,cameraMatrix);
 
     fs << "distortion_coefficients" << distCoeffs;
 

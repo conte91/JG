@@ -27,13 +27,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include <Recognition/model.h>
+#include <Recognition/Mesh.h>
 
 Mesh::Mesh(const std::string& file_path)
     :
       scene(NULL)
 {
-  LoadMesh(file_path);
+//  LoadMesh(file_path);
 }
 
 Mesh::~Mesh()
@@ -47,6 +47,9 @@ Mesh::~Mesh()
 void
 Mesh::LoadMesh(const std::string & file_path)
 {
+  using boost::filesystem::path;
+  _meshFile=path(file_path).filename();
+  _directory=path(file_path).parent_path();
   scene = aiImportFile(file_path.c_str(), aiProcessPreset_TargetRealtime_Quality);
   recursiveTextureLoad(scene, scene->mRootNode);
 }
@@ -65,13 +68,23 @@ Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
   for (unsigned int n=0; n < nd->mNumMeshes; ++n) {
     const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
     unsigned int cont = aiGetMaterialTextureCount(sc->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE);
+    struct aiString* aaastr = (aiString*) malloc(sizeof(struct aiString));
     struct aiString* str = (aiString*) malloc(sizeof(struct aiString));
 
     if (cont > 0)
     {
       //aiGetMaterialString(sc->mMaterials[mesh->mMaterialIndex],AI_MATKEY_TEXTURE_DIFFUSE(0),str);
-      aiGetMaterialTexture(sc->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE, 0, str, 0, 0, 0, 0, 0, 0);
+      aiGetMaterialTexture(sc->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE, 0, aaastr, 0, 0, 0, 0, 0, 0);
 
+      /** Manage relative paths */
+      boost::filesystem::path strPath(aaastr->data);
+      if(strPath.is_absolute()){
+        ::strcpy(str->data, strPath.string().c_str());
+      }
+      else{
+        /** Relative path */
+        ::strcpy(str->data, (_directory / strPath).string().c_str());
+      }
       // See if another mesh is already using this texture, if so, just copy GLuint instead of remaking entire texture
       bool newTextureToBeLoaded = true;
       for (unsigned int x = 0; x < texturesAndPaths.size(); x++)
@@ -126,7 +139,7 @@ Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
           std::cout << "There was an error loading the texture" << std::endl;
         }
 
-        std::cout << "texture loaded." << std::endl;
+        std::cout << "Texture loaded: " << newTexture.pathName.data << std::endl;
 
         texturesAndPaths.push_back(newTexture);
       }

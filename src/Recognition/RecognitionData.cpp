@@ -16,132 +16,16 @@
 #include <pcl/registration/icp.h>
 #include <pcl/visualization/cloud_viewer.h>
 
-#include <Recognition/Renderer3d.h>
 #include <Recognition/GiorgioUtils.h>
 #include <Recognition/GLUTInit.h>
 
 static double _threshold;
 static float px_match_min_;
-static float icp_dist_min_;
 static float th_obj_dist_;
 
 
 namespace Recognition{
 
-  static std::shared_ptr<cv::linemod::Detector> readLinemodAndPoses(const std::string& filename, std::string& mesh_file_path,
-      std::map<std::string,std::vector<cv::Mat> >& Rmap,
-      std::map<std::string,std::vector<cv::Mat> >& Tmap,
-      std::map<std::string,std::vector<cv::Mat> >& Kmap,
-      std::map<std::string,std::vector<float> >& dist_map,
-      std::map<std::string,std::vector<cv::Mat> >& HueHist)
-  {
-    //std::cout<<"-1"<<"\n";
-    std::shared_ptr<cv::linemod::Detector> detector (new cv::linemod::Detector);
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
-    detector->read(fs.root());
-    //std::cout<<"0"<<"\n";
-
-    //Read mesh_file_path
-    fs["mesh_file_path"] >> mesh_file_path;
-
-    cv::FileNode fn = fs["classes"];
-    //size_t num_classes=0;
-    //for each class:
-    //int forRot=0;
-    for (cv::FileNodeIterator i = fn.begin(), iend = fn.end(); i != iend; ++i)
-    {
-
-      //std::cout<<"1"<<"\n";
-      std::string class_id_tmp = (*i)["class_id"];
-      std::cout<<"class_id_tmp: "<<class_id_tmp <<"\n";
-      detector->readClass(*i);
-      //std::cout<<"2"<<"\n";
-      //cv::FileStorage fs2(filename, cv::FileStorage::READ);
-      //std::cout<<"3"<<"\n";
-      /**Read R**/
-      cv::FileNode n = fs["Rot"];                         // Read string sequence - Get node
-      if (n.type() != cv::FileNode::SEQ)
-      {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
-        return 0;
-      }
-      //std::cout<<"4"<<"\n";
-      cv::FileNodeIterator it = n.begin(), it_end = n.end(); // Go through the node
-      for (; it != it_end;) //++it)
-      {
-        cv::Mat m; it >> m;
-        Rmap[class_id_tmp].push_back( m );
-        //++forRot;
-      }
-      //std::cout<<"ForRor: "<<forRot<<"\n";
-
-      /**Read T**/
-      n = fs["Transl"];                         // Read string sequence - Get node
-      if (n.type() != cv::FileNode::SEQ)
-      {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
-        return 0;
-      }
-      //std::cout<<"5"<<"\n";
-      it = n.begin(), it_end = n.end(); // Go through the node
-      for (; it != it_end; )//++it)
-      {
-        cv::Mat m; it >> m;
-        Tmap[class_id_tmp].push_back( m );
-      }
-
-      /**Read K**/
-      n = fs["Ks"];                         // Read string sequence - Get node
-      if (n.type() != cv::FileNode::SEQ)
-      {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
-        return 0;
-      }
-      //std::cout<<"6"<<"\n";
-      it = n.begin(), it_end = n.end(); // Go through the node
-      for (; it != it_end;)//++it)
-      {
-        cv::Mat m; it >> m;
-        Kmap[class_id_tmp].push_back( m );
-      }
-
-      /**Read Dist**/
-      n = fs["dist"];                         // Read string sequence - Get node
-      if (n.type() != cv::FileNode::SEQ)
-      {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
-        return 0;
-      }
-      //std::cout<<"7"<<"\n";
-      it = n.begin(), it_end = n.end(); // Go through the node
-      for (; it != it_end; )//++it)
-      {
-        float d; it >> d;
-        dist_map[class_id_tmp].push_back( d );
-      }
-
-      /**Read HueHist**/
-      n = fs["Hue"];                         // Read string sequence - Get node
-      if (n.type() != cv::FileNode::SEQ)
-      {
-        std::cerr << "strings is not a sequence! FAIL" << std::endl;
-        return 0;
-      }
-      //std::cout<<"7"<<"\n";
-      it = n.begin(), it_end = n.end(); // Go through the node
-      for (; it != it_end; )//++it)
-      {
-        cv::Mat m; it >> m;
-        HueHist[class_id_tmp].push_back( m );
-      }
-
-      //++num_classes;
-    }
-
-
-
-    return detector;
-  }
 
   /***************************************************************************************************************************
    *      AS THIS WILL BE POSTED TO GITHUB SOME DAY: DEAR PERSON-WHO-WANTS-TO-HIRE-ME, READ THIS BEFORE BURNING MY CV        *
@@ -149,44 +33,40 @@ namespace Recognition{
    * I know this. But it's 3 days to the deadline and I don't have enough time to explain to the "developer" who made        *
    * this crap how crappy his crap is. Just don't touch it and it shall work.                                                *
    ***************************************************************************************************************************/
-  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask,
-      cv::Ptr<cv::linemod::Detector>& detector_, std::map<std::string, std::shared_ptr<RendererIterator> >& renderer_iterators_, 
-      std::map<std::string,std::vector<cv::Mat> >& Rs_ , std::map<std::string,std::vector<cv::Mat> >& Ts_, 
-      std::map<std::string,std::vector<cv::Mat> >& Ks_ , std::map<std::string,std::vector<float> >& distances_,
+  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
       cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const
   {
 
-    cv::Mat rgb=const_rgb;
-    //The depth_ matrix is given in Meters CV_32F == 5
-    //std::cout<<"depth_mm.depth(): "<<depth_mm.depth()<<"\n";
-    //std::cout<<"depth_mm.type(): "<<depth_mm.type()<<"\n";
-
-
+    cv::Mat rgb=const_rgb.clone();
     CV_Assert(filter_mask.depth() == CV_8UC1);
+    /** The depth_ matrix is given in mm */
     CV_Assert(depth_mm.depth() == CV_16UC1);
 
-    if (detector_->classIds().empty())
-    {   
-      std::cout<<"WARNING: detector_->classIds().empty()"<<"\n";
-      return false;
-    }
-
-
     std::vector<cv::Mat> sources;
-
     sources.push_back(rgb);
     sources.push_back(depth_mm);
 
-    std::cout<<"Matching..."<<"\n";
     std::vector<cv::linemod::Match> nonconst_matches;
     std::vector<cv::Mat> theMasks;
     theMasks.push_back(filter_mask);
     theMasks.push_back(filter_mask);
+
+    /** Check consistent input have been provided */
     CV_Assert(sources.size()==theMasks.size());
     for(unsigned int i=0; i<sources.size(); ++i){
       CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
     }
-    detector_->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
+
+    /** Create LINE-MOD detector with templates built from the object */
+    cv::Ptr<cv::linemod::Detector> detector (cv::linemod::getDefaultLINEMOD());
+    for(auto& object_id_ : vect_objs_to_pick){
+      auto& templates_original = _objectModels.at(object_id_).getAllTemplates();
+      detector->addSyntheticTemplate(templates_original, object_id_);
+    }
+
+    std::cout<<"Matching..."<<"\n";
+    detector->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
+
     /** Just to be sure it's not changed in the Rastafari loop */
     const std::vector<cv::linemod::Match>& matches=nonconst_matches;
     std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
@@ -206,20 +86,21 @@ namespace Recognition{
     for(const auto& match : matches) {
 
       // Fill the Pose object
-      cv::Matx33d R_match = Rs_.at(match.class_id)[match.template_id].clone();
-      cv::Vec3d T_match = Ts_.at(match.class_id)[match.template_id].clone();
+      int tId=match.template_id;
+      auto& obj=_objectModels.at(match.class_id);
+      cv::Matx33d R_match = obj.getR(match.template_id);
+      cv::Vec3d T_match = obj.getT(tId);
       std::cout << "Rotation matrix: \n" << R_match << "\n";
       std::cout << "Translation vector:\n" << T_match << "\n";
-      float D_match = distances_.at(match.class_id)[match.template_id];
-      cv::Mat K_match = Ks_.at(match.class_id)[match.template_id];  
+      float D_match = obj.getDist(tId);
+      cv::Mat K_match = obj.Model::getK(tId).clone();
 
       //get the point cloud of the rendered object model
       cv::Mat mask;
       cv::Rect rect;
       cv::Matx33d R_temp(R_match.inv());
       cv::Vec3d up(-R_temp(0,1), -R_temp(1,1), -R_temp(2,1));
-      //std::cout<<"***match.class_id: ***"<<match.class_id<<"\n";
-      std::shared_ptr<RendererIterator> it_r = renderer_iterators_.at(match.class_id);
+      auto it_r = _objectModels.at(match.class_id).getRenderer();
       cv::Mat depth_ref_;
       it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
 
@@ -396,53 +277,22 @@ namespace Recognition{
     :
       _cameraModel(m),
       px_match_min_(0.25f),
-      renderer_n_points_ (150),
-      renderer_angle_step_ (10),
-      renderer_radius_min_ (0.6),
-      renderer_radius_max_ (1.1),
-      renderer_radius_step_ (0.4),
-      renderer_width_ (640),
-      renderer_height_ (480),
-      renderer_near_ (0.1),
-      renderer_far_ (1000.0),
-      renderer_focal_length_x_ (525.0),
-      renderer_focal_length_y_ (525.0),
-      icp_dist_min_ (0.06f),
       th_obj_dist_(0.04f),
       objsfolder_path(trainPath),
-      detector_ (cv::linemod::getDefaultLINEMOD()),
       _threshold(91.0f)
   {
-
-    GLUTInit::init();
 
     /** GOD FORGIVE ME */
     ::_threshold=_threshold;
     ::px_match_min_=px_match_min_;
-    ::icp_dist_min_ = icp_dist_min_;
     ::th_obj_dist_=th_obj_dist_;
     //entry point simulate RGB and DEPTH images given by Simo
     //Read martrices from yml file
     cv::Mat depth_meters, depth_gray, rgb_img;
 
     namespace fs=boost::filesystem;
-    /*
-       cv::FileStorage file(argv[2], cv::FileStorage::READ);
-       file["depth_mm"] >> depth_meters;
-       file["depth_gray_img"] >> depth_gray;//for visualization purposes
-       file["rgb"] >> rgb_img;
-
-       file.release();
-
-    //Debug Shows images
-    cv::imshow("rgb",rgb_img);
-    cv::imshow("depth_gray",depth_gray);
-
-    cv::waitKey();//Hit enter to continue
-    */
 
     /*** Init Process at Start-Up: only Once !!! ***/
-
     fs::path objNamesPath=fs::path(objsfolder_path) / fs::path("names.txt");
     if(!fs::exists(objNamesPath) || !fs::is_regular_file(objNamesPath)){
       throw objNamesPath.string() + " does not exist";
@@ -462,8 +312,6 @@ namespace Recognition{
       }
     }
 
-    //Load the detector_ with the objects in the DB
-    //iterate over the Training Database
     fs::path targetDir(objsfolder_path); 
 
     fs::directory_iterator it(targetDir), eod;
@@ -472,52 +320,18 @@ namespace Recognition{
       if(is_directory(p))
       {
         std::cout<<p.filename().string()<<"\n";
-        //TODO: For Now only Crayola is Loaded...Remove it in the future
-        if(objNames.find(p.filename().string()) == objNames.end()){
+        if(objNames.find(p.filename().string()) == objNames.end()) {
           continue;
         }
 
-        //object_id
+        /** Loads a model from the trained ones */
         std::string object_id_ = p.filename().string();
+        std::cout<<"Loading object: " << object_id_<<"\n";
+        _objectModels.emplace(std::make_pair(object_id_, Model(object_id_, p.string())));
 
-        std::cout<<"-object_id_: "<<object_id_<<"\n";
+      }
 
-        //Load the yml of that class obtained in the Training phase
-        fs::path saveLinemodPath = p / fs::path(object_id_+"_Linemod.yml");
-
-
-        std::string mesh_file_path;
-        std::string saveLinemodPathString(saveLinemodPath.string());
-        //reading...
-        std::shared_ptr<cv::linemod::Detector> detector = readLinemodAndPoses(saveLinemodPathString,mesh_file_path,_Rmap,_Tmap,_Kmap,_distMap,_hueHistMap);
-        //DEBUG
-        std::cout<<"\tnumTemplates: "<<detector->numTemplates()<<"\n";
-        std::cout<<"\tmesh_file_path_debug: "<< mesh_file_path<<"\n";
-        //add class template to detector_
-        for (size_t template_id = 0; template_id < detector->numTemplates(); ++template_id) {
-          const std::vector<cv::linemod::Template> &templates_original = detector->getTemplates(object_id_, template_id);
-          detector_->addSyntheticTemplate(templates_original, object_id_);
-        }
-        //std::cout<<"new *renderer"<<"\n";
-        std::shared_ptr<Renderer3d> renderer_ (new Renderer3d(mesh_file_path));
-        renderer_->set_parameters(renderer_width_, renderer_height_, renderer_focal_length_x_, renderer_focal_length_y_, renderer_near_, renderer_far_);
-        std::cout<<"new *renderer_iterator_"<<"\n";
-        //initiaization of the renderer with the same parameters as used for learning
-        std::shared_ptr<RendererIterator> renderer_iterator_ (new RendererIterator(renderer_, renderer_n_points_));
-        renderer_iterator_->angle_step_ = renderer_angle_step_;
-        renderer_iterator_->radius_min_ = float(renderer_radius_min_);
-        renderer_iterator_->radius_max_ = float(renderer_radius_max_);
-        renderer_iterator_->radius_step_ = float(renderer_radius_step_);
-        renderer_iterators_.insert(std::pair<std::string,decltype(renderer_iterator_) >(object_id_, renderer_iterator_));
-
-        //delete renderer_;
-        //delete renderer_iterator_;
-        std::cout<<"delete"<<"\n";
-
-
-      }//end if(is_directory(p))
-    }//end BOOST_FOREACH
-
+    }
   }
 
   C5G::Pose RecognitionData::recognize(const Img::ImageWMask& frame, std::string what){
@@ -525,7 +339,7 @@ namespace Recognition{
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;
     cv::Mat pose;
-    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, detector_, renderer_iterators_, _Rmap, _Tmap, _Kmap, _distMap, pose, vect_objs_to_pick)){
+    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, pose, vect_objs_to_pick)){
       throw std::string("Could not match anything :(");
     }
     return matrixToPose(pose);

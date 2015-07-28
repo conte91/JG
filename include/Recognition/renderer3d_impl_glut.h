@@ -38,6 +38,7 @@
 #define ORK_RENDERER_RENDERER3D_IMPL_GLUT_H_
 
 #include "renderer3d_impl_base.h"
+#include "GLUTInit.h"
 
 // Make sure we define that so that we have FBO enabled
 #define GL_GLEXT_PROTOTYPES
@@ -49,34 +50,36 @@
  */
 class Renderer3dImpl : public Renderer3dImplBase
 {
-public:
-  /**
-   * @param file_path the path of the mesh file
-   */
-  Renderer3dImpl(const std::string & file_path, int width, int height);
+  private:
+    Recognition::GLUTInit _glutIniter;
+  public:
+    /**
+     * @param file_path the path of the mesh file
+     */
+    Renderer3dImpl(const std::string & file_path, int width, int height);
 
-  ~Renderer3dImpl()
-  {
-    clean_buffers();
-  }
+    ~Renderer3dImpl()
+    {
+      clean_buffers();
+    }
 
-  virtual void
-  clean_buffers();
+    virtual void
+      clean_buffers();
 
-  virtual void
-  set_parameters_low_level();
+    virtual void
+      set_parameters_low_level();
 
-  virtual void
-  bind_buffers() const;
+    virtual void
+      bind_buffers() const;
 
-  /** States whether GLUT has been initialized or not */
-  bool is_glut_initialized_;
-  /** The frame buffer object used for offline rendering */
-  GLuint fbo_id_;
-  /** The render buffer object used for offline depth rendering */
-  GLuint rbo_id_;
-  /** The render buffer object used for offline image rendering */
-  GLuint texture_id_;
+    /** States whether GLUT has been initialized or not */
+    bool is_glut_initialized_;
+    /** The frame buffer object used for offline rendering */
+    GLuint fbo_id_;
+    /** The render buffer object used for offline depth rendering */
+    GLuint rbo_id_;
+    /** The render buffer object used for offline image rendering */
+    GLuint texture_id_;
 };
 
 #endif /* ORK_RENDERER_RENDERER3D_IMPL_GLUT_H_ */

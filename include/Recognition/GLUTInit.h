@@ -5,6 +5,7 @@ namespace Recognition{
     private:
       static bool alreadyInited;
     public:
-      static void init();
+      /** Performs one-time initialization of GLUT: simply include an instance of this class when you need to be sure GLUT is initialized before doing anythin */
+      GLUTInit();
   };
 }

@@ -4,7 +4,7 @@
 namespace Recognition{
   bool GLUTInit::alreadyInited=false;
 
-  void GLUTInit::init(){
+  GLUTInit::GLUTInit(){
     if(!alreadyInited){
       int argc=0;
       char** argv=nullptr;

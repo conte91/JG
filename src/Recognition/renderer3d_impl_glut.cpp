@@ -66,20 +66,9 @@ Renderer3dImpl::clean_buffers()
 void
 Renderer3dImpl::set_parameters_low_level()
 {
-  int argc = 0;
-  char **argv = 0;
-
-  // Start GLUT if it was not started before
-  if (glutGet(GLUT_ELAPSED_TIME) <= 0)
-  {
-     //if (!is_glut_initialized_) {
-       is_glut_initialized_ = true;
-       glutInit(&argc, argv);
-    // }
-  }
-
   // By doing so, the window is not open
   glutInitDisplayMode(GLUT_DOUBLE);
+  glutCreateWindow("Assimp renderer");
 
   // create a framebuffer object
   glGenFramebuffers(1, &fbo_id_);

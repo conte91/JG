@@ -27,7 +27,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "model.h"
+#include <Recognition/model.h>
 
 Model::Model()
     :
@@ -53,8 +53,6 @@ Model::LoadModel(const std::string & file_path)
 void
 Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
 {
-  int i;
-  unsigned int n = 0, t;
   aiMatrix4x4 m = nd->mTransformation;
 
   // update transform
@@ -63,8 +61,7 @@ Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
   glMultMatrixf((float*) &m);
 
   // draw all meshes assigned to this node
-  for (; n < nd->mNumMeshes; ++n)
-  {
+  for (unsigned int n=0; n < nd->mNumMeshes; ++n) {
     const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
     unsigned int cont = aiGetMaterialTextureCount(sc->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE);
     struct aiString* str = (aiString*) malloc(sizeof(struct aiString));
@@ -76,7 +73,7 @@ Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
 
       // See if another mesh is already using this texture, if so, just copy GLuint instead of remaking entire texture
       bool newTextureToBeLoaded = true;
-      for (int x = 0; x < texturesAndPaths.size(); x++)
+      for (unsigned int x = 0; x < texturesAndPaths.size(); x++)
       {
         if (texturesAndPaths[x].pathName == *str)
         {
@@ -136,23 +133,23 @@ Model::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
   }
 
   // Get textures from all children
-  for (n = 0; n < nd->mNumChildren; ++n)
+  for (unsigned int n = 0; n < nd->mNumChildren; ++n){
     recursiveTextureLoad(sc, nd->mChildren[n]);
+  }
 }
 
 void
 Model::get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo) const
 {
   aiMatrix4x4 prev; // Use struct keyword to show you want struct version of this, not normal typedef?
-  unsigned int n = 0, t;
 
   prev = *trafo;
   aiMultiplyMatrix4(trafo, &nd->mTransformation);
 
-  for (; n < nd->mNumMeshes; ++n)
+  for (unsigned int n=0; n < nd->mNumMeshes; ++n)
   {
     const struct aiMesh* mesh = scene->mMeshes[nd->mMeshes[n]];
-    for (t = 0; t < mesh->mNumVertices; ++t)
+    for (unsigned int t = 0; t < mesh->mNumVertices; ++t)
     {
       aiVector3D tmp = mesh->mVertices[t];
       aiTransformVecByMatrix4(&tmp, trafo);
@@ -167,8 +164,9 @@ Model::get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* 
     }
   }
 
-  for (n = 0; n < nd->mNumChildren; ++n)
+  for (unsigned int n = 0; n < nd->mNumChildren; ++n){
     get_bounding_box_for_node(nd->mChildren[n], min, max, trafo);
+  }
 
   *trafo = prev;
 }
@@ -187,7 +185,7 @@ Model::get_bounding_box(aiVector3D* min, aiVector3D* max) const
 void
 Model::recursive_render(const struct aiScene *sc, const aiNode* nd, const int j) const
 {
-  int i;
+  unsigned int i;
   unsigned int n = 0, t;
   aiMatrix4x4 m = nd->mTransformation;
 

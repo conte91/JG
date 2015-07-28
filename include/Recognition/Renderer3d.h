@@ -45,10 +45,10 @@
 
 #include "renderer.h"
 #include <boost/shared_ptr.hpp>
+#include "Mesh.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Model;
 class aiLogStream;
 
 class Renderer3dImpl;
@@ -110,7 +110,7 @@ protected:
   float angle_;
 
 //  Model* model_;
-  boost::shared_ptr<Model> model_;
+  boost::shared_ptr<Mesh> model_;
   GLuint scene_list_;
 
   /** stream for storing the logs from Assimp */

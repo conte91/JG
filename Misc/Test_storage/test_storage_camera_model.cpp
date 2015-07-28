@@ -5,7 +5,7 @@ int main(){
   using cv::FileStorage;
   {
     FileStorage fs("test_camera_model_1.yml", FileStorage::WRITE);
-    Camera::CameraModel testModel(1,2,3,4,5);
+    Camera::CameraModel testModel(1,2,3,4,5,6,7);
     fs << "camera_model" << testModel;
   }
   {

@@ -40,7 +40,7 @@
 
 #include <GL/gl.h>
 
-#include <Recognition/model.h>
+#include <Recognition/Mesh.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -58,7 +58,7 @@ Renderer3d::Renderer3d(const std::string & mesh_path)
       focal_length_y_(0),
       near_(0),
       far_(0),
-      model_(new Model()),
+      model_(new Mesh(mesh_path)),
       scene_list_(0)
 {
   // get a handle to the predefined STDOUT log stream and attach
@@ -86,6 +86,8 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
 
   focal_length_x_ = focal_length_x;
   focal_length_y_ = focal_length_y;
+  std::cout << "focal length X:" << focal_length_x_;
+  std::cout << "focal length Y:" << focal_length_y_;
 
   near_ = near;
   far_ = far;
@@ -94,8 +96,9 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
 
   // Initialize the OpenGL context
   renderer_->set_parameters_low_level();
+  //+++
+  model_->LoadMesh(renderer_->mesh_path_);
 
-  model_->LoadModel(renderer_->mesh_path_);
 
   // Initialize the environment
   glClearColor(0.f, 0.f, 0.f, 1.f);

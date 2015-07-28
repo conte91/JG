@@ -3,9 +3,11 @@
 
 namespace Camera{
 
-  CameraModel::CameraModel(float fx, float fy, float s, float xc, float yc)
+  CameraModel::CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc)
     :
-      _K(3,3,CV_64F)
+      _K(3,3,CV_64F),
+      _imWidth(w),
+      _imHeight(h)
   {
     _K.setTo(0);
     _K.at<double>(0,0)=fx;
@@ -16,7 +18,11 @@ namespace Camera{
     _K.at<double>(2,2)=1;
   }
 
-  CameraModel::CameraModel(const cv::Mat& k_in){
+  CameraModel::CameraModel(int w, int h, const cv::Mat& k_in)
+    :
+      _imWidth(w),
+      _imHeight(h)
+  {
     /** Only do the necessary checks */
 
     /** Size and type */
@@ -48,27 +54,55 @@ namespace Camera{
 
     /* Read YAML Vector */
     double fx, fy, s, xc, yc;
+    int w, h;
     fs["fx"] >> fx;
     fs["fy"] >> fy;
     fs["s"] >> s;
     fs["xc"] >> xc;
     fs["yc"] >> yc;
+    fs["width"] >> w;
+    fs["height"] >> h;
 
     assert(fx>0 && fy>0);
 
-    return CameraModel(fx, fy, s, xc, yc);
+    return CameraModel(w, h, fx, fy, s, xc, yc);
   }
 
   void CameraModel::writeTo(const std::string& name, cv::FileStorage& fs) const {
 
     /* Read YAML Vector */
     fs << "{";
+    fs << "width" << _imWidth;
+    fs << "height" << _imHeight;
     fs << "fx" << _K.at<double>(0,0);
     fs << "fy" << _K.at<double>(1,1);
     fs << "s" << _K.at<double>(0,1);
     fs << "xc" << _K.at<double>(0,2);
     fs << "yc" << _K.at<double>(1,2);
     fs << "}";
+  }
+
+  int CameraModel::getWidth() const {
+    return _imWidth;
+  }
+  
+  int CameraModel::getHeight() const {
+    return _imHeight;
+  }
+  double CameraModel::getFx() const {
+    return _K.at<double>(0,0);
+  }
+  double CameraModel::getFy() const {
+    return _K.at<double>(1,1);
+  }
+  double CameraModel::getS() const {
+    return _K.at<double>(0,1);
+  }
+  double CameraModel::getXc() const {
+    return _K.at<double>(0,2);
+  }
+  double CameraModel::getYc() const {
+    return _K.at<double>(1,2);
   }
 #if 0
   TODO complete me :)

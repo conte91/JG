@@ -42,6 +42,8 @@
 
 #include <iostream>
 
+#include <boost/filesystem/path.hpp>
+
 #define aisgl_min(x,y) (x<y?x:y)
 #define aisgl_max(x,y) (y>x?y:x)
 
@@ -56,6 +58,8 @@ class Mesh
 private:
   std::vector<TextureAndPath> texturesAndPaths;
   const struct aiScene* scene;
+  boost::filesystem::path _directory;
+  boost::filesystem::path _meshFile;
 
   void
   recursiveTextureLoad(const struct aiScene *sc, const struct aiNode* nd);
@@ -67,10 +71,11 @@ private:
   void
   get_bounding_box_for_node(const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo) const;
 
+
+public:
   void
   LoadMesh(const std::string & fileName);
 
-public:
   Mesh(const std::string& file_path);
   ~Mesh();
 
