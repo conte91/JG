@@ -18,7 +18,7 @@ namespace Camera{
        */
       void writeTo(const std::string& name, cv::FileStorage& fs) const;
 
-      /** 
+      /** Build a camera model with the geometric parametrs 
        * @param fx Focal length (X)
        * @param fy Focal length (Y)
        * @param s Axis skew 
@@ -26,6 +26,11 @@ namespace Camera{
        * @param yc Principal point offset (Y)
        */
       CameraModel(float fx, float fy, float s, float xc, float yc);
+
+      /** Build a camera model using a known camera matrix.
+       * @param k Camera matrix for this model. Matrix MUST be a 3x3 float upper-triangular matrix, and focal lengths must be >0.
+       */
+      CameraModel(const cv::Mat& k);
 
     private:
       /** The intrinsic params of the camera */

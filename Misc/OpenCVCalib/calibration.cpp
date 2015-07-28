@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <Camera/CameraModel.h>
 
 using namespace cv;
 using namespace std;
@@ -207,6 +208,9 @@ static void saveCameraParams( const string& filename,
     fs << "flags" << flags;
 
     fs << "camera_matrix" << cameraMatrix;
+
+    fs << "camera_model" << Camera::CameraModel(cameraMatrix);
+
     fs << "distortion_coefficients" << distCoeffs;
 
     fs << "avg_reprojection_error" << totalAvgErr;

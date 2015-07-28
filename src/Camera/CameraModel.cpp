@@ -5,15 +5,39 @@ namespace Camera{
 
   CameraModel::CameraModel(float fx, float fy, float s, float xc, float yc)
     :
-      _K(3,3,CV_32F)
+      _K(3,3,CV_64F)
   {
     _K.setTo(0);
-    _K.at<float>(0,0)=fx;
-    _K.at<float>(0,1)=s;
-    _K.at<float>(0,2)=xc;
-    _K.at<float>(1,1)=fy;
-    _K.at<float>(1,2)=yc;
-    _K.at<float>(2,2)=1;
+    _K.at<double>(0,0)=fx;
+    _K.at<double>(0,1)=s;
+    _K.at<double>(0,2)=xc;
+    _K.at<double>(1,1)=fy;
+    _K.at<double>(1,2)=yc;
+    _K.at<double>(2,2)=1;
+  }
+
+  CameraModel::CameraModel(const cv::Mat& k_in){
+    /** Only do the necessary checks */
+
+    /** Size and type */
+    assert(k_in.rows==3 && k_in.cols==3 && "Wrong-sized camera matrix");
+    assert((k_in.depth()==CV_32F || k_in.depth()==CV_64F) && "Camera matrix must be a float or double matrix");
+
+    if(k_in.depth()==CV_64F){
+      _K=k_in.clone();
+    }
+    else{
+      k_in.convertTo(_K, CV_64F);
+    }
+
+    /** Triangularity */
+    assert(_K.at<double>(1,0)==0 && _K.at<double>(2,0)==0 && _K.at<double>(2,1)==0 && "Camera matrix is NOT upper-triangular");
+
+    /** Focus length */
+    double fx=_K.at<double>(0,0);
+    double fy=_K.at<double>(1,1);
+    assert(fx>0 && fy>0 && "Focus lengths cannot be negative");
+
   }
 
   cv::Mat CameraModel::getIntrinsic() const {
@@ -22,8 +46,8 @@ namespace Camera{
 
   CameraModel CameraModel::readFrom(const cv::FileNode& fs){
 
-    /* Read JSON Vector */
-    float fx, fy, s, xc, yc;
+    /* Read YAML Vector */
+    double fx, fy, s, xc, yc;
     fs["fx"] >> fx;
     fs["fy"] >> fy;
     fs["s"] >> s;
@@ -37,13 +61,13 @@ namespace Camera{
 
   void CameraModel::writeTo(const std::string& name, cv::FileStorage& fs) const {
 
-    /* Read JSON Vector */
+    /* Read YAML Vector */
     fs << "{";
-    fs << "fx" << _K.at<float>(0,0);
-    fs << "fy" << _K.at<float>(1,1);
-    fs << "s" << _K.at<float>(0,1);
-    fs << "xc" << _K.at<float>(0,2);
-    fs << "yc" << _K.at<float>(1,2);
+    fs << "fx" << _K.at<double>(0,0);
+    fs << "fy" << _K.at<double>(1,1);
+    fs << "s" << _K.at<double>(0,1);
+    fs << "xc" << _K.at<double>(0,2);
+    fs << "yc" << _K.at<double>(1,2);
     fs << "}";
   }
 #if 0
