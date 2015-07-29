@@ -18,10 +18,10 @@ def main():
 
     targetItem = 'mead_index_cards'  # sys.argv[1]
     robotData = RobotData()
-    score = getBestGrasp(targetItem)
-    print "best score is:", score
+    bestGrasp = getBestGrasp(targetItem)
+    print "best score for {} is: {}".format(targetItem, bestGrasp)
     with open("/tmp/grasp.result", "w") as output:
-        output.write(repr(score))
+        output.write(repr(bestGrasp))
 
 def changeReference(point, newReference):
     p0 = list(point) + [0]
@@ -282,7 +282,7 @@ class RobotData(object):
         for name,data in graspsOf.iteritems():
             for i in range(len(data)):
                 x1 = data[i]['approach'][x]
-                y1 = -pickableObjects[name][y]/2
+                y1 = -pickableObjects[name][y]
                 z1 = data[i]['approach'][z]
                 graspsOf[name][i]['approach']  = (x1, y1, z1)
                 x1 = data[i]['grip'][x]
@@ -443,8 +443,8 @@ def calculateGraspScore(grasp, targetItem, targetBin):
     leftoverBin = deepcopy(targetBin)
     leftoverBin.removeItem(targetItem)
 
-    if not isDoable(grasp, targetItem):
-        return -1
+    #if not isDoable(grasp, targetItem):
+    #    return -1
 
     collisionVolume = 1
     for binItem in leftoverBin.getBinItems():
