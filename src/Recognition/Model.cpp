@@ -1,30 +1,40 @@
 #include <cassert>
+#include <cmath>
 #include <Recognition/Model.h>
+#include <Camera/CameraModel.h>
+#include <boost/filesystem.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& myDir)
     :
-      Model(id)
+      _myId(id),
+      _detector(cv::linemod::getDefaultLINEMOD())
   {
     readFrom(id, myDir);
   }
 
-  Model::Model(const std::string& id)
+  Model::Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam)
     :
-      _id(id),
-      _detector(new cv::linemod::Detector) 
+      _myId(id),
+      mesh_file_path(meshFile),
+      _detector(cv::linemod::getDefaultLINEMOD())
+
   {
+    std::shared_ptr<Renderer3d> renderer (new Renderer3d(mesh_file_path));
+    renderer->set_parameters(cam.getWidth(), cam.getHeight(), cam.getFx(), cam.getFy(), 0.1, 1000);
+    _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, 10));
   }
 
 
-  void Model::readFrom(const std::string& id, const boost::filesystem::path& myDir)
+  void Model::readFrom(const std::string& id, const boost::filesystem::path& trainDir)
   {
     namespace fs=boost::filesystem;
 
+    using fs::path;
+    _myId=id;
     /* Load the yml of that class obtained in the Training phase */
-    fs::path lmSaveFile = myDir / fs::path(_id+"_Linemod.yml");
-    std::string mesh_file_path;
-    //Read mesh_file_path
+    fs::path lmSaveFile = trainDir / path(_myId) / fs::path(_myId+"_Linemod.yml");
 
     cv::FileStorage inFile(lmSaveFile.string(), cv::FileStorage::READ);
     inFile["mesh_file_path"] >> mesh_file_path;
@@ -33,30 +43,28 @@ namespace Recognition{
 
 
     /** Read the trained class ID for this object */
-    cv::FileNode fn = inFile["classes"];
-    assert((fn.type() != cv::FileNode::SEQ || fn.size()==1) && "More than one class into the same model!");
-    fn[0]["class_id"] >> _myId;
-    _detector->readClass(fn[0]);
+    cv::FileNode fn = inFile["object"];
+    fn["class_id"] >> _myId;
+    _detector->readClass(fn);
 
     /** Initialize the renderer with the same parameters used for learning */
     std::shared_ptr<Renderer3d> renderer (new Renderer3d(mesh_file_path));
-    int renderer_width, renderer_height;
-    float renderer_near,  renderer_far,  renderer_focal_length_x, renderer_focal_length_y;
-    inFile["renderer_width"] >> renderer_width;
-    inFile["renderer_height"] >> renderer_height;
-    inFile["renderer_focal_length_x"] >> renderer_focal_length_x;
-    inFile["renderer_focal_length_y"] >> renderer_focal_length_y;
-    inFile["renderer_near"] >> renderer_near;
-    inFile["renderer_far"] >> renderer_far;
+
+    cv::FileNode fr = inFile["rendering"];
+    fr["renderer_width"] >> renderer_width;
+    fr["renderer_height"] >> renderer_height;
+    fr["renderer_focal_length_x"] >> renderer_focal_length_x;
+    fr["renderer_focal_length_y"] >> renderer_focal_length_y;
+    fr["renderer_near"] >> renderer_near;
+    fr["renderer_far"] >> renderer_far;
     renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
 
-    int renderer_n_points;
-    inFile["renderer_n_points"] >> renderer_n_points;
+    fr["renderer_n_points"] >> renderer_n_points;
     _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
-    inFile["renderer_angle_step"] >> _renderer_iterator->angle_step_;
-    inFile["renderer_radius_min"] >> _renderer_iterator->radius_min_;
-    inFile["renderer_radius_max"] >> _renderer_iterator->radius_max_;
-    inFile["renderer_radius_step"] >> _renderer_iterator->radius_step_;
+    fr["renderer_angle_step"] >> _renderer_iterator->angle_step_;
+    fr["renderer_radius_min"] >> _renderer_iterator->radius_min_;
+    fr["renderer_radius_max"] >> _renderer_iterator->radius_max_;
+    fr["renderer_radius_step"] >> _renderer_iterator->radius_step_;
 
     /**Read R**/
     const auto& _Rmap=readSequence<cv::Mat>(inFile["Rot"]);
@@ -65,15 +73,15 @@ namespace Recognition{
     /**Read K**/
     const auto& _Kmap=readSequence<cv::Mat>(inFile["Ks"]);
     /**Read Dist**/
-    const auto& _distMap=readSequence<float>(inFile["dist"]);
+    const auto& _distMap=readSequence<double>(inFile["dist"]);
     /**Read HueHist**/
     const auto& _hueHistMap=readSequence<cv::Mat>(inFile["Hue"]);
 
-    _myData=decltype(_myData)();
+    _myData={};
     for(int i=0; i<_Rmap.size(); ++i){
       _myData.push_back({_Rmap[i], _Tmap[i], _distMap[i], _Kmap[i], _hueHistMap[i]});
     }
-      
+
   }
 
   const std::vector<cv::linemod::Template> Model::getTemplates(int templateID) const {
@@ -98,7 +106,7 @@ namespace Recognition{
   cv::Vec3d Model::getT(int templateID) const {
     return _myData[templateID].T;
   }
-  float Model::getDist(int templateID) const {
+  double Model::getDist(int templateID) const {
     return _myData[templateID].dist;
   }
   cv::Mat Model::getK(int templateID) const {
@@ -111,7 +119,167 @@ namespace Recognition{
     return _myData[templateID];
   }
 
-  const std::shared_ptr<RendererIterator> Model::getRenderer() const{
+  void Model::render(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
+    renderDepthOnly(T, up, depth_out, mask_out, rect_out);
+    renderImageOnly(T, up, image_out, rect_out);
+  }
+
+  void Model::renderImageOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Rect &rect_out) const {
+    _renderer_iterator->renderer_->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer_iterator->renderer_->renderImageOnly(image_out, rect_out);
+  }
+
+  void Model::renderDepthOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
+    _renderer_iterator->renderer_->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer_iterator->renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
+  }
+
+  const std::shared_ptr<RendererIterator> Model::getRenderer() const {
     return _renderer_iterator;
+  }
+
+  cv::Matx33d Model::camTUp2ObjRot(const cv::Vec3d& tDir, const cv::Vec3d& upDir){
+    cv::Vec3d t=tDir, up=upDir;
+    normalize_vector(t(0),t(1),t(2));
+
+    // compute the left vector
+    cv::Vec3d y;
+    y = up.cross(t);
+    normalize_vector(y(0),y(1),y(2));
+
+    // re-compute the orthonormal up vector
+    up = t.cross(y);
+    normalize_vector(up(0), up(1), up(2));
+
+    cv::Mat R_full = (cv::Mat_<double>(3, 3) <<
+        -y(0), -y(1), -y(2),
+        -up(0), -up(1), -up(2),
+        t(0), t(1), t(2)
+        );
+
+    cv::Matx33d R = R_full;
+    R = R.t();
+
+    return R.inv();
+  }
+
+  void Model::addTraining(const cv::Vec3d& T, const cv::Vec3d& up, const Camera::CameraModel& cam){
+    cv::Mat image, depth, mask;
+    cv::Matx33d R;
+
+    cv::Rect rect;
+    /** Performs a render of the object at the desired camera's position and adds it to the trained templates */
+    render(T, up, image, depth, mask, rect);
+    if(image.empty())
+    {
+      /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
+      return;
+    }
+    std::vector<cv::Mat> sources(2);
+    sources[0] = image;
+    sources[1] = depth;
+    int template_in = _detector->addTemplate(sources, _myId, mask);
+    if (template_in == -1)
+    {
+      /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
+      return;
+    }
+
+    /** Computes and saves the parameters used for training */
+    R = camTUp2ObjRot(T, up);
+    double radius=::hypot(::hypot(T(0), T(1)), T(2));
+    double distance = fabs(radius - depth.at<ushort>(depth.rows/2.0, depth.cols/2.0)/1000.0);
+
+    /** hue histogram */
+    /* Convert to HSV */
+    cv::Mat hsv_mat;
+    cv::cvtColor(image, hsv_mat, CV_BGR2HSV);
+    std::vector<cv::Mat> hsv_planes;
+    cv::split( hsv_mat, hsv_planes );
+    /* Compute histogram over 30 bins */
+    int Hbins = 30;
+    int histSize = Hbins; /* 1D histogram */
+    /* Range over which to compute the histogram */
+    const float histRange[] = { 0, 180 };
+    const float* histRangePtr = histRange;
+    cv::Mat Hue_Hist;
+    /* Compute and normalize hist only on the mask */
+    cv::calcHist( &hsv_planes[0], 1, 0, mask, Hue_Hist, 1, &histSize, &histRangePtr, true, false );
+    cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
+
+    /** Save the computed data */
+    _myData.emplace_back(TrainingData{cv::Mat(R), -T, distance, cam.getIntrinsic(), cv::Mat(Hue_Hist)});
+
+  }
+
+  void Model::saveToDirectory(const boost::filesystem::path& saveDir) const
+  {
+    using boost::filesystem::path;
+    assert(is_directory(saveDir) && "no valid directory provided");
+    path filename=saveDir / path(_myId) / path(_myId+"_Linemod.yml");
+
+    cv::FileStorage fs(filename.string(), cv::FileStorage::WRITE);
+
+    fs << "mesh_file_path" << mesh_file_path ;
+
+    _detector->write(fs);
+
+    assert(_detector->classIds().size()==1 && "Multiple classes into the same model");
+    fs << "object" ;
+    fs << "{";
+    _detector->writeClass(_myId, fs);
+    fs << "}";
+
+    //save : R, T, dist, and Ks for that class
+    int nData=_myData.size();
+    fs << "Rot" << "[";
+    for (int R_idx=0;R_idx<nData;++R_idx)
+    {
+      fs << _myData[R_idx].R;
+    }
+    fs << "]";
+
+    fs << "Transl" << "[";
+    for (int T_idx=0;T_idx<nData;++T_idx)
+    {
+      fs << _myData[T_idx].T;
+    }
+    fs << "]";
+
+    fs << "dist" << "[";
+    for (int dist_idx=0;dist_idx<nData;++dist_idx)
+    {
+      fs << _myData[dist_idx].dist;
+    }
+    fs << "]";
+
+    fs << "Ks" << "[";
+    for (int Ks_idx=0;Ks_idx<nData;++Ks_idx)
+    {
+      fs << _myData[Ks_idx].K;
+    }
+    fs << "]";
+
+    fs << "Hue" << "[";
+    for (int Hue_idx=0;Hue_idx<nData;++Hue_idx)
+    {
+      fs << _myData[Hue_idx].hueHist;
+    }
+    fs << "]";
+
+    fs << "rendering"  << "{";
+    fs << "renderer_width" <<  renderer_width;
+    fs << "renderer_height" <<  renderer_height;
+    fs << "renderer_focal_length_x" <<  renderer_focal_length_x;
+    fs << "renderer_focal_length_y" <<  renderer_focal_length_y;
+    fs << "renderer_near" <<  renderer_near;
+    fs << "renderer_far" <<  renderer_far;
+    fs << "renderer_n_points" <<  renderer_n_points;
+    fs << "renderer_angle_step" <<  _renderer_iterator->angle_step_;
+    fs << "renderer_radius_min" <<  _renderer_iterator->radius_min_;
+    fs << "renderer_radius_max" <<  _renderer_iterator->radius_max_;
+    fs << "renderer_radius_step" <<  _renderer_iterator->radius_step_;
+    fs << "}";
+
   }
 }

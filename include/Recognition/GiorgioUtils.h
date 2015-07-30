@@ -168,7 +168,6 @@ public:
   /** Values for the scale sampling */
   float radius_min_, radius_max_, radius_step_, radius_;
 
-private:
   /**
    * @param T the translation vector
    * @param up the up vector of the view point

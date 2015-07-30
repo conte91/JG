@@ -68,7 +68,7 @@ Renderer3dImpl::set_parameters_low_level()
 {
   // By doing so, the window is not open
   glutInitDisplayMode(GLUT_DOUBLE);
-  glutCreateWindow("Assimp renderer");
+  _myWinID=glutCreateWindow("Assimp renderer");
 
   // create a framebuffer object
   glGenFramebuffers(1, &fbo_id_);
@@ -92,4 +92,10 @@ Renderer3dImpl::bind_buffers() const
 {
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_);
   glBindRenderbuffer(GL_RENDERBUFFER, rbo_id_);
+}
+
+Renderer3dImpl::~Renderer3dImpl(){
+      clean_buffers();
+      glutDestroyWindow(_myWinID);
+
 }

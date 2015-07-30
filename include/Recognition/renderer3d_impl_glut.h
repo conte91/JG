@@ -52,16 +52,15 @@ class Renderer3dImpl : public Renderer3dImplBase
 {
   private:
     Recognition::GLUTInit _glutIniter;
+    int _myWinID;
+
   public:
     /**
      * @param file_path the path of the mesh file
      */
     Renderer3dImpl(const std::string & file_path, int width, int height);
 
-    ~Renderer3dImpl()
-    {
-      clean_buffers();
-    }
+    virtual ~Renderer3dImpl();
 
     virtual void
       clean_buffers();
