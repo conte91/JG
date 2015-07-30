@@ -44,7 +44,6 @@
 #include <GL/gl.h>
 
 #include "renderer.h"
-#include <boost/shared_ptr.hpp>
 #include "Mesh.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +109,7 @@ protected:
   float angle_;
 
 //  Model* model_;
-  boost::shared_ptr<Mesh> model_;
+  std::shared_ptr<Mesh> model_;
   GLuint scene_list_;
 
   /** stream for storing the logs from Assimp */
@@ -118,7 +117,7 @@ protected:
 
   /** Private implementation of the renderer (GLUT or OSMesa) */
 //  Renderer3dImpl* renderer_;
-  boost::shared_ptr<Renderer3dImpl> renderer_;
+  std::shared_ptr<Renderer3dImpl> renderer_;
 };
 
 #endif /* ORK_RENDERER_RENDERER3D_H_ */

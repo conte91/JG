@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace Camera{
-  DummyConsumer::DummyConsumer(boost::shared_ptr<const ImageProvider> provider, const std::string& ID)
+  DummyConsumer::DummyConsumer(std::shared_ptr<const ImageProvider> provider, const std::string& ID)
   :ImageConsumer(provider, ID)
   {
     std::cout << "Inited dummy image consumer\n";
@@ -12,7 +12,7 @@ namespace Camera{
     std::cout << "Updating image...\n";
   }
 
-  void setProvider(boost::shared_ptr<const ImageProvider> provider){
+  void setProvider(std::shared_ptr<const ImageProvider> provider){
     std::cout << "Changed provider...\n";
   }
 }

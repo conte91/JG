@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 
   /** This call also initializes the robot (unless false is passed as a third argument) */
   //C5G::C5G robot(argv[1], argv[2], false);
-  boost::shared_ptr<Camera::ImageProvider> camera(new Camera::OpenniStreamProvider());
+  std::shared_ptr<Camera::ImageProvider> camera(new Camera::OpenniStreamProvider());
   APC::Robot robot(ip, profile, false, camera);
 
   Img::Image photo_l, photo_r;

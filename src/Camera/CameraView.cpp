@@ -1,12 +1,10 @@
-#include <boost/shared_ptr.hpp>
-
 #include <Camera/CameraView.h>
 #include <highgui.h>
 
 namespace Camera{
 
 //SUGGESTION: compile me
-  CameraView::CameraView(boost::shared_ptr<const ImageProvider> prov, const std::string& ID)
+  CameraView::CameraView(std::shared_ptr<const ImageProvider> prov, const std::string& ID)
   : ImageConsumer(prov, ID), _ID(ID){
     cv::namedWindow(_ID+"::depth");
     cv::namedWindow(_ID+"::rgb");

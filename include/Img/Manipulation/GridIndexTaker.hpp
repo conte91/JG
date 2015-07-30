@@ -1,5 +1,3 @@
-#include <boost/property_tree/ptree.hpp>
-
 namespace Img{
   namespace Manipulation{
     template<typename T>

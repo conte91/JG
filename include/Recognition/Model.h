@@ -45,7 +45,9 @@ namespace Recognition{
       /** Gets all the templates of this model, for each template ID */
       const std::vector<cv::linemod::Template> getAllTemplates() const;
 
+      /** Loads this model from YML data taken from a folder */
       void readFrom(const std::string& id, const boost::filesystem::path& myDir);
+
       TrainingData getData(int templateID) const;
       cv::Mat getR(int templateID) const;
       cv::Vec3d getT(int templateID) const;

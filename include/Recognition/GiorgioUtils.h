@@ -38,9 +38,9 @@
 #define ORK_RENDERER_UTILS_H
 
 #include <string>
+#include <memory>
 
 #include <opencv2/core/core.hpp>
-#include <boost/shared_ptr.hpp>
 
 class Renderer;
 

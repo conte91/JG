@@ -1,6 +1,6 @@
 #pragma once
-#include <boost/shared_ptr.hpp>
 #include "ImageProvider.h"
+#include <memory>
 #include <Img/Image.h>
 
 namespace Camera{
@@ -8,13 +8,13 @@ namespace Camera{
   class ImageConsumer {
     protected:
       typedef Img::Image Image;
-      boost::shared_ptr<const ImageProvider> _provider;
+      std::shared_ptr<const ImageProvider> _provider;
     public:
-      ImageConsumer(boost::shared_ptr<const ImageProvider> provider, const std::string& ID="");
+      ImageConsumer(std::shared_ptr<const ImageProvider> provider, const std::string& ID="");
 
       virtual ~ImageConsumer()=0;
       virtual void update()=0;
-      virtual void setProvider(boost::shared_ptr<const ImageProvider> provider);
+      virtual void setProvider(std::shared_ptr<const ImageProvider> provider);
       Image getFrame();
   };
 

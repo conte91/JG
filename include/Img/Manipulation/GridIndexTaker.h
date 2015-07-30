@@ -2,8 +2,8 @@
 
 #include <string>
 #include <vector>
-#include "IndexTaker.h"
 #include <boost/property_tree/ptree.hpp>
+#include "IndexTaker.h"
 
 namespace Img{
   namespace Manipulation{
