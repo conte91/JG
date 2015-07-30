@@ -12,6 +12,16 @@
 
 namespace Recognition{
   class Model{
+    public:
+      /** Data associated with each template */
+      struct TrainingData{
+        cv::Mat R;
+        cv::Vec3d T;
+        float dist;
+        cv::Mat K;
+        cv::Mat hueHist;
+      };
+
     private:
       std::string _id;
       std::string _myId;
@@ -19,19 +29,24 @@ namespace Recognition{
         inline std::vector<T> readSequence(const cv::FileNode& n);
       std::shared_ptr<cv::linemod::Detector> _detector;
       std::shared_ptr<RendererIterator> _renderer_iterator;
-      std::vector<cv::Mat> _Rmap;
-      std::vector<cv::Vec3d> _Tmap;
-      std::vector<float> _distMap;
-      std::vector<cv::Mat> _Kmap, _hueHistMap;
+      std::vector<TrainingData> _myData;
 
     public:
+
+      /** Builds an ICP model from a training path */
       Model(const std::string& id, const boost::filesystem::path& myDir);
+
+      /** Builds an empty ICP model */
+      Model(const std::string& id);
 
       /** Gets all the templates matching a certain template ID */
       const std::vector<cv::linemod::Template> getTemplates(int templateID) const;
 
       /** Gets all the templates of this model, for each template ID */
       const std::vector<cv::linemod::Template> getAllTemplates() const;
+
+      void readFrom(const std::string& id, const boost::filesystem::path& myDir);
+      TrainingData getData(int templateID) const;
       cv::Mat getR(int templateID) const;
       cv::Vec3d getT(int templateID) const;
       float getDist(int templateID) const;

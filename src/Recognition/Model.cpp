@@ -4,10 +4,21 @@
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& myDir)
     :
+      Model(id)
+  {
+    readFrom(id, myDir);
+  }
+
+  Model::Model(const std::string& id)
+    :
       _id(id),
       _detector(new cv::linemod::Detector) 
   {
+  }
 
+
+  void Model::readFrom(const std::string& id, const boost::filesystem::path& myDir)
+  {
     namespace fs=boost::filesystem;
 
     /* Load the yml of that class obtained in the Training phase */
@@ -23,7 +34,7 @@ namespace Recognition{
 
     /** Read the trained class ID for this object */
     cv::FileNode fn = inFile["classes"];
-    CV_Assert(fn.size()==1 && "File contains more than one class");
+    assert((fn.type() != cv::FileNode::SEQ || fn.size()==1) && "More than one class into the same model!");
     fn[0]["class_id"] >> _myId;
     _detector->readClass(fn[0]);
 
@@ -48,15 +59,21 @@ namespace Recognition{
     inFile["renderer_radius_step"] >> _renderer_iterator->radius_step_;
 
     /**Read R**/
-    _Rmap=readSequence<cv::Mat>(inFile["Rot"]);
+    const auto& _Rmap=readSequence<cv::Mat>(inFile["Rot"]);
     /**Read T**/
-    _Tmap=readSequence<cv::Vec3d>(inFile["Transl"]);
+    const auto& _Tmap=readSequence<cv::Vec3d>(inFile["Transl"]);
     /**Read K**/
-    _Kmap=readSequence<cv::Mat>(inFile["Ks"]);
+    const auto& _Kmap=readSequence<cv::Mat>(inFile["Ks"]);
     /**Read Dist**/
-    _distMap=readSequence<float>(inFile["dist"]);
+    const auto& _distMap=readSequence<float>(inFile["dist"]);
     /**Read HueHist**/
-    _hueHistMap=readSequence<cv::Mat>(inFile["Hue"]);
+    const auto& _hueHistMap=readSequence<cv::Mat>(inFile["Hue"]);
+
+    _myData=decltype(_myData)();
+    for(int i=0; i<_Rmap.size(); ++i){
+      _myData.push_back({_Rmap[i], _Tmap[i], _distMap[i], _Kmap[i], _hueHistMap[i]});
+    }
+      
   }
 
   const std::vector<cv::linemod::Template> Model::getTemplates(int templateID) const {
@@ -76,20 +93,24 @@ namespace Recognition{
     return _detector->numTemplates();
   }
   cv::Mat Model::getR(int templateID) const {
-    return _Rmap[templateID];
+    return _myData[templateID].R;
   }
   cv::Vec3d Model::getT(int templateID) const {
-    return _Tmap[templateID];
+    return _myData[templateID].T;
   }
   float Model::getDist(int templateID) const {
-    return _distMap[templateID];
+    return _myData[templateID].dist;
   }
   cv::Mat Model::getK(int templateID) const {
-    return _Kmap[templateID];
+    return _myData[templateID].K;
   }
   cv::Mat Model::getHueHist(int templateID) const {
-    return _hueHistMap[templateID];
+    return _myData[templateID].hueHist;
   }
+  Model::TrainingData Model::getData(int templateID) const {
+    return _myData[templateID];
+  }
+
   const std::shared_ptr<RendererIterator> Model::getRenderer() const{
     return _renderer_iterator;
   }
