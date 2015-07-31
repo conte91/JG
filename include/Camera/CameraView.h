@@ -10,7 +10,7 @@ namespace Camera{
     private:
       std::string _ID;
     public:
-      CameraView(boost::shared_ptr<const ImageProvider> prov, const std::string& ID="CameraView");
+      CameraView(std::shared_ptr<const ImageProvider> prov, const std::string& ID="CameraView");
       virtual ~CameraView()=0;
       virtual void Update();
   };

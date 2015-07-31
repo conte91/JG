@@ -35,7 +35,7 @@ namespace C5G{
     if(_currentMovementMode==MOVING_GLOBAL){
       /** We were in global mode; save current position in order to restore it when needed */
       _lastGlobalPose=ORL2Pose(current_position[0]);
-      _currentMovementMode==MOVING_RELATIVE;
+      _currentMovementMode=MOVING_RELATIVE;
     }
     ORL_cartesian_position  target_pos=pose2ORL(p);
     std::cout << "Setting the position to: " << p << "\n";
@@ -65,7 +65,10 @@ namespace C5G{
   }
 
   /** TODO CHECK THIS!*/
-  const Pose C5G::safePose(0.3, 0, 0.9, 0, 1.57, 0);
+  const Pose C5G::safePose(){
+    static Pose theSafePose(0.3, 0, 0.9, 0, 1.57, 0);
+    return theSafePose;
+  }
   void C5G::moveCartesian(const Pose& p){
     ORL_cartesian_position  target_pos;
     target_pos.x=p.x;
@@ -74,6 +77,11 @@ namespace C5G{
     target_pos.a=p.alpha;
     target_pos.e=p.beta;
     target_pos.r=p.gamma;
+    if(_currentMovementMode==MOVING_GLOBAL){
+      /** Save the current position configuration, so that we can go in a software-faken relative mode */
+      _currentMovementMode=MOVING_RELATIVE;
+
+    }
     std::cout << "Relative movement to (" << target_pos.x << ", " << target_pos.y << ", " << target_pos.z << ")\nOrientation: (" << target_pos.a << ", " << target_pos.e << ", " << target_pos.r << "\n";
   }
 
@@ -177,12 +185,6 @@ namespace C5G{
   }
   C5G::~C5G(){
     standby();
-  }
-
-  void C5G::executeGrasp(const Grasp& g){
-    std::cout << "Executing grasp for object " << g.object << "\n";
-    //moveCartesianGlobal(Shelf.getBinSafePose(
-
   }
 
   void C5G::setGripping(double strength){

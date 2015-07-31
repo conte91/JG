@@ -1,0 +1,57 @@
+{
+  "bin_contents":
+  {
+    "bin_A":
+    [
+      "champion_copper_plus_spark_plug"
+    ],
+    "bin_B":
+    [
+      "expo_dry_erase_board_eraser"
+    ],
+    "bin_C":
+    [
+    ],
+    "bin_D":
+    [
+    ],
+    "bin_E":
+    [
+    ],
+    "bin_F":
+    [
+     "rollodex_mesh_collection_jumbo_pencil_cup"
+    ],
+    "bin_G":
+    [
+      "kygen_squeakin_eggs_plush_puppies"
+    ],
+    "bin_H":
+    [
+    ],
+    "bin_I":
+    [
+    ],
+    "bin_J":
+    [
+    ],
+    "bin_K":
+    [
+    ],
+    "bin_L":
+    [
+    ]
+  },
+
+  "work_order":
+  [
+    {
+      "bin": "bin_B",
+      "item": "expo_dry_erase_board_eraser"
+    },
+    {
+      "bin": "bin_F",
+      "item": "rollodex_mesh_collection_jumbo_pencil_cup"
+    }
+  ]
+}

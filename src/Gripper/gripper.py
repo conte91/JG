@@ -1,53 +1,439 @@
-import RobotData as rd
-from csg.core import CSG
+from copy import deepcopy
+import transformations as tr
+import numpy as np
+# import math
 
-def getBestGrasp(itemName,row,column):
-    global grasps
-    for grasp in grasps:
-        if(isDoable(itemName,grasp)):
-            return grasp
-    return None
+GRASP_ERROR_LIMIT = 1
+VERY_NEGATIVE_NUMBER = -313373
 
-#check if the end effector touches other stuff
-def isDoable(itemName,grasp):
-    global gripper
-    translationMatrix = robotData.bins[row,column].getObjectPose(itemName)
-    shape = approx[itemName]
-    #get polygons of the real object
-    itemPolygons = translate(shape,translationMatrix)
-    #get the gripper translated by grip.apporach
-    translationMatrix = generateTranslationMatrix(grasp['approach'])
-    gripperPolygons = translate(gripper,translationMatrix)
-    #draw gripper on polygon
-    movingArea =  gripperPolygons.union(itemPolygons)
-    for item in Bin:
-        if intersect(item,itemPose) > 0:
+
+def changeReference(pose0, newReferenceFrame):
+    x, y, z, a, b, g = newReferenceFrame
+    rotMatrix = tr.euler_matrix(a, b, g)
+    tranMatrix = tr.translation_matrix([x, y, z])
+    print rotMatrix, tranMatrix
+
+
+def distance(p0, p1):
+    dimensions = len(p0)
+    squares = 0
+    for i in range(dimensions):
+        squares += (p0[i] - p1[i]) ** 2
+    return pow(squares, 1/dimensions)
+
+
+class Shape(object):
+    def __init__(self, elements):
+        self.elements = elements
+
+    def __repr__(self):
+        return 'Shape(\n  ' + '\n  '.join(
+            [repr(element) for element in self.elements]
+        ) + '\n)'
+
+    def intersect(self, otherShape):
+        total = 0
+        for e0 in self.elements:
+            for e1 in otherShape.elements:
+                total += e0.getCollisionScore(e1)
+        return total
+
+
+def project(point, vector):
+    print "TODO: floating point operations fuckups"
+    x, y, z = range(3)
+    n = d = 0.
+    result = 0.
+
+    for axis in [x, y]:  # z]:
+        n += point[axis] * vector[axis]
+        d += vector[axis]**2
+    # edit vector inplace
+    vector = list(vector)
+    result = tuple([float(el) * (n/d) for el in vector])
+    return result
+
+
+def intersectCuboidCuboid(cube0, cube1):
+    x, y, z = range(3)
+    print "intersectCuboidCuboid should return a value"
+
+    # calculate vertex (lower upper right left)
+    ur0 = cube0[1]
+    ul0 = (cube0[0][x], cube0[1][y])
+    lr0 = cube0[0]
+    # ll0 = (cube0[1][x], cube0[0][y])
+    ur0 = cube0[1]
+
+    ur1 = cube1[1]
+    ul1 = (cube1[0][x], cube1[1][y])
+    lr1 = cube1[0]
+    # ll1 = (cube1[1][x], cube1[0][y])
+    ur1 = cube1[1]
+    # calculate axes
+    axis00 = ur0 - ul0
+    axis01 = ur0 - lr0
+    axis10 = ur1 - ul1
+    axis11 = ur1 - lr1
+
+    for axis in [axis00, axis01, axis10, axis11]:
+        projectedPoints0 = [project(vertex, axis) for vertex in cube0]
+        projectedPoints1 = [project(vertex, axis) for vertex in cube1]
+
+        minCube0 = min(projectedPoints0)
+        maxCube0 = max(projectedPoints0)
+        minCube1 = min(projectedPoints1)
+        maxCube1 = max(projectedPoints1)
+        if minCube0 < maxCube1 and minCube1 < maxCube0:
+            # there is an intersection on this axis
+            pass
+        else:
+            # there is a plane separating the cubes
             return False
     return True
 
+
+class PrimitiveShape(object):
+    def __init__(self):
+        print "primitive shape can only be extended"
+        raise Exception("can't init PrimitiveShape")
+
+    def getCollisionScore(self, otherShape):
+        name0 = type(self).__name__
+        name1 = type(otherShape).__name__
+        names = sorted((name0, name1))
+
+        if names == ["Cuboid", "Cuboid"]:
+            thisCuboid = self.vertices
+            otherCuboid = otherShape.vertices
+            overlap = 0
+            x, y, z = range(3)
+
+            x0 = min(thisCuboid[0][x], otherCuboid[0][x])
+            y0 = min(thisCuboid[0][y], otherCuboid[0][y])
+            z0 = min(thisCuboid[0][z], otherCuboid[0][z])
+
+            x1 = max(thisCuboid[0][x], otherCuboid[0][x])
+            y1 = max(thisCuboid[0][y], otherCuboid[0][y])
+            z1 = max(thisCuboid[0][z], otherCuboid[0][z])
+
+            a0 = min(thisCuboid[1][x], otherCuboid[1][x])
+            b0 = min(thisCuboid[1][y], otherCuboid[1][y])
+            c0 = min(thisCuboid[1][z], otherCuboid[1][z])
+
+            a1 = max(thisCuboid[1][x], otherCuboid[1][x])
+            b1 = max(thisCuboid[1][y], otherCuboid[1][y])
+            c1 = max(thisCuboid[1][z], otherCuboid[1][z])
+
+            x = max(max(a0, x0)-min(a1, x1), 0)
+            y = max(max(b0, y0)-min(b1, y1), 0)
+            z = max(max(c0, z0)-min(c1, z1), 0)
+
+            overlap = pow(x*y*z, 1/3)
+            return overlap
+
+        elif names == ["Cuboid", "Sphere"]:
+
+            (v1, v2) = self.vertices
+            (c, r) = (otherShape.center, otherShape.radius)
+
+            # assume C1 and C2 are element-wise sorted, if not, do that now
+
+            if c[0] < v1[0]:
+                # the sphere center is left of cube
+                r -= abs(c[0] - v1[0])
+            elif c[0] > v2[0]:
+                # the sphere center is right of the cube
+                r -= abs(c[0] - v2[0])
+            # if it's inside, do nothing
+
+            if c[1] < v1[1]:
+                r -= abs(c[1] - v1[1])
+            elif c[1] > v2[1]:
+                r -= abs(c[1] - v2[1])
+
+            if c[2] < v1[3]:
+                r -= abs(c[2] - v1[3])
+            elif c[2] > v2[3]:
+                r -= abs(c[2] - v2[3])
+            # r = r - |dx| + |dy| + |dz|
+            return max(r, 0)
+
+        elif names == ["Sphere", "Sphere"]:
+
+            c0 = self.center
+            r0 = self.radius
+            c1 = otherShape.center
+            r1 = otherShape.radius
+
+            coveredSpace = r0 + r1
+            spaceBetween = distance(c0, c1)
+            intersectionLen = spaceBetween - coveredSpace
+            return max(0, intersectionLen)
+
+
+class Cuboid(PrimitiveShape):
+    def __init__(self, v0, v1):
+        tv0 = v0
+        tv1 = v1
+        v1 = (
+            min(tv0[0], tv1[0]),
+            min(tv0[1], tv1[1]),
+            min(tv0[2], tv1[2])
+            )
+        v1 = (
+            max(tv0[0], tv1[0]),
+            max(tv0[1], tv1[1]),
+            max(tv0[2], tv1[2])
+            )
+        self.vertices = (v0, v1)
+
+    def __repr__(self):
+        return 'Cuboid(' + ' '.join([
+            repr(vertex) for vertex in self.vertices
+        ]) + ')'
+
+    def __name__(self):
+        return 'Cuboid'
+
+
+class Sphere(PrimitiveShape):
+    def __init__(self, center, radius):
+        self.center = center
+        self.radius = radius
+        self.shapeName = "sphere"
+
+    def __repr__(self):
+        return "Sphere(" + self.center + ", " + self.radius + ")"
+
+
+class RobotData(object):
+    def __init__(self):
+        itemsDatabase = dict()
+
+        pickableObjects = {
+            'munchkin_white_hot_duck_bath_toy': (150, 160, 80),
+            'mark_twain_huckleberry_finn': (128, 250, 16),
+            'sharpie_accent_tank_style_highlighters': (120, 130, 20),
+            'genuine_joe_plastic_stir_sticks': (144, 97, 108),
+            'safety_works_safety_glasses': (220, 55, 115),
+            'rollodex_mesh_collection_jumbo_pencil_cup':  (100, 136, 100),
+            'dr_browns_bottle_brush': (350, 140, 50),
+            'kygen_squeakin_eggs_plush_puppies': (240, 60, 130),
+            'kong_duck_dog_toy': (170, 110, 70),
+            'mommys_helper_outlet_plugs': (190, 60, 90),
+            'highland_6539_self_stick_notes': (150, 40, 50),
+            'expo_dry_erase_board_eraser': (130, 35, 55),
+            'paper_mate_12_count_mirado_black_warrior': (195, 20, 50),
+            'laugh_out_loud_joke_book': (180, 10, 110),
+            'stanley_66_052': (195, 20, 100),
+            'mead_index_cards': (130, 78, 23),
+            'elmers_washable_no_run_school_glue': (65, 150, 35),
+        }
+
+        """
+            ['champion_copper_plus_spark_plug', ],
+            ['cheezit_big_original', ],
+            ['crayola_64_ct', ],
+            ['dove_beauty_bar', ],
+            ['feline_greenies_dental_treats', ],
+            ['first_years_take_and_toss_straw_cups', ],
+            ['kong_air_dog_squeakair_tennis_ball', ],
+            ['kong_sitting_frog_dog_toy', ],
+            ['one_with_nature_soap_dead_sea_mud', ],
+            ['oreo_mega_stuf', ],
+        ]
+        """
+        print "using dummy grasps"
+        dummyGrasp = Grasp(originPose, originPose, 0, 100000)
+        print "fineShapes are fake"
+        fakeCuboids = [
+            Cuboid(originXYZ, (1, 2, 1)),
+            Cuboid(originXYZ, (2, 2, 3)),
+        ]
+        # dummyShape = Shape(fakeCuboids)
+        # dummyPose = originPose
+        # end placeholders
+
+        for objName in pickableObjects.keys():
+            roughElements = [Cuboid(originXYZ, pickableObjects[objName])]
+            roughShape = Shape(roughElements)
+            fineShape = Shape(fakeCuboids)
+
+            grasps = [dummyGrasp]  # TODO init as generatePotentialGrasps()
+
+            itemsDatabase[objName] = Item(objName, originPose, roughShape,
+                                          fineShape, grasps)
+        self.itemsDatabase = itemsDatabase
+
+    def __repr__(self):
+        return '\n'.join([
+            repr(item) for item in self.itemDatabase.values()[:5]
+        ])+'...'
+
+    def getBin(self):
+        with open("/tmp/robot.data") as dataFile:
+            binItems = dataFile.read().split("\n")[:-1]
+        # binItems = [item.split for item in binItems.split()]
+        result = {}
+        for item in binItems:
+            itemName, itemPose = item.split(" ", 1)
+            result[itemName] = tuple([float(n) for n in itemPose.split(" ")])
+        return KivaBin(result)
+
+    def getItemTemplate(self, itemName):
+        return self.itemsDatabase[itemName]
+
+    def removeItem(self, item):
+        raise Exception("can't remove item from the database!")
+        ind = self.itemDatabase.index(item)
+        self.itemDatabase.pop(ind)
+
+
+class KivaBin(object):
+    # fake
+    def __init__(self, items):
+        self.items = items
+
+    def __repr__(self):
+        return "KivaBin(\n\t" + '\n\t'.join([
+            repr(item) for item in self.items
+        ]) + "\n)"
+
+    def getBinItems(self):
+        return self.items
+
+    def removeItem(self, item):
+        if item not in self.items:
+            raise Exception("""trying to remove a non existing
+                            item from shelf model""")
+        ind = self.items.index(item)
+        self.items.pop(ind)
+
+    def getItemPose(self, itemName):
+        return self.items[itemName]
+
+
+class Item(object):
+    def __init__(self, name, pose, roughShape, fineShape, grasps):
+        self._name = name
+        self._pose = pose
+        self._roughShape = roughShape
+        self._fineShape = fineShape
+        self._grasps = grasps
+
+    def __hash__(self):
+        return hash(hash(self._name) + sum(self._pose.values()))
+
+    def __repr__(self):
+        return "Item(" + self._name + " at " + repr(self._pose) + ")"
+
+    def __eq__(self, other):
+        return (self._name, self._pose) == (other._name, other._pose)
+
+    def setPose(self, newPose):
+        self._pose = newPose
+
+    def getGrasps(self):
+        grasps = [changeReference(grasp, self._pose) for grasp in self._grasps]
+        return grasps
+
+
+class Grasp(object):
+    def __init__(self, approachPose, gripPose, minForce, maxForce):
+        self.approachPose = approachPose
+        self.gripPose = gripPose
+
+        print "using fake shape"
+        self.roughShape = Shape([
+            Cuboid((0, 0, 0), (3, 5, 5)),
+        ])
+        self.minForce = minForce
+        self.maxForce = maxForce
+
+    def __repr__(self):
+        return "Grasp(" + ' '.join([
+            str(val) for val in self.gripPose.values()
+        ]) + ")"
+
+    def getCollisionVolume(self, otherItem):
+        volume = self.roughShape.intersect(otherItem.roughShape)
+        return volume
+
+
+def getBestGrasp(targetItemName):
+    """
+    args:
+        (str) targetItem  :   item to pick
+    """
+    targetBin = robotData.getBin()
+    # load the item from shapes db
+    targetItem = robotData.getItemTemplate(targetItemName)
+    itemPose = targetBin.getItemPose(targetItemName)
+    targetItem.setPose(itemPose)
+
+    if min(itemPose) < -1000:
+        # -1000 as pose means item not found
+        global VERY_NEGATIVE_NUMBER
+        return VERY_NEGATIVE_NUMBER
+
+    # adapt the item template to the real item
+    grasps = targetItem.getGrasps()
+
+    # force best graps to be None if <0 ? TODO checkme
+    grasps.insert(0, None)
+    bestGrasp = max(grasps, key=lambda x:
+                    calculateGraspScore(x, targetItem, targetBin))
+    print grasps.index(bestGrasp)
+    return bestGrasp
+
+
+def calculateGraspScore(grasp, targetItem, targetBin):
+    if grasp is None:
+        return -0
+    scores = dict()
+    leftoverBin = deepcopy(targetBin)
+    leftoverBin.removeItem(targetItem)
+
+    if not isDoable(grasp, targetItem):
+        return -1
+
+    collisionVolume = 1
+    for binItem in leftoverBin.getBinItems():
+        scores[binItem] = grasp.getCollisionVolume(binItem)
+        collisionVolume += scores[binItem]
+
+    bestScore = 1.0
+    if collisionVolume == 0:
+        return bestScore
+    else:
+        return bestScore/collisionVolume
+
+
+def isDoable(grasp, targetItem):
+    """
+    Checks if the gripper can grasp the item ignoring the environment
+    we only allow GRASP_ERROR_LIMIT error
+    """
+    global GRASP_ERROR_LIMIT
+    runningSum = 0
+    for key in grasp.gripPose.keys():
+        runningSum += (grasp.gripPose[key] + targetItem.pose[key]) ** 2
+    grasp_error = np.sqrt(runningSum)
+    if grasp_error > GRASP_ERROR_LIMIT:
+        return False
+    return True
+
 if __name__ == '__main__':
-    grasps = {}
-    OriginPose = { 'x':0, 'y':0, 'z':0, 'alpha':0, 'beta':0, 'gamma':0, }
-    graspSafe = OriginPose
-    graspNear = OriginPose
-    forceMin = 0
-    forceMax = 999
-    graspFuffa = {'poseSafe':graspSafe, 'poseNear':graspNear,'forceMin':forceMin,'forceMax':forceMax,}
 
-    grasps['obj0'] = [graspFuffa,]
-    grasps['obj1'] = [graspFuffa,graspFuffa,]
-    grasps['obj2'] = [graspFuffa,graspFuffa,graspFuffa,]
-    grasps['obj3'] = [graspFuffa,graspFuffa,graspFuffa,graspFuffa,]
-    grasps['obj4'] = [graspFuffa,graspFuffa,graspFuffa,]
-    grasps['obj5'] = [graspFuffa,graspFuffa,]
-    grasps['obj6'] = [graspFuffa,]
-    grasps['obj7'] = [graspFuffa,graspFuffa,]
+    # globals
+    originPose = tuple([0]*6)
+    originXYZ = (0, 0, 0)
+    # end globals
 
-    approx['obj0'] = [1,1,0]
-    approx['obj1'] = [1,1,1]
-    approx['obj2'] = [1,1,2]
-    approx['obj3'] = [1,1,3]
-    approx['obj4'] = [1,1,4]
-    approx['obj5'] = [1,1,5]
-    approx['obj6'] = [1,1,6]
-    approx['obj7'] = [1,1,7]
+    targetItem = 'mead_index_cards'  # sys.argv[1]
+    robotData = RobotData()
+    score = getBestGrasp(targetItem)
+    print "best score is:", score
+    with open("/tmp/grasp.result", "w") as output:
+        output.write(getBestGrasp(targetItem))

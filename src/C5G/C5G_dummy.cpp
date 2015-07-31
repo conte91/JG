@@ -11,7 +11,10 @@ namespace C5G{
     std::cout << "Relative movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }
 
-  const Pose C5G::safePose(0.3, 0, 0.7, 0, 0, 0);
+  const Pose C5G::safePose(){
+    static const Pose thesafePose(0.3, 0, 0.7, 0, 0, 0);
+    return thesafePose;
+  }
   void C5G::moveCartesianGlobal(const Pose& p){
     std::cout << "Global movement to (" << p.x << ", " << p.y << ", " << p.z << ")\nOrientation: (" << p.alpha << ", " << p.beta << ", " << p.gamma << "\n";
   }
@@ -40,12 +43,14 @@ namespace C5G{
   void C5G::setGripping(double strength){
     std::cout << "Closing the plier with strength " << strength << "\n";
   }
+#if 0
   void C5G::executeGrasp(const Grasp& g){
     moveCartesian(g.approach);
     moveCartesian(g.grasp);
-    setGripping(g.forceMin);
+    setGripping(g.forceMax);
     moveCartesian(g.approach);
   }
+#endif
   C5G::~C5G(){
     standby();
   }

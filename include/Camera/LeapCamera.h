@@ -1,11 +1,12 @@
 #pragma once
 #include <cv.hpp>
 #include <Leap.h>
-#include "Image.h"
+#include <Img/Image.h>
 
 namespace Camera{
   class LeapCamera : public Leap::Listener {
     private:
+      typedef Img::Image Image;
       Image _lastImage;
       Leap::Controller _controller;
       const std::string _myID;

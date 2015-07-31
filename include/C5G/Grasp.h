@@ -5,11 +5,13 @@ namespace C5G{
 
   struct Grasp{
     std::string object;
+    int row;
+    int column;
     Pose approach;
     Pose grasp;
-    double score;
-    double forceMin;
+    // REMOVED double forceMin;
     double forceMax;
+    double score;
   };
 
 }

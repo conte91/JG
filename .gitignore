@@ -20,6 +20,7 @@ Burocrazia/
 *.egg-info
 dist/
 build/
+build*/
 eggs/
 parts/
 bin/
@@ -65,3 +66,12 @@ srv_gen
 
 .DS_STORE
 *.a
+
+
+.idea/
+
+#local tests data
+nonGitTestBed/
+
+#rope
+.ropeproject

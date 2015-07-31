@@ -1,4 +1,6 @@
 #pragma once
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <iostream>
 
 
@@ -14,6 +16,10 @@ namespace C5G {
     double beta;
     double gamma;
 
+    Pose whichIsRelativeTo(const Pose& origin) const ;
+    Pose andIWantItRelativeTo(const Pose& origin) const;
+
+    static Pose transform2Pose(const Eigen::Affine3f& x);
     /** Basic operations */
     Pose operator+(const Pose& o) const;
     Pose(/* In meters */ double x, double y, double z, /* In radians */ double alpha, double beta, double gamma, /* Override default units */bool useMMDeg=false);

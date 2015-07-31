@@ -6,14 +6,14 @@
 #include <Parser/RobotData.h>
 
 namespace APC{
-  void ScanBins(C5G::C5G& robot, Camera::ImageConsumer& photo){
+  void ScanBins(C5G::C5G& robot){
     using APC::Shelf;
     using C5G::Pose;
     Pose p=Shelf::POSE;
 
     InterProcessCommunication::RobotData& rData=InterProcessCommunication::RobotData::getInstance();
-    for(int j=0; j<Shelf::HEIGHT; ++j){
-      for(int i=0; i<Shelf::WIDTH; ++i){
+    for(unsigned int j=0; j<Shelf::HEIGHT; ++j){
+      for(unsigned int i=0; i<Shelf::WIDTH; ++i){
         /** First, move globally into the safe pose of each bin */
         Pose whereToGo=Shelf::getBinSafePose(i, j)+Shelf::POSE;
         whereToGo.alpha=0;
@@ -21,7 +21,7 @@ namespace APC{
         whereToGo.gamma=0;
 
         /** Go to the safe pose */
-        Pose p=C5G::C5G::safePose;
+        Pose p=C5G::C5G::safePose();
         robot.moveCartesianGlobal(p);
 
         /** Approach the shelf */
@@ -31,7 +31,6 @@ namespace APC{
 
         /** Move to the bin */
         robot.moveCartesianGlobal(whereToGo);
-        photo.update();
         rData.setDirty(i, j);
 
         /** Return to the approach position */

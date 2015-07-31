@@ -3,9 +3,52 @@
 
 std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
   os << "{("<< x.x << "," << x.y << "," << x.z << ");(" << x.alpha << "," << x.beta << "," << x.gamma << ")}" ;
+  return os;
 }
 
 namespace C5G{
+
+  static Eigen::Affine3f poseToTransform(const Pose& x){
+    Eigen::Affine3f transformation = Eigen::Affine3f::Identity();
+    transformation.translation() << x.x, x.y, x.z;
+    /** Apply Euler angle rotations */
+    transformation.rotate (Eigen::AngleAxisf (x.alpha, Eigen::Vector3f::UnitX()));
+    transformation.rotate (Eigen::AngleAxisf (x.beta, Eigen::Vector3f::UnitY()));
+    transformation.rotate (Eigen::AngleAxisf (x.gamma, Eigen::Vector3f::UnitZ()));
+    return transformation;
+  }
+  Pose Pose::andIWantItRelativeTo(const Pose& origin) const {
+    auto& transformation=poseToTransform(origin)*poseToTransform(*this);
+    return transform2Pose(transformation);
+  }
+
+  Pose Pose::whichIsRelativeTo(const Pose& origin) const {
+    auto& transformation=poseToTransform(origin)*poseToTransform(*this);
+    std::cout <<"\n" <<  transformation.translation() << "\nR\n" << transformation.rotation() << "\n";
+    return transform2Pose(transformation);
+  }
+
+  Pose Pose::transform2Pose(const Eigen::Affine3f& x){
+    /** Implements the refined algorithm from extracting euler angles from rotation matrix
+     * see Mike Day, Insomniac Games, "Extracting Euler Angles from a Rotation Matrix"
+     */
+    auto transl=x.translation();
+    auto m=x.rotation();
+
+    double theta1=atan2(m(1,2),m(2,2));
+    //std::cout << "Theta1: " << theta1 << "\n";
+    double c2=hypot(m(0,0),m(0,1));
+    //std::cout << "c2: " << c2 << "\n";
+    double theta2=atan2(-m(0,2),c2);
+    //std::cout << "Theta2: " << theta2 << "\n";
+    double s1=sin(theta1);
+    //std::cout << "s1: " << s1 << "\n";
+    double c1=cos(theta1);
+    //std::cout << "c1: " << c1 << "\n";
+    double theta3=atan2(s1*m(2,0)-c1*m(1,0),c1*m(1,1)-s1*m(2,1));
+    //std::cout << "Theta3: " << theta3 << "\n";
+    return C5G::Pose(transl[0], transl[1], transl[2], theta1, theta2, theta3);
+  }
 
   Pose::Pose()
   {

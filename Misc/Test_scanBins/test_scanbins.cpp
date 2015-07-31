@@ -19,11 +19,11 @@ int main(int argc, char** argv){
   
   /** This call also initializes the robot (unless false is passed as a third argument) */
   C5G::C5G robot(argv[1], argv[2], false);
-  boost::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
+  std::shared_ptr<Camera::ImageProvider> x(new Camera::DummyProvider());
   Camera::DummyConsumer img(x); 
   try{
     robot.init();
-    APC::ScanBins(robot, img);
+    APC::ScanBins(robot);
   }
   catch(std::string e){
     std::cerr << e << "\n";
