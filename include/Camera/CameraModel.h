@@ -25,12 +25,14 @@ namespace Camera{
        * @param xc Principal point offset (X)
        * @param yc Principal point offset (Y)
        */
-      CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc);
+      CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc, double xCam, double yCam, double zCam, double aCam, double bCam, double gCam);
+
+      CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc, const cv::Mat& extr_in = cv::Mat::eye(4,4, CV_64F));
 
       /** Build a camera model using a known camera matrix.
        * @param k Camera matrix for this model. Matrix MUST be a 3x3 float upper-triangular matrix, and focal lengths must be >0.
        */
-      CameraModel(int w, int h, const cv::Mat& k);
+      CameraModel(int w, int h, const cv::Mat& k, const cv::Mat& extr_in = cv::Mat::eye(4,4,CV_64F));
 
       /** Returns the width of the frames */
       int getWidth() const;
@@ -45,6 +47,7 @@ namespace Camera{
     private:
       /** The intrinsic params of the camera */
       cv::Mat _K;
+      cv::Mat _extr;
 
       /** Camera's frame size */
       int _imWidth;
