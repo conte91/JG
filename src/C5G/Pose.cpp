@@ -1,4 +1,5 @@
 #include <C5G/Pose.h>
+#include <Eigen/Core>
 #include <iostream>
 
 std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
@@ -8,15 +9,20 @@ std::ostream& operator<< (std::ostream& os, const C5G::Pose& x){
 
 namespace C5G{
 
-  static Eigen::Affine3f poseToTransform(const Pose& x){
-    Eigen::Affine3f transformation = Eigen::Affine3f::Identity();
+  Eigen::Affine3d Pose::poseToTransform(const Pose& x){
+    Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
     transformation.translation() << x.x, x.y, x.z;
     /** Apply Euler angle rotations */
-    transformation.rotate (Eigen::AngleAxisf (x.alpha, Eigen::Vector3f::UnitX()));
-    transformation.rotate (Eigen::AngleAxisf (x.beta, Eigen::Vector3f::UnitY()));
-    transformation.rotate (Eigen::AngleAxisf (x.gamma, Eigen::Vector3f::UnitZ()));
+    transformation.rotate (Eigen::AngleAxisd (x.alpha, Eigen::Vector3d::UnitX()));
+    transformation.rotate (Eigen::AngleAxisd (x.beta, Eigen::Vector3d::UnitY()));
+    transformation.rotate (Eigen::AngleAxisd (x.gamma, Eigen::Vector3d::UnitZ()));
     return transformation;
   }
+
+  Eigen::Affine3d Pose::toTransform() const {
+    return poseToTransform(*this);
+  }
+
   Pose Pose::andIWantItRelativeTo(const Pose& origin) const {
     auto& transformation=poseToTransform(origin)*poseToTransform(*this);
     return transform2Pose(transformation);
@@ -28,7 +34,7 @@ namespace C5G{
     return transform2Pose(transformation);
   }
 
-  Pose Pose::transform2Pose(const Eigen::Affine3f& x){
+  Pose Pose::transform2Pose(const Eigen::Affine3d& x){
     /** Implements the refined algorithm from extracting euler angles from rotation matrix
      * see Mike Day, Insomniac Games, "Extracting Euler Angles from a Rotation Matrix"
      */

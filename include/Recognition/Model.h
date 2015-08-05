@@ -2,11 +2,15 @@
 #include <unordered_map>
 #include <boost/filesystem.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
+#include <C5G/C5G.h>
 #include <Recognition/db_linemod.h>
 #include <Recognition/linemod_icp.h>
 #include <Recognition/Renderer3d.h>
 #include <Recognition/GiorgioUtils.h>
 #include <Camera/CameraModel.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/point_representation.h>
 
 #include "Mesh.h"
 #include "Renderer3d.h"
@@ -74,6 +78,8 @@ namespace Recognition{
       cv::Mat getHueHist(int templateID) const;
       const std::shared_ptr<RendererIterator> getRenderer() const;
       int numTemplates() const;
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr getPointCloud(const C5G::Pose& pose) const;
+      Camera::CameraModel _camModel;
 
   };
 }

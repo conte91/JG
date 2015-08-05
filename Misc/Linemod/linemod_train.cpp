@@ -119,7 +119,6 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   }
 
   //write the template + R + t + dist + K for each class
-  path saveLinemodPath = p / path(object_id_+"_Linemod.yml");
   model.saveToDirectory(trainDir);
 
   std::cout<<std::endl;

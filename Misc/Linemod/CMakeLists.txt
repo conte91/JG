@@ -2,10 +2,10 @@ find_package(OpenCV REQUIRED )
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 FIND_PACKAGE( Boost 1.40 COMPONENTS system filesystem thread REQUIRED )
-find_package(PCL 1.7 REQUIRED)
+find_package(PCL REQUIRED)
 find_package(assimp REQUIRED)
 
-include_directories( ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
+include_directories( ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})

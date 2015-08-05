@@ -1,29 +1,41 @@
 #include <cassert>
 #include <cmath>
+#include <Eigen/Core>
 #include <Recognition/Model.h>
 #include <Camera/CameraModel.h>
 #include <boost/filesystem.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/rgbd.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <C5G/Pose.h>
 
 namespace Recognition{
-  Model::Model(const std::string& id, const boost::filesystem::path& myDir)
+  Model::Model(const std::string& id, const boost::filesystem::path& trainDir)
     :
       _myId(id),
+      _camModel(1,1,1,1,1,1,1,1,1,1,1,1,1),
       _detector(cv::linemod::getDefaultLINEMOD())
   {
-    readFrom(id, myDir);
+    readFrom(id, trainDir);
   }
 
   Model::Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam)
     :
       _myId(id),
       mesh_file_path(meshFile),
-      _detector(cv::linemod::getDefaultLINEMOD())
-
+      _detector(cv::linemod::getDefaultLINEMOD()),
+      _camModel(cam),
+      renderer_width(cam.getWidth()),
+      renderer_height(cam.getHeight()),
+      renderer_focal_length_x(cam.getFx()),
+      renderer_focal_length_y(cam.getFy()),
+      renderer_near(0.1),
+      renderer_far(10),
+      renderer_n_points(10)
   {
     std::shared_ptr<Renderer3d> renderer (new Renderer3d(mesh_file_path));
-    renderer->set_parameters(cam.getWidth(), cam.getHeight(), cam.getFx(), cam.getFy(), 0.1, 1000);
-    _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, 10));
+    renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
+    _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
   }
 
 
@@ -57,14 +69,11 @@ namespace Recognition{
     fr["renderer_focal_length_y"] >> renderer_focal_length_y;
     fr["renderer_near"] >> renderer_near;
     fr["renderer_far"] >> renderer_far;
+    _camModel=Camera::CameraModel(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, 0, renderer_height/2.0, renderer_width/2.0);
     renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
 
     fr["renderer_n_points"] >> renderer_n_points;
     _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
-    fr["renderer_angle_step"] >> _renderer_iterator->angle_step_;
-    fr["renderer_radius_min"] >> _renderer_iterator->radius_min_;
-    fr["renderer_radius_max"] >> _renderer_iterator->radius_max_;
-    fr["renderer_radius_step"] >> _renderer_iterator->radius_step_;
 
     /**Read R**/
     const auto& _Rmap=readSequence<cv::Mat>(inFile["Rot"]);
@@ -133,6 +142,10 @@ namespace Recognition{
     _renderer_iterator->renderer_->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
     _renderer_iterator->renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
   }
+
+  //TODO pcl::PointCloud<pcl::PointXYZRGB> Model::getPointCloud(cv::Vec3d T, cv::Vec3d up, const Camera::CameraModel& cam ){
+  //TODO   cv::Matrix
+  //TODO }
 
   const std::shared_ptr<RendererIterator> Model::getRenderer() const {
     return _renderer_iterator;
@@ -275,11 +288,47 @@ namespace Recognition{
     fs << "renderer_near" <<  renderer_near;
     fs << "renderer_far" <<  renderer_far;
     fs << "renderer_n_points" <<  renderer_n_points;
-    fs << "renderer_angle_step" <<  _renderer_iterator->angle_step_;
-    fs << "renderer_radius_min" <<  _renderer_iterator->radius_min_;
-    fs << "renderer_radius_max" <<  _renderer_iterator->radius_max_;
-    fs << "renderer_radius_step" <<  _renderer_iterator->radius_step_;
     fs << "}";
 
+  }
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr Model::getPointCloud(const C5G::Pose& pose) const {
+    cv::Mat image_out, depth_out, mask_out;
+    cv::Rect rect_out;
+
+    /** Gets the T and UP vector from the Pose object */
+    Eigen::Affine3d objTransformation=C5G::Pose::poseToTransform(pose);
+    cv::Mat t;
+    eigen2cv(Eigen::Vector3d(objTransformation.translation()), t);
+    Eigen::Matrix3d R_temp(objTransformation.rotation());
+    R_temp=R_temp.inverse();
+    cv::Vec3d u (-R_temp(0,1), -R_temp(1,1), -R_temp(2,1));
+    std::cout << "Up vector: " << u(0) << ","<< u(1) << ","<< u(2) << "\n";
+
+    render(t, u, image_out, depth_out, mask_out, rect_out);
+
+    cv::Mat_<cv::Vec3d> pointsXYZ;
+    cv::rgbd::depthTo3d(depth_out, _camModel.getIntrinsic(), pointsXYZ);
+    /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    /** Model PointCloud*/
+    int mySize = pointsXYZ.rows*pointsXYZ.cols;
+    modelCloudPtr->resize(mySize);
+    modelCloudPtr->height = 1;
+    modelCloudPtr->is_dense = true;
+
+    for(int i=0; i<pointsXYZ.rows; ++i)
+    {
+      for(int j=0; j<pointsXYZ.cols; ++j){
+        modelCloudPtr->points[i*pointsXYZ.cols+j].x=pointsXYZ[i][j][0];
+        modelCloudPtr->points[i*pointsXYZ.cols+j].y=pointsXYZ[i][j][1];
+        modelCloudPtr->points[i*pointsXYZ.cols+j].z=pointsXYZ[i][j][2];
+        modelCloudPtr->points[i*pointsXYZ.cols+j].r=0;
+        modelCloudPtr->points[i*pointsXYZ.cols+j].g=255;
+        modelCloudPtr->points[i*pointsXYZ.cols+j].b=0;
+      }
+    }
+    return modelCloudPtr;
   }
 }

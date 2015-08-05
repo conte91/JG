@@ -45,12 +45,16 @@ namespace Recognition{
 
       bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
       cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
+
     public:
       C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
+
       /**
        * @param trainPath path to the trained models data
        * @param M camera model to use
        */
       RecognitionData(const std::string& trainPath, const CameraModel& m);
+
+      PCloud::Ptr objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const;
   };
 }

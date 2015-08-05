@@ -205,9 +205,12 @@ Renderer3d::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv
     {
       //need to undo the depth buffer mapping
       //http://olivers.posterous.com/linear-depth-in-glsl-for-real
+      std::cout << "It: " << *it << "\n";
       *it = 2 * zFar * zNear / (zFar + zNear - (zFar - zNear) * (2 * (*it) - 1));
-      if (*it > max_allowed_z)
+      if (*it > max_allowed_z){
+        std::cout << *it << "> " << max_allowed_z << "\n";
         *it = 0;
+      }
       else
       {
         mask(j, i) = 255;
@@ -268,6 +271,9 @@ Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rec
   float zNear = near_, zFar = far_;
   cv::Mat_<float>::iterator it = depth.begin(), end = depth.end();
   float max_allowed_z = zFar * 0.99;
+  std::cout << "Max allowed z: " << max_allowed_z << "\n";
+  std::cout << "zFar: " << zFar << "\n";
+  std::cout << "zNear: " << zNear << "\n";
 
   unsigned int i_min = renderer_->width_, i_max = 0, j_min = renderer_->height_, j_max = 0;
   for (unsigned int j = 0; j < renderer_->height_; ++j)
@@ -275,9 +281,12 @@ Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rec
     {
       //need to undo the depth buffer mapping
       //http://olivers.posterous.com/linear-depth-in-glsl-for-real
+        std::cout << "It:" << *it << "\n";
       *it = 2 * zFar * zNear / (zFar + zNear - (zFar - zNear) * (2 * (*it) - 1));
-      if (*it > max_allowed_z)
+      if (*it > max_allowed_z){
+        std::cout << *it << "> " << max_allowed_z << "\n";
         *it = 0;
+      }
       else
       {
         mask(j, i) = 255;
@@ -308,6 +317,7 @@ Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rec
     ++j_max;
   rect = cv::Rect(i_min, j_min, i_max - i_min + 1, j_max - j_min + 1);
 
+  std::cout << "Rect: " << rect << "\n";
   if ((rect.width <=0) || (rect.height <= 0)) {
     depth_out = cv::Mat();
     mask_out = cv::Mat();

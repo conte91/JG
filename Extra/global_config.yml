@@ -1,0 +1,14 @@
+%YAML:1.0
+Linemod:
+  training:
+    trainPath: "/mnt/Music/APCModels"
+    visualizeTraining: 1
+  rendering:
+    nPoints: 150
+    angleStep: 10
+    radiusMin: 0.6
+    radiusMax: 1.5
+    radiusStep: 0.4
+    renderNear: 0.1
+    renderFar: 1000.0
+    cameraModel: "./camera_data.yml"

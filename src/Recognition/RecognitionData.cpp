@@ -163,9 +163,9 @@ namespace Recognition{
         continue;
 
       Eigen::Matrix4d finalTransformationMatrix;
-      if(!pclICP(pts_real_model_temp, pts_real_ref_temp, finalTransformationMatrix, resultPointClouds)){
-        continue;
-      }
+      //TODO if(!pclICP(pts_real_model_temp, pts_real_ref_temp, finalTransformationMatrix, resultPointClouds)){
+      //TODO   continue;
+      //TODO }
 
       /** Take the best match and return it as a position */
 
@@ -191,7 +191,7 @@ namespace Recognition{
       Eigen::Matrix4d startTransform;
       cv2eigen(cvStartTransform, startTransform);
 
-      startTransform=startTransform*finalTransformationMatrix;
+      //TODO startTransform=startTransform*finalTransformationMatrix;
       eigen2cv(startTransform, Pose);
       Pose.at<double>(3,3)=1;
       return true;
@@ -327,7 +327,7 @@ namespace Recognition{
         /** Loads a model from the trained ones */
         std::string object_id_ = p.filename().string();
         std::cout<<"Loading object: " << object_id_<<"\n";
-        _objectModels.emplace(std::make_pair(object_id_, Model(object_id_, p.string())));
+        _objectModels.emplace(std::make_pair(object_id_, Model(object_id_, objsfolder_path)));
 
       }
 
@@ -343,6 +343,11 @@ namespace Recognition{
       throw std::string("Could not match anything :(");
     }
     return matrixToPose(pose);
+  }
+
+  RecognitionData::PCloud::Ptr RecognitionData::objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const {
+    const Model& m = _objectModels.at(objectID);
+    return m.getPointCloud(pose);
   }
 
   C5G::Pose RecognitionData::matrixToPose(cv::Mat m){
