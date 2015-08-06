@@ -1,5 +1,7 @@
 #pragma once
 #include <Img/Image.h>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <opencv2/core/operations.hpp>
 
 namespace Camera{
@@ -43,6 +45,8 @@ namespace Camera{
       double getS() const;
       double getXc() const;
       double getYc() const;
+
+      Eigen::Affine3d getExtrinsic() const ;
 
     private:
       /** The intrinsic params of the camera */

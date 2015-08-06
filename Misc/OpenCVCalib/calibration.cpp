@@ -232,7 +232,7 @@ static void saveCameraParams( const string& filename,
             r = rvecs[i].t();
             t = tvecs[i].t();
         }
-        cvWriteComment( *fs, "a set of 6-tuples (rotation vector + translation vector) for each view", 0 );
+        cvWriteComment( *fs, "a set of 6-tuples (Rodrigues rotation vector + translation vector) for each view", 0 );
         fs << "extrinsic_parameters" << bigmat;
     }
 

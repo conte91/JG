@@ -23,7 +23,7 @@ namespace Recognition{
         cv::Mat R;
         cv::Vec3d T;
         double dist;
-        cv::Mat K;
+        Camera::CameraModel cam;
         cv::Mat hueHist;
       };
 
@@ -76,6 +76,7 @@ namespace Recognition{
       double getDist(int templateID) const;
       cv::Mat getK(int templateID) const;
       cv::Mat getHueHist(int templateID) const;
+      Camera::CameraModel getCam(int templateID) const;
       const std::shared_ptr<RendererIterator> getRenderer() const;
       int numTemplates() const;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr getPointCloud(const C5G::Pose& pose) const;

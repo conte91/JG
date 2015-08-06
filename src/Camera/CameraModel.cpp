@@ -1,5 +1,9 @@
 #include <cv.h>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <opencv2/core/eigen.hpp>
 #include <Camera/CameraModel.h>
+
 
 namespace Camera{
 
@@ -19,7 +23,7 @@ namespace Camera{
     _K.at<double>(1,2)=yc;
     _K.at<double>(2,2)=1;
     
-    // Rotation matrices around the X, Y, and Z axis
+    // Rotation matrices are saved as Rodriguez coefficients
     Mat RX = (Mat_<double>(4, 4) <<
               1,          0,           0, 0,
               0, cos(aCam), -sin(aCam), 0,
@@ -61,6 +65,7 @@ namespace Camera{
     _K.at<double>(1,1)=fy;
     _K.at<double>(1,2)=yc;
     _K.at<double>(2,2)=1;
+    assert(extr_in.depth()==CV_64F);
   }
 
   CameraModel::CameraModel(int w, int h, const cv::Mat& k_in, const cv::Mat& extr_in)
@@ -89,6 +94,7 @@ namespace Camera{
     double fx=_K.at<double>(0,0);
     double fy=_K.at<double>(1,1);
     assert(fx>0 && fy>0 && "Focus lengths cannot be negative");
+    assert(extr_in.depth()==CV_64F);
 
   }
 
@@ -154,6 +160,15 @@ namespace Camera{
   double CameraModel::getYc() const {
     return _K.at<double>(1,2);
   }
+
+  Eigen::Affine3d CameraModel::getExtrinsic() const {
+    Eigen::Matrix4d extrMatrix;
+    cv2eigen(_extr, extrMatrix);
+    Eigen::Affine3d result;
+    result.matrix()=extrMatrix;
+    return result;
+  }
+
 #if 0
   TODO complete me :)
     pcl::PointXYZRGB pointToXYZ(const Image& frame, int x, int y){

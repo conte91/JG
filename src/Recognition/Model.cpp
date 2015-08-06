@@ -80,7 +80,16 @@ namespace Recognition{
     /**Read T**/
     const auto& _Tmap=readSequence<cv::Vec3d>(inFile["Transl"]);
     /**Read K**/
-    const auto& _Kmap=readSequence<cv::Mat>(inFile["Ks"]);
+    std::vector<Camera::CameraModel> _Kmap;
+    {
+      const cv::FileNode& n=inFile["Camera"];
+      /** Reads the camera models: can't use readSequence! */
+      assert(n.type() == cv::FileNode::SEQ && "Data are not a sequence!");
+      for(const auto& it : n){
+        _Kmap.emplace_back(Camera::CameraModel::readFrom(it));
+      }
+    }
+
     /**Read Dist**/
     const auto& _distMap=readSequence<double>(inFile["dist"]);
     /**Read HueHist**/
@@ -119,7 +128,10 @@ namespace Recognition{
     return _myData[templateID].dist;
   }
   cv::Mat Model::getK(int templateID) const {
-    return _myData[templateID].K;
+    return _myData[templateID].cam.getIntrinsic();
+  }
+  Camera::CameraModel Model::getCam(int templateID) const {
+    return _myData[templateID].cam;
   }
   cv::Mat Model::getHueHist(int templateID) const {
     return _myData[templateID].hueHist;
@@ -221,7 +233,7 @@ namespace Recognition{
     cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
 
     /** Save the computed data */
-    _myData.emplace_back(TrainingData{cv::Mat(R), -T, distance, cam.getIntrinsic(), cv::Mat(Hue_Hist)});
+    _myData.emplace_back(TrainingData{cv::Mat(R), -T, distance, cam, cv::Mat(Hue_Hist)});
 
   }
 
@@ -266,10 +278,10 @@ namespace Recognition{
     }
     fs << "]";
 
-    fs << "Ks" << "[";
+    fs << "Camera" << "[";
     for (int Ks_idx=0;Ks_idx<nData;++Ks_idx)
     {
-      fs << _myData[Ks_idx].K;
+      fs << _myData[Ks_idx].cam;
     }
     fs << "]";
 

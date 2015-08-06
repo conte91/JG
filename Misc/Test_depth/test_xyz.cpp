@@ -1,5 +1,9 @@
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <opencv2/core/eigen.hpp>
 #include <Camera/OpenniWaitProvider.h>
 #include <Camera/CameraModel.h>
+#include <Camera/FileProvider.h>
 #include <opencv2/rgbd.hpp>
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -38,29 +42,56 @@ void doSomething(int event, int x, int y, int flags, void* stafava){
     cv::Vec3b rgb=r.at<cv::Vec3b>(y,x);
     unsigned int r=rgb.val[2], g=rgb.val[1], b=rgb.val[0];
     std::cout << "RGB: (" << r << "," << g << "," <<  b << ")\n - Coordinates: ";
-    cv::Mat_<cv::Vec3f> depthOut;
+    cv::Mat_<cv::Vec3d> depthOut;
 
     cv::Mat singlePointMask(d.rows, d.cols, CV_8U);
     singlePointMask.setTo(0);
     singlePointMask.at<uint8_t>(y,x)=255;
 
     cv::rgbd::depthTo3d(d, cam->getIntrinsic(), depthOut, singlePointMask);
-    std::cout << "(" << depthOut[0][0].val[0];
-    std::cout << "," << depthOut[0][0].val[1];
-    std::cout << "," << depthOut[0][0].val[2] << ")\n";
+    Eigen::Vector3d myVal;
+    for(int i=0; i<3; ++i){
+       myVal[i]=depthOut[0][0].val[i];
+    }
+    std::cout << "Extrinsics: " << cam->getExtrinsic().matrix() << "\n";
+    auto& cacca = cam->getExtrinsic()*myVal;
+    std::cout << "(" << cacca[0];
+    std::cout << "," << cacca[1];
+    std::cout << "," << cacca[2] << ")\n";
+    std::cout << "Inverse extrinsic: " << cam->getExtrinsic().inverse().matrix() << "\n";
+    auto& cacca2 = cam->getExtrinsic().inverse()*myVal;
+    std::cout << "(" << cacca2[0];
+    std::cout << "," << cacca2[1];
+    std::cout << "," << cacca2[2] << ")\n";
 
   }
 }
 
-int main(){
+int main(int argc, char** argv){
   using Camera::OpenNIWaitProvider;
+  using Camera::FileProvider;
   using Camera::CameraModel;
 
-  OpenNIWaitProvider p;
-  cv::FileStorage fs("camera_model.data", cv::FileStorage::READ);
+  assert(argc==3 && "Must provide camera type and camera model file");
+
+  std::unique_ptr<Camera::ImageProvider> p ( [argc, argv] () -> Camera::ImageProvider* {
+    if(std::string(argv[1])=="W"){
+      return new OpenNIWaitProvider();
+    }
+    else if(std::string(argv[1])=="F"){
+      return new FileProvider();
+    }
+    else{
+      return nullptr;
+    }
+  } () );
+
+
+
+  cv::FileStorage fs(argv[2], cv::FileStorage::READ);
   cam=std::shared_ptr<CameraModel>(new CameraModel(std::move(CameraModel::readFrom(fs["camera_model"]))));
 
-  Img::Image i=p.getFrame();
+  Img::Image i=p->getFrame();
 
   r=i.rgb;
   d=i.depth;

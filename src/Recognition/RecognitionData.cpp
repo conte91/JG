@@ -1,5 +1,6 @@
 #include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/core/eigen.hpp>
@@ -88,7 +89,7 @@ namespace Recognition{
       // Fill the Pose object
       int tId=match.template_id;
       auto& obj=_objectModels.at(match.class_id);
-      cv::Matx33d R_match = obj.getR(match.template_id);
+      cv::Matx33d R_match = obj.getR(tId);
       cv::Vec3d T_match = obj.getT(tId);
       std::cout << "Rotation matrix: \n" << R_match << "\n";
       std::cout << "Translation vector:\n" << T_match << "\n";
@@ -170,30 +171,23 @@ namespace Recognition{
       /** Take the best match and return it as a position */
 
       /** Fill the transformation matrix */
-      cv::Mat cvStartTransform(4,4,CV_64F);
-      cvStartTransform.setTo(0);
-      {
-        /** Rotation filling - dk a better way */
-        auto myBlock=cvStartTransform.rowRange(0,2).colRange(0,2);
-        for(int i=0; i<3; ++i){
-          for(int j=0; j<3; ++j){
-            myBlock.at<double>(i,j)=R_match(i,j);
-          }
-        }
-      }
-      {
-        auto lastcolumn=cvStartTransform.rowRange(0,2).colRange(3,3);
-        for(int i=0; i<3; ++i){
-          lastcolumn.at<double>(i,0)=T_match(i);
-        }
-      }
+      Eigen::Matrix3d eRot;
+      Eigen::Vector3d eTras;
 
-      Eigen::Matrix4d startTransform;
-      cv2eigen(cvStartTransform, startTransform);
+      cv2eigen(R_match, eRot);
+      cv2eigen(T_match, eTras);
 
-      //TODO startTransform=startTransform*finalTransformationMatrix;
-      eigen2cv(startTransform, Pose);
-      Pose.at<double>(3,3)=1;
+      Eigen::Affine3d matchTrans;
+      matchTrans.linear()=eRot;
+      matchTrans.translation()=eTras;
+
+      const auto& Cam_match = obj.getCam(tId);
+      Eigen::Affine3d cameraToWorld=Cam_match.getExtrinsic().inverse();
+
+      /** Move to global positions */
+      matchTrans = cameraToWorld * matchTrans;
+
+      eigen2cv(matchTrans.matrix(), Pose);
       return true;
     }
     return false;
