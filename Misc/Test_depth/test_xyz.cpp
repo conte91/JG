@@ -42,7 +42,7 @@ void doSomething(int event, int x, int y, int flags, void* stafava){
     cv::Vec3b rgb=r.at<cv::Vec3b>(y,x);
     unsigned int r=rgb.val[2], g=rgb.val[1], b=rgb.val[0];
     std::cout << "RGB: (" << r << "," << g << "," <<  b << ")\n - Coordinates: ";
-    cv::Mat_<cv::Vec3d> depthOut;
+    cv::Mat_<cv::Vec3f> depthOut;
 
     cv::Mat singlePointMask(d.rows, d.cols, CV_8U);
     singlePointMask.setTo(0);
@@ -100,9 +100,63 @@ int main(int argc, char** argv){
 
   cv::namedWindow("RGB image");
   cv::namedWindow("Depth image");
+  Eigen::Matrix<double, 4, 100> myPoints;
+  Eigen::Matrix<double, 4, 10> myAxisX, myAxisY;
+
+  /** Builds up five vector to show onto the image. Origin, and combinations of +1 and -1. */
+  for(int i=0; i<10; ++i){
+    for(int j=0; j<10; ++j){
+      myPoints.col(i*10+j)<< -.648+i*0.108, -.648+j*0.108, 0, 1 ;
+    }
+  }
+  for(int i=0; i<10; ++i){
+    myAxisX.col(i)<< -.648+i*0.108, 0, 0, 1;
+    myAxisY.col(i)<< 0, -.648+i*0.108, 0, 1;
+  }
+
+  std::cout << "XYZ points: \n" << myPoints << "\n";
+  /** Gets (u,v) coordinates from (x,y,z,1) points */
+  Eigen::Matrix<double, 3, 3> camIntr;
+  const auto& cvIn=cam->getIntrinsic();
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j){
+      camIntr(i,j)=cvIn.at<double>(i,j);
+    }
+  }
+
+  Eigen::Matrix<double, 3, 100> uvPoints = camIntr*(cam->getExtrinsic()*myPoints).topRows<3>();
+  Eigen::Matrix<double, 3, 10> uvAxisX = camIntr*(cam->getExtrinsic()*myAxisX).topRows<3>();
+  Eigen::Matrix<double, 3, 10> uvAxisY = camIntr*(cam->getExtrinsic()*myAxisY).topRows<3>();
+
+  std::cout << "UV points:\n" << uvPoints << "\n";
+
+  for(int i=0; i<100; ++i){
+    if(uvPoints(0,i)<0 || uvPoints(0,i) > r.cols || uvPoints(1,i)<0 || uvPoints(1,i)>r.rows){
+      std::cout << "Exit\n";
+      continue;
+    }
+    std::cout << "Doing " << uvPoints(0,i) << " " <<  uvPoints(1,i) << "\n";
+    r.at<cv::Vec3b>(int(uvPoints(1,i)),int(uvPoints(0,i)))=cv::Vec3b(255,0,0);
+  }
+  for(int i=0; i<10; ++i){
+    if(uvAxisY(0,i)<0 || uvAxisY(0,i) > r.cols || uvAxisY(1,i)<0 || uvAxisY(1,i)>r.rows){
+      std::cout << "Exit\n";
+      continue;
+    }
+    std::cout << "Doing " << uvAxisY(0,i) << " " <<  uvAxisY(1,i) << "\n";
+    r.at<cv::Vec3b>(int(uvAxisY(1,i)),int(uvAxisY(0,i)))=cv::Vec3b(0,255,0);
+  }
+  for(int i=0; i<10; ++i){
+    if(uvAxisX(0,i)<0 || uvAxisX(0,i) > r.cols || uvAxisX(1,i)<0 || uvAxisX(1,i)>r.rows){
+      std::cout << "Exit\n";
+      continue;
+    }
+    std::cout << "Doing " << uvAxisX(0,i) << " " <<  uvAxisX(1,i) << "\n";
+    r.at<cv::Vec3b>(int(uvAxisX(1,i)),int(uvAxisX(0,i)))=cv::Vec3b(0,0,255);
+  }
+
   cv::imshow("RGB image", r);
   cv::imshow("Depth image", d);
-
   cv::setMouseCallback("RGB image", doSomething);
   cv::setMouseCallback("Depth image", doSomething);
 

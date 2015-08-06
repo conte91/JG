@@ -75,6 +75,8 @@ flags = [
 '-I',
 '/usr/include/opencv',
 '-I',
+'/usr/include/eigen3',
+'-I',
 './ClangCompleter',
 '-isystem',
 './tests/gmock/gtest',
