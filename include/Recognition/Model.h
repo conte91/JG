@@ -57,7 +57,7 @@ namespace Recognition{
       const std::vector<cv::linemod::Template> getTemplates(int templateID) const;
 
       /** Gets all the templates of this model, for each template ID */
-      const std::vector<cv::linemod::Template> getAllTemplates() const;
+      void addAllTemplates(cv::linemod::Detector& det) const;
 
       /** Loads this model from YML data taken from a folder */
       void readFrom(const std::string& id, const boost::filesystem::path& myDir);

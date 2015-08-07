@@ -106,13 +106,11 @@ namespace Recognition{
     return _detector->getTemplates(_myId, templateID);
   }
 
-  const std::vector<cv::linemod::Template> Model::getAllTemplates() const {
-    std::vector<cv::linemod::Template> result;
+  void Model::addAllTemplates(cv::linemod::Detector& det) const {
     for(int i=0; i<_detector->numTemplates(); ++i){
       auto& t=getTemplates(i);
-      result.insert(result.end(), t.begin(), t.end());
+      det.addSyntheticTemplate(t, _myId);
     }
-    return result;
   }
 
   int Model::numTemplates() const {
@@ -203,6 +201,8 @@ namespace Recognition{
     std::vector<cv::Mat> sources(2);
     sources[0] = image;
     sources[1] = depth;
+    assert(image.type()==CV_8UC3);
+    assert(depth.type()==CV_16UC1);
     int template_in = _detector->addTemplate(sources, _myId, mask);
     if (template_in == -1)
     {

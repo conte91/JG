@@ -20,11 +20,6 @@
 #include <Recognition/GiorgioUtils.h>
 #include <Recognition/GLUTInit.h>
 
-static double _threshold;
-static float px_match_min_;
-static float th_obj_dist_;
-
-
 namespace Recognition{
 
 
@@ -34,14 +29,16 @@ namespace Recognition{
    * I know this. But it's 3 days to the deadline and I don't have enough time to explain to the "developer" who made        *
    * this crap how crappy his crap is. Just don't touch it and it shall work.                                                *
    ***************************************************************************************************************************/
-  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
+  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
       cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const
   {
 
     cv::Mat rgb=const_rgb.clone();
     CV_Assert(filter_mask.depth() == CV_8UC1);
-    /** The depth_ matrix is given in mm */
-    CV_Assert(depth_mm.depth() == CV_16UC1);
+    /** The depth_ matrix is given in m, but we want to use it in mm now */
+    CV_Assert(depth_m.type() == CV_64FC1);
+    cv::Mat depth_mm;
+    depth_m.convertTo(depth_mm, CV_16UC1, 1000);
 
     std::vector<cv::Mat> sources;
     sources.push_back(rgb);
@@ -61,9 +58,9 @@ namespace Recognition{
     /** Create LINE-MOD detector with templates built from the object */
     cv::Ptr<cv::linemod::Detector> detector (cv::linemod::getDefaultLINEMOD());
     for(auto& object_id_ : vect_objs_to_pick){
-      auto& templates_original = _objectModels.at(object_id_).getAllTemplates();
-      detector->addSyntheticTemplate(templates_original, object_id_);
+      _objectModels.at(object_id_).addAllTemplates(*detector);
     }
+    std::cout << "#Templates: " << detector->numTemplates() << "\n";
 
     std::cout<<"Matching..."<<"\n";
     detector->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
@@ -93,7 +90,7 @@ namespace Recognition{
       cv::Vec3d T_match = obj.getT(tId);
       std::cout << "Rotation matrix: \n" << R_match << "\n";
       std::cout << "Translation vector:\n" << T_match << "\n";
-      float D_match = obj.getDist(tId);
+      double D_match = obj.getDist(tId);
       cv::Mat K_match = obj.Model::getK(tId).clone();
 
       //get the point cloud of the rendered object model
@@ -158,7 +155,7 @@ namespace Recognition{
       //get the point clouds (for both reference and model)
       std::vector<cv::Vec3f> pts_real_model_temp;
       std::vector<cv::Vec3f> pts_real_ref_temp;
-      float px_ratio_missing = matToVec(depth_real_model, depth_real_ref, pts_real_model_temp, pts_real_ref_temp);
+      double px_ratio_missing = matToVec(depth_real_model, depth_real_ref, pts_real_model_temp, pts_real_ref_temp);
       std::cout<<"px_ratio_missing > px_match_min_ ?: "<<px_ratio_missing<<" > " <<  px_match_min_ <<"\n";
       if (px_ratio_missing > px_match_min_)
         continue;
@@ -276,12 +273,6 @@ namespace Recognition{
       _threshold(91.0f)
   {
 
-    /** GOD FORGIVE ME */
-    ::_threshold=_threshold;
-    ::px_match_min_=px_match_min_;
-    ::th_obj_dist_=th_obj_dist_;
-    //entry point simulate RGB and DEPTH images given by Simo
-    //Read martrices from yml file
     cv::Mat depth_meters, depth_gray, rgb_img;
 
     namespace fs=boost::filesystem;

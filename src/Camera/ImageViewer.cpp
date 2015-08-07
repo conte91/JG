@@ -32,7 +32,7 @@ namespace Camera{
 
     //cv::putText(_ID+" (RGB)", _title+" RGB");
     //cv::putText(_ID+" (DEPTH)", _title+" DEPTH");
-    cv::waitKey(1);
+    cv::waitKey(10);
   }
 
   void ImageViewer::showImage(const Image& what){

@@ -42,7 +42,7 @@ void doSomething(int event, int x, int y, int flags, void* stafava){
     cv::Vec3b rgb=r.at<cv::Vec3b>(y,x);
     unsigned int r=rgb.val[2], g=rgb.val[1], b=rgb.val[0];
     std::cout << "RGB: (" << r << "," << g << "," <<  b << ")\n - Coordinates: ";
-    cv::Mat_<cv::Vec3f> depthOut;
+    cv::Mat_<cv::Vec3d> depthOut;
 
     cv::Mat singlePointMask(d.rows, d.cols, CV_8U);
     singlePointMask.setTo(0);

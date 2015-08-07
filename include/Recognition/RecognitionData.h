@@ -25,10 +25,10 @@ namespace Recognition{
 
       //Depth Camera Matrix
       const CameraModel _cameraModel;
-      const float px_match_min_;
+      const double px_match_min_;
 
-      const float th_obj_dist_; //"th_obj_dist", "Threshold on minimal distance between detected objects.", 0.04f);
-      const float _threshold; //"threshold", "Matching threshold, as a percentage", 93.0f
+      const double th_obj_dist_; //"th_obj_dist", "Threshold on minimal distance between detected objects.", 0.04f);
+      const double _threshold; //"threshold", "Matching threshold, as a percentage", 93.0f
 
       std::unordered_map<std::string, Model> _objectModels;
 
