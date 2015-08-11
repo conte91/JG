@@ -75,31 +75,17 @@ namespace Recognition{
     fr["renderer_n_points"] >> renderer_n_points;
     _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
 
-    /**Read R**/
-    const auto& _Rmap=readSequence<cv::Mat>(inFile["Rot"]);
-    /**Read T**/
-    const auto& _Tmap=readSequence<cv::Vec3d>(inFile["Transl"]);
-    /**Read K**/
-    std::vector<Camera::CameraModel> _Kmap;
-    {
-      const cv::FileNode& n=inFile["Camera"];
-      /** Reads the camera models: can't use readSequence! */
-      assert(n.type() == cv::FileNode::SEQ && "Data are not a sequence!");
-      for(const auto& it : n){
-        _Kmap.emplace_back(Camera::CameraModel::readFrom(it));
-      }
-    }
-
-    /**Read Dist**/
-    const auto& _distMap=readSequence<double>(inFile["dist"]);
-    /**Read HueHist**/
-    const auto& _hueHistMap=readSequence<cv::Mat>(inFile["Hue"]);
-
     _myData={};
-    for(int i=0; i<_Rmap.size(); ++i){
-      _myData.push_back({_Rmap[i], _Tmap[i], _distMap[i], _Kmap[i], _hueHistMap[i]});
+    const cv::FileNode& n=inFile["trainData"];
+    /** Reads the camera models: can't use readSequence! */
+    assert(n.type() == cv::FileNode::SEQ && "Data are not a sequence!");
+    for(const auto& it : n){
+      int tID;
+      it["id"] >> tID;
+      TrainingData t{{},{},{},{0,0,0,0,0,0,0},{}};
+      read(it["data"], t, {{},{},{},{0,0,0,0,0,0,0},{}});
+      _myData.insert(std::make_pair(tID,t));
     }
-
   }
 
   const std::vector<cv::linemod::Template> Model::getTemplates(int templateID) const {
@@ -116,26 +102,26 @@ namespace Recognition{
   int Model::numTemplates() const {
     return _detector->numTemplates();
   }
-  cv::Mat Model::getR(int templateID) const {
-    return _myData[templateID].R;
+  cv::Matx33f Model::getR(int templateID) const {
+    return _myData.at(templateID).R;
   }
-  cv::Vec3d Model::getT(int templateID) const {
-    return _myData[templateID].T;
+  cv::Vec3f Model::getT(int templateID) const {
+    return _myData.at(templateID).T;
   }
-  double Model::getDist(int templateID) const {
-    return _myData[templateID].dist;
+  float Model::getDist(int templateID) const {
+    return _myData.at(templateID).dist;
   }
-  cv::Mat Model::getK(int templateID) const {
-    return _myData[templateID].cam.getIntrinsic();
+  cv::Matx33f Model::getK(int templateID) const {
+    return _myData.at(templateID).cam.getIntrinsic();
   }
   Camera::CameraModel Model::getCam(int templateID) const {
-    return _myData[templateID].cam;
+    return _myData.at(templateID).cam;
   }
   cv::Mat Model::getHueHist(int templateID) const {
-    return _myData[templateID].hueHist;
+    return _myData.at(templateID).hueHist;
   }
   Model::TrainingData Model::getData(int templateID) const {
-    return _myData[templateID];
+    return _myData.at(templateID);
   }
 
   void Model::render(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
@@ -212,8 +198,8 @@ namespace Recognition{
 
     /** Computes and saves the parameters used for training */
     R = camTUp2ObjRot(T, up);
-    double radius=::hypot(::hypot(T(0), T(1)), T(2));
-    double distance = fabs(radius - depth.at<ushort>(depth.rows/2.0, depth.cols/2.0)/1000.0);
+    float radius=::hypot(::hypot(T(0), T(1)), T(2));
+    float distance = fabs(radius - depth.at<ushort>(depth.rows/2.0, depth.cols/2.0)/1000.0);
 
     /** hue histogram */
     /* Convert to HSV */
@@ -233,8 +219,10 @@ namespace Recognition{
     cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
 
     /** Save the computed data */
-    _myData.emplace_back(TrainingData{cv::Mat(R), -T, distance, cam, cv::Mat(Hue_Hist)});
-
+    if(_myData.find(template_in)!=_myData.end()){
+      std::cerr << "##############Duplicate template ID!!################\n";
+    }
+    _myData.insert(std::make_pair(template_in,TrainingData{cv::Mat(R), -T, distance, cam, cv::Mat(Hue_Hist)}));
   }
 
   void Model::saveToDirectory(const boost::filesystem::path& saveDir) const
@@ -257,38 +245,13 @@ namespace Recognition{
 
     //save : R, T, dist, and Ks for that class
     int nData=_myData.size();
-    fs << "Rot" << "[";
-    for (int R_idx=0;R_idx<nData;++R_idx)
+    fs << "trainData" << "[";
+    for (auto& item : _myData)
     {
-      fs << _myData[R_idx].R;
-    }
-    fs << "]";
-
-    fs << "Transl" << "[";
-    for (int T_idx=0;T_idx<nData;++T_idx)
-    {
-      fs << _myData[T_idx].T;
-    }
-    fs << "]";
-
-    fs << "dist" << "[";
-    for (int dist_idx=0;dist_idx<nData;++dist_idx)
-    {
-      fs << _myData[dist_idx].dist;
-    }
-    fs << "]";
-
-    fs << "Camera" << "[";
-    for (int Ks_idx=0;Ks_idx<nData;++Ks_idx)
-    {
-      fs << _myData[Ks_idx].cam;
-    }
-    fs << "]";
-
-    fs << "Hue" << "[";
-    for (int Hue_idx=0;Hue_idx<nData;++Hue_idx)
-    {
-      fs << _myData[Hue_idx].hueHist;
+      fs << "{";
+      fs << "id" << item.first;
+      fs << "data" << item.second;
+      fs << "}";
     }
     fs << "]";
 
@@ -302,6 +265,24 @@ namespace Recognition{
     fs << "renderer_n_points" <<  renderer_n_points;
     fs << "}";
 
+  }
+
+  void Model::render(const Eigen::Affine3f& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {
+    render(Eigen::Affine3d(pose), rgb_out, depth_out, mask_out, rect_out);
+  }
+
+  void Model::render(const Eigen::Affine3d& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {
+    constexpr double PI  =3.141592653589793238463;
+    auto newPose=Eigen::AngleAxisd(PI, Eigen::Vector3d::UnitX())*pose;
+
+    _renderer_iterator->renderer_->setObjectPose(newPose);
+    _renderer_iterator->renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
+    _renderer_iterator->renderer_->renderImageOnly(rgb_out, rect_out);
+  }
+
+  void Model::render(const C5G::Pose& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {
+    /** Gets the T and UP vector from the Pose object */
+    render(C5G::Pose::poseToTransform(pose), rgb_out, depth_out, mask_out, rect_out);
   }
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr Model::getPointCloud(const C5G::Pose& pose) const {
@@ -319,7 +300,7 @@ namespace Recognition{
 
     render(t, u, image_out, depth_out, mask_out, rect_out);
 
-    cv::Mat_<cv::Vec3d> pointsXYZ;
+    cv::Mat_<cv::Vec3f> pointsXYZ;
     cv::rgbd::depthTo3d(depth_out, _camModel.getIntrinsic(), pointsXYZ);
     /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -342,5 +323,35 @@ namespace Recognition{
       }
     }
     return modelCloudPtr;
+  }
+}
+namespace cv{
+  void write( FileStorage& fs, const std::string& name, const Recognition::Model::TrainingData& data){
+    /* Read YAML Vector */
+    fs << "{";
+    fs << "R" << cv::Mat(data.R);
+    fs << "T" << data.T;
+    fs << "dist" << data.dist;
+    fs << "cam" << data.cam;
+    fs << "hueHist" << data.hueHist;
+    fs << "}";
+  }
+  void read(const FileNode& node, Recognition::Model::TrainingData& x, const Recognition::Model::TrainingData& default_value){
+    if(node.empty()){
+      x=default_value;
+      return;
+    }
+
+    /* Read YAML Vector */
+    cv::Mat R;
+    cv::Vec3d T;
+    float dist;
+    cv::Mat hueHist;
+
+    node["R"] >> R;
+    node["T"] >> T;
+    node["dist"] >> dist;
+    node["hueHist"] >> hueHist;
+    x={R,T,dist,Camera::CameraModel::readFrom(node["cam"]), hueHist};
   }
 }

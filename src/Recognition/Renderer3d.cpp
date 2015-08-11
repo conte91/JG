@@ -33,12 +33,15 @@
  *
  */
 
+#include <GL/glew.h>
+#include <GL/gl.h>
 #include <Recognition/Renderer3d.h>
 
 #include <iostream>
 #include <stdlib.h>
 
-#include <GL/gl.h>
+#include <Eigen/Geometry>
+#include <unsupported/Eigen/OpenGLSupport>
 
 #include <Recognition/Mesh.h>
 
@@ -46,6 +49,7 @@
 
 //#if USE_GLUT
 #include <Recognition/renderer3d_impl_glut.h>
+#include <highgui.h>
 //#else
 //#include "renderer3d_impl_osmesa.h"
 //#endif
@@ -114,7 +118,7 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
 /****/
   GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 1.0f };
   GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
-  GLfloat LightPosition[]= { 0.0f, 0.0f, 15.0f, 1.0f };
+  GLfloat LightPosition[]= { 0.0f, 15.0f, 0.0f, 1.0f };
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
     glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
     glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
@@ -155,7 +159,70 @@ Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double 
 
   // center the model
   glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
+  glScalef(1,-1,1);
+  glFrontFace(GL_CW);
 
+  // if the display list has not been made yet, create a new one and
+  // fill it with scene contents
+  if (scene_list_ == 0)
+  {
+    scene_list_ = glGenLists(1);
+    glNewList(scene_list_, GL_COMPILE);
+    // now begin at the root node of the imported data and traverse
+    // the scenegraph by multiplying subsequent local transforms
+    // together on GL's matrix stack.
+    model_->Draw();
+    glEndList();
+  }
+
+  glCallList(scene_list_);
+}
+
+void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
+  renderer_->bind_buffers();
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  Eigen::glMultMatrix(pose);
+
+  // scale the whole asset to fit into our view frustum
+  aiVector3D scene_min, scene_max, scene_center;
+  model_->get_bounding_box(&scene_min, &scene_max);
+  glScalef(1,-1,1);
+  glFrontFace(GL_CW);
+  // if the display list has not been made yet, create a new one and
+  // fill it with scene contents
+  if (scene_list_ == 0)
+  {
+    scene_list_ = glGenLists(1);
+    glNewList(scene_list_, GL_COMPILE);
+    // now begin at the root node of the imported data and traverse
+    // the scenegraph by multiplying subsequent local transforms
+    // together on GL's matrix stack.
+    model_->Draw();
+    glEndList();
+  }
+
+  glCallList(scene_list_);
+}
+void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
+  renderer_->bind_buffers();
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  Eigen::glMultMatrix(pose.inverse());//.inverse());
+
+  // scale the whole asset to fit into our view frustum
+  aiVector3D scene_min, scene_max, scene_center;
+  model_->get_bounding_box(&scene_min, &scene_max);
+  glScalef(1,-1,1);
+  glFrontFace(GL_CW);
   // if the display list has not been made yet, create a new one and
   // fill it with scene contents
   if (scene_list_ == 0)

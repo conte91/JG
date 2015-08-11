@@ -1,0 +1,7 @@
+#find_package(Eigen REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(PCL REQUIRED)
+find_package(assimp REQUIRED)
+find_package(GLUT REQUIRED)
+find_package(FREEIMAGE REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${FREEIMAGE_INCLUDE_DIRS})

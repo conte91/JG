@@ -5,6 +5,7 @@
 
 #include <cctype>
 #include <stdio.h>
+#include <iostream>
 #include <string.h>
 #include <time.h>
 #include <Camera/CameraModel.h>
@@ -140,11 +141,11 @@ static bool runCalibration( vector<vector<Point2f> > imagePoints,
                     vector<float>& reprojErrs,
                     double& totalAvgErr)
 {
-    cameraMatrix = Mat::eye(3, 3, CV_64F);
+    cameraMatrix = Mat::eye(3, 3, CV_32F);
     if( flags & CV_CALIB_FIX_ASPECT_RATIO )
-        cameraMatrix.at<double>(0,0) = aspectRatio;
+        cameraMatrix.at<float>(0,0) = aspectRatio;
 
-    distCoeffs = Mat::zeros(8, 1, CV_64F);
+    distCoeffs = Mat::zeros(8, 1, CV_32F);
 
     vector<vector<Point3f> > objectPoints(1);
     calcChessboardCorners(boardSize, squareSize, objectPoints[0], patternType);
@@ -209,7 +210,16 @@ static void saveCameraParams( const string& filename,
 
     fs << "camera_matrix" << cameraMatrix;
 
-    fs << "camera_model" << Camera::CameraModel(imageSize.width,imageSize.height,cameraMatrix);
+    cv::Mat mazzi;
+    if(cameraMatrix.type()!=CV_32F){
+      assert(cameraMatrix.type()==CV_64F);
+      std::cout << "Converting matrix to float\n";
+      cameraMatrix.convertTo(mazzi, CV_32F);
+    }
+    else{
+      mazzi=cameraMatrix;
+    }
+    fs << "camera_model" << Camera::CameraModel(imageSize.width,imageSize.height,mazzi);
 
     fs << "distortion_coefficients" << distCoeffs;
 

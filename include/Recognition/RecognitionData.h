@@ -41,7 +41,7 @@ namespace Recognition{
        * @param resultPointClouds array of returned point clouds, in order: model point cloud, reference (i.e. scene) point cloud, aligned model point cloud 
        * @return true if ICP succeded, false otherwise
        */
-      bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4d& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
+      bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
 
       bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
       cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
@@ -56,5 +56,7 @@ namespace Recognition{
       RecognitionData(const std::string& trainPath, const CameraModel& m);
 
       PCloud::Ptr objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const;
+
+      const Model& getModel(const std::string& name) const;
   };
 }

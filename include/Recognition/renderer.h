@@ -40,6 +40,7 @@
 
 #include <string>
 
+#include <Eigen/Geometry>
 #include <opencv2/core/core.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,6 +90,8 @@ public:
   virtual void
   renderImageOnly(cv::Mat &image_out, const cv::Rect &rect_out) const = 0;
 
+  virtual void setObjectPose(const Eigen::Affine3d& pose)=0;
+  virtual void setCameraPose(const Eigen::Affine3d& pose)=0;
 protected:
   unsigned int width_, height_;
   double focal_length_x_, focal_length_y_, near_, far_;

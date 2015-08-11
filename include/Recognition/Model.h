@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <boost/filesystem.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
+#include <opencv2/core/core.hpp>
 #include <C5G/C5G.h>
 #include <Recognition/db_linemod.h>
 #include <Recognition/linemod_icp.h>
@@ -20,9 +21,9 @@ namespace Recognition{
     public:
       /** Data associated with each template */
       struct TrainingData{
-        cv::Mat R;
-        cv::Vec3d T;
-        double dist;
+        cv::Matx33f R;
+        cv::Vec3f T;
+        float dist;
         Camera::CameraModel cam;
         cv::Mat hueHist;
       };
@@ -34,7 +35,7 @@ namespace Recognition{
         inline std::vector<T> readSequence(const cv::FileNode& n);
       cv::Ptr<cv::linemod::Detector> _detector;
       std::shared_ptr<RendererIterator> _renderer_iterator;
-      std::vector<TrainingData> _myData;
+      std::unordered_map<int, TrainingData> _myData;
 
       cv::Matx33d camTUp2ObjRot(const cv::Vec3d& tDir, const cv::Vec3d& upDir);
       int renderer_width;
@@ -64,6 +65,9 @@ namespace Recognition{
 
       void saveToDirectory(const boost::filesystem::path& saveDir) const;
 
+      void render(const Eigen::Affine3f& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const;
+      void render(const Eigen::Affine3d& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const;
+      void render(const C5G::Pose& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const;
       void render(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
       void renderImageOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Rect &rect_out) const;
       void renderDepthOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
@@ -71,10 +75,10 @@ namespace Recognition{
       void addTraining(const cv::Vec3d& T, const cv::Vec3d& up, const Camera::CameraModel& cam);
 
       TrainingData getData(int templateID) const;
-      cv::Mat getR(int templateID) const;
-      cv::Vec3d getT(int templateID) const;
-      double getDist(int templateID) const;
-      cv::Mat getK(int templateID) const;
+      cv::Matx33f getR(int templateID) const;
+      cv::Vec3f getT(int templateID) const;
+      float getDist(int templateID) const;
+      cv::Matx33f getK(int templateID) const;
       cv::Mat getHueHist(int templateID) const;
       Camera::CameraModel getCam(int templateID) const;
       const std::shared_ptr<RendererIterator> getRenderer() const;
@@ -83,6 +87,11 @@ namespace Recognition{
       Camera::CameraModel _camModel;
 
   };
+}
+
+namespace cv{
+  void write( FileStorage& fs, const std::string& name, const Recognition::Model::TrainingData& data);
+  void read(const FileNode& node, Recognition::Model::TrainingData& x, const Recognition::Model::TrainingData& default_value );
 }
 
 #include "Model.hpp"

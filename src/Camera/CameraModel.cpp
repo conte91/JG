@@ -2,110 +2,103 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/rgbd.hpp>
 #include <Camera/CameraModel.h>
 
 
 namespace Camera{
 
-  CameraModel::CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc, double xCam, double yCam, double zCam, double aCam, double bCam, double gCam)
+  CameraModel::CameraModel(int w, int h, float fx, float fy, float s, float xc, float yc, float xCam, float yCam, float zCam, float aCam, float bCam, float gCam)
     :
-      _K(3,3,CV_64F),
+      _K(3,3,CV_32F),
       _imWidth(w),
       _imHeight(h)
   {
     using cv::Mat;
     using cv::Mat_;
-    _K.setTo(0);
-    _K.at<double>(0,0)=fx;
-    _K.at<double>(0,1)=s;
-    _K.at<double>(0,2)=xc;
-    _K.at<double>(1,1)=fy;
-    _K.at<double>(1,2)=yc;
-    _K.at<double>(2,2)=1;
+    _K=0;
+    _K(0,0)=fx;
+    _K(0,1)=s;
+    _K(0,2)=xc;
+    _K(1,1)=fy;
+    _K(1,2)=yc;
+    _K(2,2)=1;
     
     // Rotation matrices are saved as Rodriguez coefficients
-    Mat RX = (Mat_<double>(4, 4) <<
+    Mat RX = (Mat_<float>(4, 4) <<
               1,          0,           0, 0,
               0, cos(aCam), -sin(aCam), 0,
               0, sin(aCam),  cos(aCam), 0,
               0,          0,           0, 1);
 
-    Mat RY = (Mat_<double>(4, 4) <<
+    Mat RY = (Mat_<float>(4, 4) <<
               cos(bCam), 0, -sin(bCam), 0,
               0, 1,          0, 0,
               sin(bCam), 0,  cos(bCam), 0,
               0, 0,          0, 1);
 
-    Mat RZ = (Mat_<double>(4, 4) <<
+    Mat RZ = (Mat_<float>(4, 4) <<
               cos(gCam), -sin(gCam), 0, 0,
               sin(gCam),  cos(gCam), 0, 0,
               0,          0,           1, 0,
               0,          0,           0, 1);
     // Translation 
-    Mat T = (Mat_<double>(4,4) <<
+    Mat T = (Mat_<float>(4,4) <<
               1, 0, 0, xCam,
               0, 1, 0, yCam,
               0, 0, 1, zCam,
               0, 0, 0, 1);
-    _extr = T * RX * RY * RZ;
+    _extr =cv::Mat( T * RX * RY * RZ);
 
   }
 
-    CameraModel::CameraModel(int w, int h, double fx, double fy, double s, double xc, double yc, const cv::Mat& extr_in)
+    CameraModel::CameraModel(int w, int h, float fx, float fy, float s, float xc, float yc, const cv::Mat& extr_in)
     :
-      _K(3,3,CV_64F),
+      _K(3,3,CV_32F),
       _extr(extr_in.clone()),
       _imWidth(w),
       _imHeight(h)
   {
-    _K.setTo(0);
-    _K.at<double>(0,0)=fx;
-    _K.at<double>(0,1)=s;
-    _K.at<double>(0,2)=xc;
-    _K.at<double>(1,1)=fy;
-    _K.at<double>(1,2)=yc;
-    _K.at<double>(2,2)=1;
-    assert(extr_in.depth()==CV_64F);
+    _K=0;
+    _K(0,0)=fx;
+    _K(0,1)=s;
+    _K(0,2)=xc;
+    _K(1,1)=fy;
+    _K(1,2)=yc;
+    _K(2,2)=1;
+    assert(extr_in.depth()==CV_32F);
   }
 
-  CameraModel::CameraModel(int w, int h, const cv::Mat& k_in, const cv::Mat& extr_in)
+  CameraModel::CameraModel(int w, int h, const cv::Matx33f& k_in, const cv::Matx44f& extr_in)
     :
       _imWidth(w),
       _imHeight(h),
-      _extr(extr_in)
+      _extr(extr_in),
+      _K(k_in)
   {
     /** Only do the necessary checks */
 
     /** Size and type */
     assert(k_in.rows==3 && k_in.cols==3 && "Wrong-sized camera matrix");
-    assert((k_in.depth()==CV_32F || k_in.depth()==CV_64F) && "Camera matrix must be a float or double matrix");
-
-    if(k_in.depth()==CV_64F){
-      _K=k_in.clone();
-    }
-    else{
-      k_in.convertTo(_K, CV_64F);
-    }
 
     /** Triangularity */
-    assert(_K.at<double>(1,0)==0 && _K.at<double>(2,0)==0 && _K.at<double>(2,1)==0 && "Camera matrix is NOT upper-triangular");
+    assert(_K(1,0)==0 && _K(2,0)==0 && _K(2,1)==0 && "Camera matrix is NOT upper-triangular");
 
     /** Focus length */
-    double fx=_K.at<double>(0,0);
-    double fy=_K.at<double>(1,1);
+    float fx=_K(0,0);
+    float fy=_K(1,1);
     assert(fx>0 && fy>0 && "Focus lengths cannot be negative");
-    assert(extr_in.depth()==CV_64F);
 
   }
 
-  cv::Mat CameraModel::getIntrinsic() const {
-    return _K.clone();
+  cv::Matx33f CameraModel::getIntrinsic() const {
+    return _K;
   }
 
   CameraModel CameraModel::readFrom(const cv::FileNode& fs){
 
     /* Read YAML Vector */
-    double fx, fy, s, xc, yc;
+    float fx, fy, s, xc, yc;
     int w, h;
     cv::Mat ext;
 
@@ -129,12 +122,12 @@ namespace Camera{
     fs << "{";
     fs << "width" << _imWidth;
     fs << "height" << _imHeight;
-    fs << "fx" << _K.at<double>(0,0);
-    fs << "fy" << _K.at<double>(1,1);
-    fs << "s" << _K.at<double>(0,1);
-    fs << "xc" << _K.at<double>(0,2);
-    fs << "yc" << _K.at<double>(1,2);
-    fs << "extr" << _extr;
+    fs << "fx" << _K(0,0);
+    fs << "fy" << _K(1,1);
+    fs << "s" << _K(0,1);
+    fs << "xc" << _K(0,2);
+    fs << "yc" << _K(1,2);
+    fs << "extr" << cv::Mat(_extr);
     fs << "}";
   }
 
@@ -145,53 +138,60 @@ namespace Camera{
   int CameraModel::getHeight() const {
     return _imHeight;
   }
-  double CameraModel::getFx() const {
-    return _K.at<double>(0,0);
+  float CameraModel::getFx() const {
+    return _K(0,0);
   }
-  double CameraModel::getFy() const {
-    return _K.at<double>(1,1);
+  float CameraModel::getFy() const {
+    return _K(1,1);
   }
-  double CameraModel::getS() const {
-    return _K.at<double>(0,1);
+  float CameraModel::getS() const {
+    return _K(0,1);
   }
-  double CameraModel::getXc() const {
-    return _K.at<double>(0,2);
+  float CameraModel::getXc() const {
+    return _K(0,2);
   }
-  double CameraModel::getYc() const {
-    return _K.at<double>(1,2);
+  float CameraModel::getYc() const {
+    return _K(1,2);
   }
 
-  Eigen::Affine3d CameraModel::getExtrinsic() const {
-    Eigen::Matrix4d extrMatrix;
+  Eigen::Affine3f CameraModel::getExtrinsic() const {
+    Eigen::Matrix4f extrMatrix;
     cv2eigen(_extr, extrMatrix);
-    Eigen::Affine3d result;
+    Eigen::Affine3f result;
     result.matrix()=extrMatrix;
     return result;
   }
 
-#if 0
-  TODO complete me :)
-    pcl::PointXYZRGB pointToXYZ(const Image& frame, int x, int y){
+  pcl::PointCloud<pcl::PointXYZ>::Ptr CameraModel::sceneToGlobalPointCloud(const Img::ImageWMask& _myData) const {
+    return sceneToGlobalPointCloud(_myData, _myData.mask);
+  }
 
-      depth=frame.depth.at<double>(x,y);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr CameraModel::sceneToGlobalPointCloud(const Img::Image& _myData, const cv::Mat& mask) const {
+    cv::Mat_<cv::Vec3f> pointsXYZ;
+    cv::rgbd::depthTo3d(_myData.depth, _K, pointsXYZ, mask);
 
-      pcl::PointXYZRGB pt ;
-      // Use correct principal point from calibration
-      float center_x = cam_model_.cx();
-      float center_y = cam_model_.cy();
+    /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZ>);
 
-      // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
-      double unit_scaling = DepthTraits<T>::toMeters( T(1) );
-      float constant_x = unit_scaling / cam_model_.fx();
-      float constant_y = unit_scaling / cam_model_.fy();
-      pt.x = (u - center_x) * depth * constant_x;
-      pt.y = (v - center_y) * depth * constant_y;
-      pt.z = DepthTraits<T>::toMeters(depth);
-      pt.r=
-        return pt;
+    /** Model PointCloud*/
+    int mySize = pointsXYZ.rows*pointsXYZ.cols;
+    modelCloudPtr->resize(mySize);
+    modelCloudPtr->height = 1;
+    modelCloudPtr->is_dense = true;
+
+    for(int i=0; i<pointsXYZ.rows; ++i)
+    {
+      for(int j=0; j<pointsXYZ.cols; ++j){
+        auto& tia=pointsXYZ[i][j];
+        cv::Vec4f pt{tia[0],tia[1],tia[2],1};
+        cv::Vec4f result=(_extr.inv()*pt);
+        modelCloudPtr->points[i*pointsXYZ.cols+j].x=result[0];
+        modelCloudPtr->points[i*pointsXYZ.cols+j].y=result[1];
+        modelCloudPtr->points[i*pointsXYZ.cols+j].z=result[2];
+      }
     }
-#endif
-
+    return modelCloudPtr;
+  }
 }
 
 namespace cv{

@@ -11,7 +11,7 @@ namespace Camera{
 
   Img::Image DummyProvider::getFrame() const{
     std::cout << "I'm taking a photo\n";
-    return Image(Image::Matrix(640, 480, cv::DataType<float>::type), Image::Matrix(640, 480, cv::DataType<float>::type));
+    return Image(Image::Matrix(640, 480, CV_8UC3), Image::Matrix(640, 480, CV_32F));
   }
 
 }

@@ -19,7 +19,7 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  double square_size=::atof(argv[1]);
+  float square_size=::atof(argv[1]);
   int width=::atoi(argv[2]);
   int height=::atoi(argv[3]);
 
@@ -37,15 +37,15 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  cv::Mat imagePointsXYZ(depth.rows, depth.cols, CV_64FC3);
+  cv::Mat imagePointsXYZ(depth.rows, depth.cols, CV_32FC3);
   cv::Mat drawnRGB=img.rgb.clone();
 
-  const cv::Mat& K = cam.getIntrinsic();
-  double fx = K.at<double>(0, 0);
-  double fy = K.at<double>(1, 1);
-  double s = K.at<double>(0, 1);
-  double cx = K.at<double>(0, 2);
-  double cy = K.at<double>(1, 2);
+  const auto& K = cam.getIntrinsic();
+  float fx = K(0, 0);
+  float fy = K(1, 1);
+  float s = K(0, 1);
+  float cx = K(0, 2);
+  float cy = K(1, 2);
   std::cout << "Intrinsic matrix: " << K << "\n";
   const cv::Mat& d=img.depth;
   for(int v=0; v<d.rows; ++v){
@@ -53,8 +53,8 @@ int main(int argc, char** argv){
       
       /** Project back the point to XYZ space */
       {
-        double z= d.at<float>(v,u);
-        cv::Vec3d coordinates;
+        float z= d.at<float>(v,u);
+        cv::Vec3f coordinates;
 
         coordinates[0] = (u - cx) / fx;
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv){
         coordinates[0] = coordinates[0]*z;
         coordinates[1] = (v - cy)*z * (1. / fy);
         coordinates[2] = z;
-        imagePointsXYZ.at<cv::Vec3d>(v,u)=coordinates;
+        imagePointsXYZ.at<cv::Vec3f>(v,u)=coordinates;
       }
     }
   }
@@ -101,7 +101,7 @@ int main(int argc, char** argv){
           }
         }
       }
-      cv::Vec3d c=imagePointsXYZ.at<cv::Vec3d>(pt.y, pt.x);
+      cv::Vec3f c=imagePointsXYZ.at<cv::Vec3f>(pt.y, pt.x);
       pcl::PointXYZ p, refP;
       p.x=c[0];
       p.y=c[1];
@@ -117,17 +117,17 @@ int main(int argc, char** argv){
   }
   assert(refChessBoard->size()==pChessBoard->size());
 
-  Eigen::Affine3d extrinsics=Eigen::Affine3d::Identity();
+  Eigen::Affine3f extrinsics=Eigen::Affine3f::Identity();
   /** Computes the transformation between the reference point cloud and the as-seen-by-the-camera point cloud, i.e. the extrinsics matrix of the camera :) */
   {
-    Eigen::Vector4d cIdeal, cCB;
-    Eigen::Vector3d t;
+    Eigen::Vector4f cIdeal, cCB;
+    Eigen::Vector3f t;
     pcl::compute3DCentroid(*refChessBoard, cIdeal);
     pcl::compute3DCentroid(*pChessBoard, cCB);
     std::cout << "cIdeal: " << cIdeal << "\ncCB: " << cCB << "\n";
 
     /** Translate the two clouds so that the centroid is on the origin */
-    Eigen::Affine3d cTIdeal=Eigen::Affine3d::Identity(), cTCB=Eigen::Affine3d::Identity();
+    Eigen::Affine3f cTIdeal=Eigen::Affine3f::Identity(), cTCB=Eigen::Affine3f::Identity();
     cTIdeal.translation() = -cIdeal.topRows<3>();
     cTCB.translation() = -cCB.topRows<3>();
 
@@ -136,14 +136,14 @@ int main(int argc, char** argv){
     pcl::transformPointCloud(*pChessBoard, centeredCB, cTCB);
 
     /** Use SVD to find the rotation between the two centered clouds */
-    Eigen::Matrix3d H=Eigen::Matrix3d::Zero();
+    Eigen::Matrix3f H=Eigen::Matrix3f::Zero();
     for(size_t i=0; i<refChessBoard->size(); ++i){
-      Eigen::Vector3d pCB{(*pChessBoard)[i].x, (*pChessBoard)[i].y, (*pChessBoard)[i].z};
-      Eigen::Vector3d pId{(*refChessBoard)[i].x, (*refChessBoard)[i].y, (*refChessBoard)[i].z};
+      Eigen::Vector3f pCB{(*pChessBoard)[i].x, (*pChessBoard)[i].y, (*pChessBoard)[i].z};
+      Eigen::Vector3f pId{(*refChessBoard)[i].x, (*refChessBoard)[i].y, (*refChessBoard)[i].z};
       H+=(pId-cIdeal.topRows<3>())*((pCB-cCB.topRows<3>()).transpose());
     }
-    Eigen::JacobiSVD<Eigen::Matrix3d> decomposition(H,Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Eigen::Matrix3d R=decomposition.matrixV()*decomposition.matrixU().transpose();
+    Eigen::JacobiSVD<Eigen::Matrix3f> decomposition(H,Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3f R=decomposition.matrixV()*decomposition.matrixU().transpose();
     if(R.determinant()<0){
       /** Reflection case: Invert 3rd column */
       R.col(2)*=-1;

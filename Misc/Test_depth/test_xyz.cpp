@@ -42,22 +42,21 @@ void doSomething(int event, int x, int y, int flags, void* stafava){
     cv::Vec3b rgb=r.at<cv::Vec3b>(y,x);
     unsigned int r=rgb.val[2], g=rgb.val[1], b=rgb.val[0];
     std::cout << "RGB: (" << r << "," << g << "," <<  b << ")\n - Coordinates: ";
-    cv::Mat_<cv::Vec3d> depthOut;
+    cv::Mat_<cv::Vec3f> depthOut;
 
     cv::Mat singlePointMask(d.rows, d.cols, CV_8U);
     singlePointMask.setTo(0);
     singlePointMask.at<uint8_t>(y,x)=255;
 
     cv::rgbd::depthTo3d(d, cam->getIntrinsic(), depthOut, singlePointMask);
-    Eigen::Vector3d myVal;
+    Eigen::Vector3f myVal;
+    assert(depthOut.type()==CV_32FC3);
+    std::cout << "Depth: " << depthOut[0][0] << "\n";
+
     for(int i=0; i<3; ++i){
        myVal[i]=depthOut[0][0].val[i];
     }
     std::cout << "Extrinsics: " << cam->getExtrinsic().matrix() << "\n";
-    auto& cacca = cam->getExtrinsic()*myVal;
-    std::cout << "(" << cacca[0];
-    std::cout << "," << cacca[1];
-    std::cout << "," << cacca[2] << ")\n";
     std::cout << "Inverse extrinsic: " << cam->getExtrinsic().inverse().matrix() << "\n";
     auto& cacca2 = cam->getExtrinsic().inverse()*myVal;
     std::cout << "(" << cacca2[0];
@@ -100,8 +99,8 @@ int main(int argc, char** argv){
 
   cv::namedWindow("RGB image");
   cv::namedWindow("Depth image");
-  Eigen::Matrix<double, 4, 100> myPoints;
-  Eigen::Matrix<double, 4, 10> myAxisX, myAxisY;
+  Eigen::Matrix<float, 4, 100> myPoints;
+  Eigen::Matrix<float, 4, 10> myAxisX, myAxisY;
 
   /** Builds up five vector to show onto the image. Origin, and combinations of +1 and -1. */
   for(int i=0; i<10; ++i){
@@ -116,17 +115,17 @@ int main(int argc, char** argv){
 
   std::cout << "XYZ points: \n" << myPoints << "\n";
   /** Gets (u,v) coordinates from (x,y,z,1) points */
-  Eigen::Matrix<double, 3, 3> camIntr;
+  Eigen::Matrix3f camIntr;
   const auto& cvIn=cam->getIntrinsic();
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j){
-      camIntr(i,j)=cvIn.at<double>(i,j);
+      camIntr(i,j)=cvIn(i,j);
     }
   }
 
-  Eigen::Matrix<double, 3, 100> uvPoints = camIntr*(cam->getExtrinsic()*myPoints).topRows<3>();
-  Eigen::Matrix<double, 3, 10> uvAxisX = camIntr*(cam->getExtrinsic()*myAxisX).topRows<3>();
-  Eigen::Matrix<double, 3, 10> uvAxisY = camIntr*(cam->getExtrinsic()*myAxisY).topRows<3>();
+  Eigen::Matrix<float, 3, 100> uvPoints = camIntr*(cam->getExtrinsic()*myPoints).topRows<3>();
+  Eigen::Matrix<float, 3, 10> uvAxisX = camIntr*(cam->getExtrinsic()*myAxisX).topRows<3>();
+  Eigen::Matrix<float, 3, 10> uvAxisY = camIntr*(cam->getExtrinsic()*myAxisY).topRows<3>();
 
   std::cout << "UV points:\n" << uvPoints << "\n";
 

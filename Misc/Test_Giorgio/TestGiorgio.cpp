@@ -71,6 +71,7 @@ int main(int argc, char** argv){
     }
 
     std::cout << "Do it again? (y/n) ";
+    while((cv::waitKey(100) & 0xFF) != 'q');
     std::cin >> s;
     if(s=="n"){
       haveFinished=true;

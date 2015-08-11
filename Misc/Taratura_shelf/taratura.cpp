@@ -9,6 +9,11 @@
 #include <APC/Robot.h>
 
 int main(int argc, char** argv){
+
+  /*********************************************
+   * TODO TODO TODO
+   * CHECK FOR DATATYPES!!!!
+   *********************************************/
   if(argc<4){
     std::cerr << "Usage: " << argv[0] << " server profile camera_poses_file\n";
     std::cerr  << "Example: " << argv[0] << " 172.22.178.102 CNTRLC5G_2200102 camera.poses\n";

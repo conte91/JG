@@ -29,4 +29,5 @@ MACRO(COPY_TO_BIN filename)
   CONFIGURE_FILE("${filename}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${filename}" COPYONLY)
 ENDMACRO(COPY_TO_BIN)
 
+include("Libraries.cmake")
 include("ProjectList.cmake")

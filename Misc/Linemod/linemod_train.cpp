@@ -128,10 +128,10 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   {
     Recognition::Model testModel(object_id_, trainDir);
     for(int tID=0; tID<testModel.numTemplates(); ++tID){
-      cv::Mat rTest(testModel.getR(tID));
-      cv::Vec3d tTest(testModel.getT(tID));
-      double dTest=testModel.getDist(tID);
-      cv::Mat kTest(testModel.getK(tID));
+      cv::Matx33f rTest(testModel.getR(tID));
+      cv::Vec3f tTest(testModel.getT(tID));
+      float dTest=testModel.getDist(tID);
+      cv::Matx33f kTest(testModel.getK(tID));
       cv::Mat hTest(testModel.getHueHist(tID));
       assert(cv::countNonZero(rTest!=model.getR(tID))==0 && "Failed to read back data");
       assert(cv::countNonZero(tTest!=model.getT(tID))==0 && "Failed to read back data");
