@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <vector>
 #include <set>
+#include <cmath>
 
 #include <boost/filesystem.hpp>
 
@@ -46,9 +47,9 @@
 
 #include <Recognition/Model.h>
 #include <Recognition/Renderer3d.h>
-#include <Recognition/GiorgioUtils.h>
 #include <Camera/CameraModel.h>
 #include <Recognition/GLUTInit.h>
+#include <C5G/Pose.h>
 
 #include <opencv2/highgui/highgui.hpp>
 
@@ -78,44 +79,45 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
 
   Recognition::Model model(object_id_, mesh_path.string(), cam);
 
-  std::shared_ptr<RendererIterator> rendererIteratorPtr (new RendererIterator(nullptr, renderer_n_points_));   
-  rendererIteratorPtr->angle_step_ = renderer_angle_step_;
-  rendererIteratorPtr->radius_min_ = float(renderer_radius_min_);
-  rendererIteratorPtr->radius_max_ = float(renderer_radius_max_);
-  rendererIteratorPtr->radius_step_ = float(renderer_radius_step_);
-
-
   /** Takes snapshots of the (ideal) object */
-  for (size_t i = 0; !rendererIteratorPtr->isDone(); ++i, ++(*rendererIteratorPtr) )
+  int totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
+  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
+  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
+  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
+  int i=0; 
+  for (double radius=renderer_radius_min_; radius<=renderer_radius_max_; radius+=renderer_radius_step_)
   {
-    std::stringstream status;
-    status << "Loading images " << (i+1) << "/" << rendererIteratorPtr->n_templates();
-    std::cout << status.str();
+    for(double alpha=0; alpha<2*M_PI; alpha+=renderer_angle_step_/180.0*M_PI){
+    for(double beta=0; beta<2*M_PI; beta+=renderer_angle_step_/180.0*M_PI){
+    for(double gamma=0; gamma<2*M_PI; gamma+=renderer_angle_step_/180.0*M_PI){
+        i++;
+        std::stringstream status;
+        status << "Loading images " << (i) << "/" << totalTemplates;
+        std::cout << status.str();
+
+        model.addTraining(radius,alpha,beta,gamma,cam);
+        if((i % 5 ) && visualize_){
+          cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);
+          cv::Mat depth2show(cam.getHeight(), cam.getWidth(), CV_16U);
+          cv::Mat image, depth, mask;
+          cv::Rect rect;
+          model.render(C5G::Pose{0,0,radius,alpha,beta,gamma}, image, depth, mask, rect);
+          image.copyTo(image2show(rect));
+          depth.copyTo(depth2show(rect));
+          imshow("mastamazza", image2show);
+          imshow("mastadepth", depth2show);
+          cv::waitKey(1);
+        }
 
 
-    cv::Vec3d T, up;
-    rendererIteratorPtr->view_params(T, up);
-    model.addTraining(T, up, cam);
-    cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);
-    cv::Mat depth2show(cam.getHeight(), cam.getWidth(), CV_16U);
-    cv::Mat image, depth, mask;
-    cv::Rect rect;
-    if((i % 5 ) && visualize_){
-      model.render(T, up, image, depth, mask, rect);
-      image.copyTo(image2show(rect));
-      depth.copyTo(depth2show(rect));
-      imshow("mastamazza", image2show);
-      imshow("mastadepth", depth2show);
-      cv::waitKey(1);
+
+        // Delete the status
+        for (size_t j = 0; j < status.str().size(); ++j) {
+          std::cout << '\b';
+        }
+      }
     }
-
-
-
-    // Delete the status
-    for (size_t j = 0; j < status.str().size(); ++j) {
-      std::cout << '\b';
     }
-
   }
 
   //write the template + R + t + dist + K for each class
@@ -128,13 +130,11 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   {
     Recognition::Model testModel(object_id_, trainDir);
     for(int tID=0; tID<testModel.numTemplates(); ++tID){
-      cv::Matx33f rTest(testModel.getR(tID));
-      cv::Vec3f tTest(testModel.getT(tID));
+      cv::Matx33d rTest(testModel.getR(tID));
       float dTest=testModel.getDist(tID);
       cv::Matx33f kTest(testModel.getK(tID));
       cv::Mat hTest(testModel.getHueHist(tID));
       assert(cv::countNonZero(rTest!=model.getR(tID))==0 && "Failed to read back data");
-      assert(cv::countNonZero(tTest!=model.getT(tID))==0 && "Failed to read back data");
       assert(cv::countNonZero(kTest!=model.getK(tID))==0 && "Failed to read back data");
       assert(dTest==model.getDist(tID) && "Failed to read back data");
       assert(cv::countNonZero(hTest!=model.getHueHist(tID))==0 && "Failed to read back data");

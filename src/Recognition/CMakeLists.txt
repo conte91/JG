@@ -7,8 +7,10 @@ find_package(ASSIMP REQUIRED)
 
 include_directories(${Eigen_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${ASSIMP_INCLUDE_DIRS} ${freeimage_INCLUDE_DIRS})
 
+add_library(linemod_with_masks SHARED DetectorWMasks.cpp)
+
 add_library(renderer3d SHARED renderer3d_impl_glut.cpp Renderer3d.cpp Mesh.cpp GiorgioUtils.cpp GLUTInit.cpp)
-target_link_libraries(renderer3d ${GLUT_LIBRARIES} freeimage ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES})
+target_link_libraries(renderer3d ${GLUT_LIBRARIES} freeimage ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} linemod_with_masks)
 SET_TARGET_PROPERTIES(renderer3d PROPERTIES COMPILE_FLAGS "-fPIC" )
 
 add_library(icp_models SHARED linemod_icp.cpp Model.cpp)

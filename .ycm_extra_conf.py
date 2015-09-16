@@ -69,6 +69,8 @@ flags = [
 '-isystem',
 '../llvm/tools/clang/include',
 '-I',
+'/usr/include',
+'-I',
 './include',
 '-I',
 '/usr/include/pcl-1.7',

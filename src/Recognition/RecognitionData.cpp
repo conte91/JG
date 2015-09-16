@@ -17,7 +17,6 @@
 #include <pcl/registration/icp.h>
 #include <pcl/visualization/cloud_viewer.h>
 
-#include <Recognition/GiorgioUtils.h>
 #include <Recognition/GLUTInit.h>
 
 namespace Recognition{
@@ -90,18 +89,16 @@ namespace Recognition{
       int tId=match.template_id;
       std::cout << "Template # " << tId << " matches.\n";
       auto& obj=_objectModels.at(match.class_id);
-      cv::Matx33f R_match = obj.getR(tId);
-      cv::Vec3f T_match = obj.getT(tId);
+      cv::Matx33d R_match = obj.getR(tId);
       std::cout << "Rotation matrix: \n" << R_match << "\n";
-      std::cout << "Translation vector:\n" << T_match << "\n";
       float D_match = obj.getDist(tId);
+      std::cout << "Distance:\n" << D_match << "\n";
       const auto& K_match = obj.getK(tId);
 
       //get the point cloud of the rendered object model
       cv::Mat mask;
       cv::Rect rect;
-      cv::Matx33f R_temp(R_match.inv());
-      cv::Vec3d up(-R_temp(0,1), -R_temp(1,1), -R_temp(2,1));
+      /*
       auto it_r = _objectModels.at(match.class_id).getRenderer();
       cv::Mat depth_ref_;
       it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
@@ -169,33 +166,20 @@ namespace Recognition{
       //TODO   continue;
       //TODO }
 
+      */
       /** Take the best match and return it as a position */
 
       /** Fill the transformation matrix */
-      Eigen::Matrix3f eRot;
-      Eigen::Vector3f eTras;
+      Eigen::Matrix3d eRot;
 
       cv2eigen(R_match, eRot);
-      cv2eigen(T_match, eTras);
 
-      Eigen::Affine3f matchTrans=Eigen::Affine3f::Identity();
-      
-      matchTrans*=eRot;
-      std::cout << "MatrixR: \n" <<
-        matchTrans.matrix() << "\n";
+      Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
 
-      Eigen::Affine3f miasorella=Eigen::Affine3f::Identity();
-      miasorella*=Eigen::Translation3f(eTras);
-      std::cout << "MatrixT: \n" <<
-        miasorella.matrix() << "\n";
-
-      matchTrans=miasorella*matchTrans;
-      std::cout << "MatrixM: \n" <<
-        matchTrans.matrix() << "\n";
-
-      matchTrans.translate(Eigen::Vector3f(0.5,0,0.2));
+      matchTrans.translation() << 0,0,D_match;
+      matchTrans.linear()=eRot;
       const auto& Cam_match = obj.getCam(tId);
-      Eigen::Affine3f cameraToWorld=Cam_match.getExtrinsic().inverse();
+      Eigen::Affine3d cameraToWorld(Cam_match.getExtrinsic().inverse());
 
       /** Move to global positions */
       std::cout << "Matrix0: \n" <<
@@ -209,17 +193,24 @@ namespace Recognition{
       cv::Mat newFrame=const_rgb.clone();
       cv::Rect stiretti;
       obj.render(mattiaEUnTrans, stimazzi, sticazzi, stimaski, stiretti);
+      stiretti.x=match.x;
+      stiretti.y=match.y;
       stimazzi.copyTo(newFrame.rowRange(stiretti.y, stiretti.y+stiretti.height).colRange(stiretti.x,stiretti.x+stiretti.width));
 
       eigen2cv(matchTrans.matrix(), pose);
+      imshow("Sbarubba", newFrame);
+      while((cv::waitKey() & 0xFF)!='q');
 
       return true;
     }
     return false;
   }
 
-  bool RecognitionData::pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const {
+  /*
+  bool RecognitionData::pclICP(const PCloud::Ptr& pointsFromModel, const PCloud::Ptr& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const {
 
+  */
+#if 0
     /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
     PCloud::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
     PCloud::Ptr refCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -257,8 +248,10 @@ namespace Recognition{
       refCloudPtr->points[ii].g = 0;
       refCloudPtr->points[ii].b = 0;
     }
+#endif
 
 
+    /*
     pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
     icp.setMaximumIterations (20);
     icp.setInputSource (modelCloudPtr);//Model
@@ -291,6 +284,7 @@ namespace Recognition{
     return true;
   }
 
+  */
 
   RecognitionData::RecognitionData(const std::string& trainPath, const CameraModel& m)
     :

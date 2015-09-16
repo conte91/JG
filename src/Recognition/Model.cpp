@@ -4,17 +4,19 @@
 #include <Recognition/Model.h>
 #include <Camera/CameraModel.h>
 #include <boost/filesystem.hpp>
+#include <highgui.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/rgbd.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <C5G/Pose.h>
+#include <Recognition/DetectorWMasks.h>
 
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& trainDir)
     :
       _myId(id),
       _camModel(1,1,1,1,1,1,1,1,1,1,1,1,1),
-      _detector(cv::linemod::getDefaultLINEMOD())
+      _detector(new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD()))
   {
     readFrom(id, trainDir);
   }
@@ -23,7 +25,7 @@ namespace Recognition{
     :
       _myId(id),
       mesh_file_path(meshFile),
-      _detector(cv::linemod::getDefaultLINEMOD()),
+      _detector(new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD())),
       _camModel(cam),
       renderer_width(cam.getWidth()),
       renderer_height(cam.getHeight()),
@@ -82,8 +84,8 @@ namespace Recognition{
     for(const auto& it : n){
       int tID;
       it["id"] >> tID;
-      TrainingData t{{},{},{},{0,0,0,0,0,0,0},{}};
-      read(it["data"], t, {{},{},{},{0,0,0,0,0,0,0},{}});
+      TrainingData t{{},{},{},{},{},{0,0,0,0,0,0,0},{}};
+      read(it["data"], t, {{},{},{},{},{},{0,0,0,0,0,0,0},{}});
       _myData.insert(std::make_pair(tID,t));
     }
   }
@@ -102,11 +104,20 @@ namespace Recognition{
   int Model::numTemplates() const {
     return _detector->numTemplates();
   }
-  cv::Matx33f Model::getR(int templateID) const {
+  cv::Matx33d Model::getR(int templateID) const {
     return _myData.at(templateID).R;
   }
-  cv::Vec3f Model::getT(int templateID) const {
+  /*cv::Vec3f Model::getT(int templateID) const {
     return _myData.at(templateID).T;
+  }*/
+  float Model::getA(int templateID) const {
+    return _myData.at(templateID).a;
+  }
+  float Model::getB(int templateID) const {
+    return _myData.at(templateID).b;
+  }
+  float Model::getG(int templateID) const {
+    return _myData.at(templateID).g;
   }
   float Model::getDist(int templateID) const {
     return _myData.at(templateID).dist;
@@ -172,37 +183,54 @@ namespace Recognition{
     return R.inv();
   }
 
-  void Model::addTraining(const cv::Vec3d& T, const cv::Vec3d& up, const Camera::CameraModel& cam){
+  void Model::addTraining(const double distance, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam){
     cv::Mat image, depth, mask;
-    cv::Matx33d R;
+    Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
+    Eigen::Affine3d rot = Eigen::Affine3d::Identity();
+    rot.rotate (Eigen::AngleAxisd (alpha, Eigen::Vector3d::UnitX()));
+    rot.rotate (Eigen::AngleAxisd (beta, Eigen::Vector3d::UnitY()));
+    rot.rotate (Eigen::AngleAxisd (gamma, Eigen::Vector3d::UnitZ()));
+    transformation.translation() << 0, 0, distance;
+    transformation.linear()=rot.linear();
+    /** Apply Euler angle rotations */
 
     cv::Rect rect;
     /** Performs a render of the object at the desired camera's position and adds it to the trained templates */
-    render(T, up, image, depth, mask, rect);
+    render(transformation, image, depth, mask, rect);
+      
+    // Create a structuring element
+    constexpr int erosion_size = 3;  
+    cv::Mat erosion_element = cv::getStructuringElement(cv::MORPH_CROSS,
+            cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+            cv::Point(erosion_size, erosion_size) );
+    cv::Mat eroded_mask, contour;
+    // Apply erosion or dilation on the image
+    cv::erode(mask,eroded_mask,erosion_element);
+    contour=mask&(~eroded_mask);
+
     if(image.empty())
     {
       /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
       return;
     }
-    std::vector<cv::Mat> sources(2);
+    std::vector<cv::Mat> sources(2), trainMasks(2);
     sources[0] = image;
     sources[1] = depth;
+    trainMasks[0]=contour;
+    trainMasks[1]=eroded_mask;
     assert(image.type()==CV_8UC3);
     assert(depth.type()==CV_16UC1);
-    int template_in = _detector->addTemplate(sources, _myId, mask);
+    int template_in = _detector->addTemplate(sources, _myId, trainMasks);
     if (template_in == -1)
     {
       /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
       return;
     }
 
-    /** Computes and saves the parameters used for training */
-    R = camTUp2ObjRot(T, up);
-    float radius=::hypot(::hypot(T(0), T(1)), T(2));
-    float distance = fabs(radius - depth.at<ushort>(depth.rows/2.0, depth.cols/2.0)/1000.0);
-
     /** hue histogram */
     /* Convert to HSV */
+    cv::Mat R;
+    eigen2cv(Eigen::Matrix3d(rot.linear().matrix()), R);
     cv::Mat hsv_mat;
     cv::cvtColor(image, hsv_mat, CV_BGR2HSV);
     std::vector<cv::Mat> hsv_planes;
@@ -222,7 +250,7 @@ namespace Recognition{
     if(_myData.find(template_in)!=_myData.end()){
       std::cerr << "##############Duplicate template ID!!################\n";
     }
-    _myData.insert(std::make_pair(template_in,TrainingData{cv::Mat(R), -T, distance, cam, cv::Mat(Hue_Hist)}));
+    _myData.insert(std::make_pair(template_in,TrainingData{R, distance, alpha, beta, gamma, cam, cv::Mat(Hue_Hist)}));
   }
 
   void Model::saveToDirectory(const boost::filesystem::path& saveDir) const
@@ -330,8 +358,10 @@ namespace cv{
     /* Read YAML Vector */
     fs << "{";
     fs << "R" << cv::Mat(data.R);
-    fs << "T" << data.T;
     fs << "dist" << data.dist;
+    fs << "a" << data.a;
+    fs << "b" << data.b;
+    fs << "g" << data.g;
     fs << "cam" << data.cam;
     fs << "hueHist" << data.hueHist;
     fs << "}";
@@ -345,13 +375,16 @@ namespace cv{
     /* Read YAML Vector */
     cv::Mat R;
     cv::Vec3d T;
-    float dist;
+    float dist,a,b,g;
     cv::Mat hueHist;
 
     node["R"] >> R;
     node["T"] >> T;
     node["dist"] >> dist;
+    node["a"] >> a;
+    node["b"] >> b;
+    node["g"] >> g;
     node["hueHist"] >> hueHist;
-    x={R,T,dist,Camera::CameraModel::readFrom(node["cam"]), hueHist};
+    x={R,dist,a,b,g,Camera::CameraModel::readFrom(node["cam"]), hueHist};
   }
 }

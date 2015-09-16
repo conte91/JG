@@ -2,7 +2,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <Camera/CameraModel.h>
 #include <Recognition/Renderer3d.h>
-#include <Recognition/GiorgioUtils.h>
 
 int main(int argc, char** argv){
   if(argc!=9){

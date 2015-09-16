@@ -1,7 +1,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <Parser/RobotData.h>
-#include <Recognition/GiorgioUtils.h>
 #include <Recognition/Renderer3d.h>
 #include <Camera/ImageViewer.h>
 #include <C5G/Pose.h>

@@ -1,7 +1,6 @@
 #pragma once
 #include <unordered_map>
 #include <boost/filesystem.hpp>
-#include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/core/core.hpp>
 #include <C5G/C5G.h>
 #include <Recognition/db_linemod.h>
@@ -13,6 +12,8 @@
 #include <pcl/point_types.h>
 #include <pcl/point_representation.h>
 
+
+#include "DetectorWMasks.h"
 #include "Mesh.h"
 #include "Renderer3d.h"
 
@@ -21,9 +22,11 @@ namespace Recognition{
     public:
       /** Data associated with each template */
       struct TrainingData{
-        cv::Matx33f R;
-        cv::Vec3f T;
-        float dist;
+        cv::Matx33d R;
+        double dist;
+        double a;
+        double b;
+        double g;
         Camera::CameraModel cam;
         cv::Mat hueHist;
       };
@@ -33,7 +36,7 @@ namespace Recognition{
 
       template<typename T>
         inline std::vector<T> readSequence(const cv::FileNode& n);
-      cv::Ptr<cv::linemod::Detector> _detector;
+      cv::Ptr<cv::linemod::DetectorWMasks> _detector;
       std::shared_ptr<RendererIterator> _renderer_iterator;
       std::unordered_map<int, TrainingData> _myData;
 
@@ -72,12 +75,15 @@ namespace Recognition{
       void renderImageOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Rect &rect_out) const;
       void renderDepthOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
 
-      void addTraining(const cv::Vec3d& T, const cv::Vec3d& up, const Camera::CameraModel& cam);
+      void addTraining(const double dist, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam);
 
       TrainingData getData(int templateID) const;
-      cv::Matx33f getR(int templateID) const;
-      cv::Vec3f getT(int templateID) const;
+      cv::Matx33d getR(int templateID) const;
+      //cv::Vec3f getT(int templateID) const;
       float getDist(int templateID) const;
+      float getA(int templateID) const;
+      float getB(int templateID) const;
+      float getG(int templateID) const;
       cv::Matx33f getK(int templateID) const;
       cv::Mat getHueHist(int templateID) const;
       Camera::CameraModel getCam(int templateID) const;

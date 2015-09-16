@@ -5,7 +5,6 @@
 #include <pcl/point_cloud.h>
 #include <C5G/Pose.h>
 #include <Camera/CameraModel.h>
-#include "GiorgioUtils.h"
 #include "Renderer3d.h"
 
 #include <Img/ImageWMask.h>
