@@ -1,3 +1,4 @@
+#include <cmath>
 #include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -21,6 +22,81 @@
 
 namespace Recognition{
 
+  static void turnBlackWhiteToBlueYellow(const cv::Mat& hsv_in, cv::Mat& hsv_out, double ts, double tv){
+    using cv::Mat;
+    Mat whiteMask, blackMask;
+    Mat allY(hsv_in.size(), CV_8UC3);
+    allY.setTo(cv::Scalar{30,255,255});
+    Mat allB(hsv_in.size(), CV_8UC3);
+    allB.setTo(cv::Scalar{120,255,255});
+
+    /** Turn black points to blue points and white points to yellow points*/
+    cv::inRange(hsv_in, cv::Scalar{0,0,0}, cv::Scalar{255, 255, tv}, blackMask);
+    cv::inRange(hsv_in, cv::Scalar{0,0,tv}, cv::Scalar{255, ts, 255}, whiteMask);
+
+    hsv_out=hsv_in.clone();
+    allY.copyTo(hsv_out, whiteMask);
+    allB.copyTo(hsv_out, blackMask);
+
+  }
+
+  static double matchingHuePercentage(const cv::Mat& matchingTemplate, const cv::Mat& possibleMatch, const cv::Mat& mask, const cv::Size& matchSize, double cutPercentage, double acceptThreshold, double scaleFactor){
+    using cv::Mat;
+    using cv::Rect;
+    using cv::Size;
+
+    /** Blank the background */
+    Mat blankedTemplate(matchSize, CV_8UC3), blankedMatch(matchSize, CV_8UC3);
+    blankedTemplate.setTo(cv::Scalar{0,0,0});
+    blankedMatch.setTo(cv::Scalar{0,0,0});
+
+    matchingTemplate.copyTo(blankedTemplate, mask);
+    possibleMatch.copyTo(blankedMatch, mask);
+    /** Remove a small border from the match, in order to compensate wrong-by-little positioning */
+    cv::Rect section;
+    section.width=0.8*matchSize.width;
+    section.height=0.8*matchSize.height;
+    section.y=0.1*matchSize.height;
+    section.x=0.1*matchSize.width;
+    Mat templatePart=blankedTemplate(section);
+    Mat matchPart=blankedMatch(section);
+    Mat maskPart=mask(section);
+    Mat hsvTemplate, hsvMatch, filteredTemplate, filteredMatch;
+    cv::cvtColor(templatePart, hsvTemplate, CV_BGR2HSV);
+    cv::cvtColor(matchPart, hsvMatch, CV_BGR2HSV);
+    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 30, 30);
+    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 30, 30);
+    Mat displayT, displayM;
+    cv::cvtColor(hsvTemplate, displayT, CV_HSV2BGR);
+    cv::cvtColor(hsvMatch, displayM, CV_HSV2BGR);
+
+    int totalPoints, matchingPoints;
+    Mat scaledTemplate, scaledMatch;
+    cv::resize(filteredTemplate, scaledTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
+    cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
+    Mat matchingDraw(scaledTemplate.size(), CV_8UC1);
+    matchingDraw.setTo(0);
+    for(int i=0; i<filteredTemplate.cols; ++i){
+      for(int j=0; j<filteredTemplate.rows; ++j){
+        if(maskPart.at<unsigned char>(i*scaleFactor, j*scaleFactor)){
+          totalPoints++;
+          if(fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold){
+            matchingPoints++;
+            matchingDraw.at<unsigned char>(i,j)=255;
+          }
+        }
+      }
+    }
+
+    cv::imshow("T", displayT);
+    cv::imshow("M", displayM);
+    cv::imshow("D", matchingDraw);
+    while((cv::waitKey() & 0xFF)!='q');
+    cv::destroyWindow("T");
+    cv::destroyWindow("M");
+    cv::destroyWindow("D");
+    return 0;
+  }
 
   /***************************************************************************************************************************
    *      AS THIS WILL BE POSTED TO GITHUB SOME DAY: DEAR PERSON-WHO-WANTS-TO-HIRE-ME, READ THIS BEFORE BURNING MY CV        *
@@ -32,19 +108,21 @@ namespace Recognition{
       cv::Mat& pose, const std::vector<std::string>& vect_objs_to_pick) const
   {
 
-    cv::Mat rgb=const_rgb.clone();
+    using cv::Rect;
+    using cv::Mat;
+    Mat rgb=const_rgb.clone();
     CV_Assert(filter_mask.depth() == CV_8UC1);
     /** The depth_ matrix is given in m, but we want to use it in mm now */
     CV_Assert(depth_m.type() == CV_32FC1);
-    cv::Mat depth_mm;
+    Mat depth_mm;
     depth_m.convertTo(depth_mm, CV_16UC1, 1000);
 
-    std::vector<cv::Mat> sources;
+    std::vector<Mat> sources;
     sources.push_back(rgb);
     sources.push_back(depth_mm);
 
     std::vector<cv::linemod::Match> nonconst_matches;
-    std::vector<cv::Mat> theMasks;
+    std::vector<Mat> theMasks;
     theMasks.push_back(filter_mask);
     theMasks.push_back(filter_mask);
 
@@ -71,7 +149,7 @@ namespace Recognition{
       return false;
     }
 
-    cv::Mat depth_real_ref_raw;
+    Mat depth_real_ref_raw;
     cv::rgbd::depthTo3d(depth_mm, _cameraModel.getIntrinsic(), depth_real_ref_raw);
     assert(depth_real_ref_raw.type()==CV_32FC3);
 
@@ -96,11 +174,11 @@ namespace Recognition{
       const auto& K_match = obj.getK(tId);
 
       //get the point cloud of the rendered object model
-      cv::Mat mask;
-      cv::Rect rect;
+      Mat mask;
+      Rect rect;
       /*
       auto it_r = _objectModels.at(match.class_id).getRenderer();
-      cv::Mat depth_ref_;
+      Mat depth_ref_;
       it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
 
       cv::Mat_<cv::Vec3f> depth_real_model_raw;
@@ -113,7 +191,7 @@ namespace Recognition{
       rect_ref.x += match.x;
       rect_ref.y += match.y;
 
-      rect_ref = rect_ref & cv::Rect(0, 0, depth_real_ref_raw.cols, depth_real_ref_raw.rows);
+      rect_ref = rect_ref & Rect(0, 0, depth_real_ref_raw.cols, depth_real_ref_raw.rows);
       if ((rect_ref.width < 5) || (rect_ref.height < 5))
         continue;
       //adjust both rectangles to be equal to the smallest among them
@@ -189,14 +267,19 @@ namespace Recognition{
 
       std::cout << "Matrix: \n" <<
         matchTrans.matrix() << "\n";
-      cv::Mat sticazzi, stimazzi, stimaski;
-      cv::Mat newFrame=const_rgb.clone();
-      cv::Rect stiretti;
+      Mat sticazzi, stimazzi, stimaski;
+      Mat newFrame=const_rgb.clone();
+      Rect stiretti;
       obj.render(mattiaEUnTrans, stimazzi, sticazzi, stimaski, stiretti);
       stiretti.x=match.x;
       stiretti.y=match.y;
-      stimazzi.copyTo(newFrame.rowRange(stiretti.y, stiretti.y+stiretti.height).colRange(stiretti.x,stiretti.x+stiretti.width));
+      Mat matchingPart=newFrame(stiretti);
+      if(matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,10,2) < 0.7) {
+        std::cout << "Object rejected. Trying another template...\n";
+        continue;
+      }
 
+      /** Check for false positives by valuating hues values on the downsampled image */
       eigen2cv(matchTrans.matrix(), pose);
       imshow("Sbarubba", newFrame);
       while((cv::waitKey() & 0xFF)!='q');
