@@ -73,7 +73,7 @@ namespace Recognition{
     cv::cvtColor(hsvTemplate, displayT, CV_HSV2BGR);
     cv::cvtColor(hsvMatch, displayM, CV_HSV2BGR);
 
-    int totalPoints, matchingPoints;
+    int totalPoints=0, matchingPoints=0;
     Mat scaledTemplate, scaledMatch;
     cv::resize(filteredTemplate, scaledTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
@@ -99,7 +99,7 @@ namespace Recognition{
     //cv::destroyWindow("T");
     //cv::destroyWindow("M");
     //cv::destroyWindow("D");
-    return 0;
+    return (double) matchingPoints/(double) totalPoints;
   }
 
   /***************************************************************************************************************************
