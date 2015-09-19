@@ -39,6 +39,7 @@
 #include <vector>
 #include <set>
 #include <cmath>
+#include <unordered_set>
 
 #include <boost/filesystem.hpp>
 
@@ -50,13 +51,14 @@
 #include <Camera/CameraModel.h>
 #include <Recognition/GLUTInit.h>
 #include <C5G/Pose.h>
+#include <Eigen/Geometry>
 
 #include <opencv2/highgui/highgui.hpp>
 
 
 bool visualize_ ;
 int renderer_n_points_;
-int renderer_angle_step_;
+double renderer_angle_step_;
 double renderer_radius_min_;
 double renderer_radius_max_;
 double renderer_radius_step_;
@@ -80,43 +82,73 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   Recognition::Model model(object_id_, mesh_path.string(), cam);
 
   /** Takes snapshots of the (ideal) object */
-  int totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
-  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
-  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
-  totalTemplates*=2*M_PI/(renderer_angle_step_/180.0*M_PI);
-  int i=0; 
+  long totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
+  totalTemplates*=int(1.0/renderer_angle_step_);
+  totalTemplates*=int(1.0/renderer_angle_step_);
+  totalTemplates*=int(1.0/renderer_angle_step_);
+  totalTemplates*=8;
+  long i=0; 
+  long done=0;
+  //std::unordered_set<long> tuanonna;
+  
+  std::cout << "Loading images ";
+  cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);
+  cv::Mat depth2show(cam.getHeight(), cam.getWidth(), CV_16U);
   for (double radius=renderer_radius_min_; radius<=renderer_radius_max_; radius+=renderer_radius_step_)
   {
-    for(double alpha=0; alpha<2*M_PI; alpha+=renderer_angle_step_/180.0*M_PI){
-    for(double beta=0; beta<2*M_PI; beta+=renderer_angle_step_/180.0*M_PI){
-    for(double gamma=0; gamma<2*M_PI; gamma+=renderer_angle_step_/180.0*M_PI){
-        i++;
-        std::stringstream status;
-        status << "Loading images " << (i) << "/" << totalTemplates;
-        std::cout << status.str();
+    for(double x=-1; x<=1; x+=renderer_angle_step_){
+      for(double y=-1; y<=1; y+=renderer_angle_step_){
+        for(double z=-1; z<=1; z+=renderer_angle_step_){
+          i++;
+          double nAxis=x*x+y*y+z*z;
+          //long thevec=((long) (x/nAxis)*1000.0)*1000000+((long) (y/nAxis)*1000.0)*1000+((long)(z/nAxis)*1000.0);
+          if(nAxis<=1 /*&& tuanonna.find(thevec)==tuanonna.end()*/ ){
+            //tuanonna.insert(thevec);
+            for(int k=0; k<2; ++k){
+            done++;
+            double w=sqrt(1-x*x-y*y-z*z);
+            if(!k){
+              w=-w;
+            }
 
-        model.addTraining(radius,alpha,beta,gamma,cam);
-        if((i % 5 ) && visualize_){
-          cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);
-          cv::Mat depth2show(cam.getHeight(), cam.getWidth(), CV_16U);
-          cv::Mat image, depth, mask;
-          cv::Rect rect;
-          model.render(C5G::Pose{0,0,radius,alpha,beta,gamma}, image, depth, mask, rect);
-          image.copyTo(image2show(rect));
-          depth.copyTo(depth2show(rect));
-          imshow("mastamazza", image2show);
-          imshow("mastadepth", depth2show);
-          cv::waitKey(1);
-        }
+            std::stringstream status;
+            status << (i) << "/" << totalTemplates;
+            std::cout << status.str();
 
 
+            Eigen::Quaterniond q{w,x,y,z};
 
-        // Delete the status
-        for (size_t j = 0; j < status.str().size(); ++j) {
-          std::cout << '\b';
+            Eigen::Matrix3d rotation = Eigen::Quaterniond{w,x,y,z}.normalized().toRotationMatrix();
+            double x2=x*x, y2=y*y, z2=z*z;
+            model.addTraining(rotation,radius, cam);
+            if((done % 5 ) && visualize_){
+              image2show.setTo(cv::Scalar(0,0,0));
+              depth2show.setTo(cv::Scalar(0,0,0));
+              cv::Mat image, depth, mask;
+              cv::Rect rect;
+              Eigen::Affine3d tr=Eigen::Affine3d::Identity();
+              tr.translation() << 0,0,radius;
+              tr.linear() = rotation;
+              model.render(tr, image, depth, mask, rect);
+              if(!image.empty()){
+                image.copyTo(image2show(rect));
+                depth.copyTo(depth2show(rect));
+                imshow("mastamazza", image2show);
+                imshow("mastadepth", depth2show);
+                cv::waitKey(1);
+              }
+            }
+
+
+
+            // Delete the status
+            for (size_t j = 0; j < status.str().size(); ++j) {
+              std::cout << '\b';
+            }
+            }
+          }
         }
       }
-    }
     }
   }
 

@@ -10,6 +10,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <C5G/Pose.h>
 #include <Recognition/DetectorWMasks.h>
+#include <Recognition/Utils.h>
 
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& trainDir)
@@ -33,11 +34,9 @@ namespace Recognition{
       renderer_focal_length_y(cam.getFy()),
       renderer_near(0.1),
       renderer_far(10),
-      renderer_n_points(10)
+      _renderer(new Renderer3d(meshFile))
   {
-    std::shared_ptr<Renderer3d> renderer (new Renderer3d(mesh_file_path));
-    renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
-    _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
+    _renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
   }
 
 
@@ -62,7 +61,7 @@ namespace Recognition{
     _detector->readClass(fn);
 
     /** Initialize the renderer with the same parameters used for learning */
-    std::shared_ptr<Renderer3d> renderer (new Renderer3d(mesh_file_path));
+    _renderer=std::shared_ptr<Renderer3d>(new Renderer3d(mesh_file_path));
 
     cv::FileNode fr = inFile["rendering"];
     fr["renderer_width"] >> renderer_width;
@@ -72,10 +71,7 @@ namespace Recognition{
     fr["renderer_near"] >> renderer_near;
     fr["renderer_far"] >> renderer_far;
     _camModel=Camera::CameraModel(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, 0, renderer_height/2.0, renderer_width/2.0);
-    renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
-
-    fr["renderer_n_points"] >> renderer_n_points;
-    _renderer_iterator=std::shared_ptr<RendererIterator>(new RendererIterator(renderer, renderer_n_points));
+    _renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
 
     _myData={};
     const cv::FileNode& n=inFile["trainData"];
@@ -94,7 +90,7 @@ namespace Recognition{
     return _detector->getTemplates(_myId, templateID);
   }
 
-  void Model::addAllTemplates(cv::linemod::Detector& det) const {
+  void Model::addAllTemplates(cv::linemod::DetectorWMasks& det) const {
     for(int i=0; i<_detector->numTemplates(); ++i){
       auto& t=getTemplates(i);
       det.addSyntheticTemplate(t, _myId);
@@ -141,21 +137,21 @@ namespace Recognition{
   }
 
   void Model::renderImageOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Rect &rect_out) const {
-    _renderer_iterator->renderer_->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
-    _renderer_iterator->renderer_->renderImageOnly(image_out, rect_out);
+    _renderer->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer->renderImageOnly(image_out, rect_out);
   }
 
   void Model::renderDepthOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
-    _renderer_iterator->renderer_->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
-    _renderer_iterator->renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
+    _renderer->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer->renderDepthOnly(depth_out, mask_out, rect_out);
   }
 
   //TODO pcl::PointCloud<pcl::PointXYZRGB> Model::getPointCloud(cv::Vec3d T, cv::Vec3d up, const Camera::CameraModel& cam ){
   //TODO   cv::Matrix
   //TODO }
 
-  const std::shared_ptr<RendererIterator> Model::getRenderer() const {
-    return _renderer_iterator;
+  const std::shared_ptr<Renderer3d> Model::getRenderer() const {
+    return _renderer;
   }
 
   cv::Matx33d Model::camTUp2ObjRot(const cv::Vec3d& tDir, const cv::Vec3d& upDir){
@@ -183,20 +179,21 @@ namespace Recognition{
     return R.inv();
   }
 
-  void Model::addTraining(const double distance, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam){
-    cv::Mat image, depth, mask;
+  void Model::addTraining(const Eigen::Matrix3d& rot, double distance, const Camera::CameraModel& cam){
+
     Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
-    Eigen::Affine3d rot = Eigen::Affine3d::Identity();
-    rot.rotate (Eigen::AngleAxisd (alpha, Eigen::Vector3d::UnitX()));
-    rot.rotate (Eigen::AngleAxisd (beta, Eigen::Vector3d::UnitY()));
-    rot.rotate (Eigen::AngleAxisd (gamma, Eigen::Vector3d::UnitZ()));
     transformation.translation() << 0, 0, distance;
-    transformation.linear()=rot.linear();
-    /** Apply Euler angle rotations */
+    transformation.linear()=rot;
 
     cv::Rect rect;
+    cv::Mat image, depth, mask;
     /** Performs a render of the object at the desired camera's position and adds it to the trained templates */
     render(transformation, image, depth, mask, rect);
+    if(image.empty())
+    {
+      /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
+      return;
+    }
       
     // Create a structuring element
     constexpr int erosion_size = 3;  
@@ -208,11 +205,6 @@ namespace Recognition{
     cv::erode(mask,eroded_mask,erosion_element);
     contour=mask&(~eroded_mask);
 
-    if(image.empty())
-    {
-      /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */
-      return;
-    }
     std::vector<cv::Mat> sources(2), trainMasks(2);
     sources[0] = image;
     sources[1] = depth;
@@ -230,7 +222,7 @@ namespace Recognition{
     /** hue histogram */
     /* Convert to HSV */
     cv::Mat R;
-    eigen2cv(Eigen::Matrix3d(rot.linear().matrix()), R);
+    eigen2cv(rot, R);
     cv::Mat hsv_mat;
     cv::cvtColor(image, hsv_mat, CV_BGR2HSV);
     std::vector<cv::Mat> hsv_planes;
@@ -239,18 +231,30 @@ namespace Recognition{
     int Hbins = 30;
     int histSize = Hbins; /* 1D histogram */
     /* Range over which to compute the histogram */
+#if 0
     const float histRange[] = { 0, 180 };
     const float* histRangePtr = histRange;
     cv::Mat Hue_Hist;
     /* Compute and normalize hist only on the mask */
     cv::calcHist( &hsv_planes[0], 1, 0, mask, Hue_Hist, 1, &histSize, &histRangePtr, true, false );
     cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
+#endif
 
     /** Save the computed data */
     if(_myData.find(template_in)!=_myData.end()){
       std::cerr << "##############Duplicate template ID!!################\n";
     }
-    _myData.insert(std::make_pair(template_in,TrainingData{R, distance, alpha, beta, gamma, cam, cv::Mat(Hue_Hist)}));
+    _myData.insert(std::make_pair(template_in,TrainingData{R, distance, 0, 0, 0, cam, cv::Mat()}));
+  }
+
+  void Model::addTraining(const double distance, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam){
+
+    /** Apply Euler angle rotations */
+    Eigen::Affine3d rot = Eigen::Affine3d::Identity();
+    rot.rotate (Eigen::AngleAxisd (alpha, Eigen::Vector3d::UnitX()));
+    rot.rotate (Eigen::AngleAxisd (beta, Eigen::Vector3d::UnitY()));
+    rot.rotate (Eigen::AngleAxisd (gamma, Eigen::Vector3d::UnitZ()));
+    addTraining(rot.rotation().matrix(), distance, cam);
   }
 
   void Model::saveToDirectory(const boost::filesystem::path& saveDir) const
@@ -303,9 +307,9 @@ namespace Recognition{
     constexpr double PI  =3.141592653589793238463;
     auto newPose=Eigen::AngleAxisd(PI, Eigen::Vector3d::UnitX())*pose;
 
-    _renderer_iterator->renderer_->setObjectPose(newPose);
-    _renderer_iterator->renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
-    _renderer_iterator->renderer_->renderImageOnly(rgb_out, rect_out);
+    _renderer->setObjectPose(newPose);
+    _renderer->renderDepthOnly(depth_out, mask_out, rect_out);
+    _renderer->renderImageOnly(rgb_out, rect_out);
   }
 
   void Model::render(const C5G::Pose& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {

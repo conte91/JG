@@ -81,6 +81,16 @@ Renderer3d::~Renderer3d()
   aiDetachAllLogStreams();
 }
 
+/*Eigen::Affine3d Renderer3d::tUpToWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  gluLookAt(t[0], t[1], t[2], 0, 0, 0, up[0], up[1], up[2]);
+
+  Eigen::Matrix4d m=Eigen::glGet(GL_MODELVIEW_MATRIX);
+
+}*/
+
 void
 Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, double focal_length_y, double near,
                          double far)
@@ -116,9 +126,9 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
   //glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
   //glEnable(GL_COLOR_MATERIAL);
 /****/
-  GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 1.0f };
-  GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 1.0f };
-  GLfloat LightPosition[]= { 0.0f, 15.0f, 0.0f, 1.0f };
+  GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 2.0f };
+  GLfloat LightDiffuse[]= { 2.0f, 2.0f, 2.0f, 2.0f };
+  GLfloat LightPosition[]= { 0.0f, -5.0f, 0.0f, 1.0f };
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
     glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
     glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);

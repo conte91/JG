@@ -19,6 +19,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 
 #include <Recognition/GLUTInit.h>
+#include <Recognition/Utils.h>
 
 namespace Recognition{
 
@@ -64,6 +65,8 @@ namespace Recognition{
     Mat hsvTemplate, hsvMatch, filteredTemplate, filteredMatch;
     cv::cvtColor(templatePart, hsvTemplate, CV_BGR2HSV);
     cv::cvtColor(matchPart, hsvMatch, CV_BGR2HSV);
+    hsvTemplate.setTo(cv::Scalar{0,0,0}, ~maskPart);
+    hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
     turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 30, 30);
     turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 30, 30);
     Mat displayT, displayM;
@@ -76,25 +79,26 @@ namespace Recognition{
     cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     Mat matchingDraw(scaledTemplate.size(), CV_8UC1);
     matchingDraw.setTo(0);
-    for(int i=0; i<filteredTemplate.cols; ++i){
-      for(int j=0; j<filteredTemplate.rows; ++j){
-        if(maskPart.at<unsigned char>(i*scaleFactor, j*scaleFactor)){
+    for(int i=0; i<scaledTemplate.rows; ++i){
+      for(int j=0; j<scaledTemplate.cols; ++j){
+        //if(maskPart.at<unsigned char>(i*scaleFactor, j*scaleFactor)){
           totalPoints++;
           if(fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold){
             matchingPoints++;
             matchingDraw.at<unsigned char>(i,j)=255;
           }
-        }
+        //}
       }
     }
 
     cv::imshow("T", displayT);
     cv::imshow("M", displayM);
     cv::imshow("D", matchingDraw);
-    while((cv::waitKey() & 0xFF)!='q');
-    cv::destroyWindow("T");
-    cv::destroyWindow("M");
-    cv::destroyWindow("D");
+    //while((cv::waitKey() & 0xFF)!='q');
+    cv::waitKey(1);
+    //cv::destroyWindow("T");
+    //cv::destroyWindow("M");
+    //cv::destroyWindow("D");
     return 0;
   }
 
@@ -133,14 +137,16 @@ namespace Recognition{
     }
 
     /** Create LINE-MOD detector with templates built from the object */
-    cv::Ptr<cv::linemod::Detector> detector (cv::linemod::getDefaultLINEMOD());
+    cv::Ptr<cv::linemod::DetectorWMasks> detector (new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD()));
     for(auto& object_id_ : vect_objs_to_pick){
       _objectModels.at(object_id_).addAllTemplates(*detector);
     }
     std::cout << "#Templates: " << detector->numTemplates() << "\n";
 
+    double currentThreshold=_threshold;
+    while(1){
     std::cout<<"Matching..."<<"\n";
-    detector->match(sources, _threshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
+    detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
 
     /** Just to be sure it's not changed in the Rastafari loop */
     const std::vector<cv::linemod::Match>& matches=nonconst_matches;
@@ -283,8 +289,15 @@ namespace Recognition{
       eigen2cv(matchTrans.matrix(), pose);
       imshow("Sbarubba", newFrame);
       while((cv::waitKey() & 0xFF)!='q');
+      cv::destroyWindow("Sbarubba");
+      cv::waitKey(100);
 
       return true;
+    }
+      if(currentThreshold<0.1){
+        break;
+      }
+      currentThreshold*=0.9;
     }
     return false;
   }

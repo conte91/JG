@@ -75,3 +75,4 @@ nonGitTestBed/
 
 #rope
 .ropeproject
+.ycm_extra_conf.py
