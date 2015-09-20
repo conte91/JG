@@ -15,7 +15,7 @@ INCLUDE_DIRECTORIES(${ASSIMP_INCLUDE_DIRS})
 
 add_executable( LineModTraining linemod_train.cpp )
 
-target_link_libraries( LineModTraining renderer3d ${Boost_LIBRARIES} icp_models ${OpenCV_LIBRARIES} camera)
+target_link_libraries( LineModTraining renderer3d ${Boost_LIBRARIES} icp_models ${OpenCV_LIBRARIES} camera points_iterators recogUtils)
 
 add_executable( test_renderer Test_renderer.cpp )
 target_link_libraries( test_renderer renderer3d camera)

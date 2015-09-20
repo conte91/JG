@@ -5,7 +5,7 @@ find_package(GLEW REQUIRED)
 find_package(PCL REQUIRED)
 find_package(ASSIMP REQUIRED)
 
-include_directories(${Eigen_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${ASSIMP_INCLUDE_DIRS} ${freeimage_INCLUDE_DIRS})
+include_directories(${Eigen_INCLUDE_DIRECTORIES} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${ASSIMP_INCLUDE_DIRS} ${freeimage_INCLUDE_DIRS})
 
 add_library(linemod_with_masks SHARED DetectorWMasks.cpp)
 
@@ -24,3 +24,11 @@ add_library(recognition SHARED Recognition.cpp)
 target_link_libraries(recognition ${OpenCV_LIBRARIES} c5g_misc robotdata)
 #Necessary as this library will be linked to a shared object later
 SET_TARGET_PROPERTIES( recognition PROPERTIES COMPILE_FLAGS "-fPIC" )
+
+add_library(recogUtils SHARED Utils.cpp)
+target_link_libraries(recogUtils ${Eigen_LIBRARIES})
+SET_TARGET_PROPERTIES( recogUtils PROPERTIES COMPILE_FLAGS "-fPIC" )
+
+add_library(points_iterators SHARED SphereSplitter.cpp)
+target_link_libraries(points_iterators ${Eigen_LIBRARIES})
+SET_TARGET_PROPERTIES( points_iterators PROPERTIES COMPILE_FLAGS "-fPIC" )

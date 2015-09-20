@@ -17,7 +17,7 @@ namespace Recognition{
     :
       _myId(id),
       _camModel(1,1,1,1,1,1,1,1,1,1,1,1,1),
-      _detector(new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD()))
+      _detector(new Detector(*cv::linemod::getDefaultLINEMOD()))
   {
     readFrom(id, trainDir);
   }
@@ -26,7 +26,7 @@ namespace Recognition{
     :
       _myId(id),
       mesh_file_path(meshFile),
-      _detector(new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD())),
+      _detector(new Detector(*cv::linemod::getDefaultLINEMOD())),
       _camModel(cam),
       renderer_width(cam.getWidth()),
       renderer_height(cam.getHeight()),
@@ -90,7 +90,7 @@ namespace Recognition{
     return _detector->getTemplates(_myId, templateID);
   }
 
-  void Model::addAllTemplates(cv::linemod::DetectorWMasks& det) const {
+  void Model::addAllTemplates(Detector& det) const {
     for(int i=0; i<_detector->numTemplates(); ++i){
       auto& t=getTemplates(i);
       det.addSyntheticTemplate(t, _myId);
@@ -212,7 +212,7 @@ namespace Recognition{
     trainMasks[1]=eroded_mask;
     assert(image.type()==CV_8UC3);
     assert(depth.type()==CV_16UC1);
-    int template_in = _detector->addTemplate(sources, _myId, trainMasks);
+    int template_in = _detector->addTemplate(sources, _myId, mask);
     if (template_in == -1)
     {
       /** Nothing to be done, this template is completely unuseful as the object can't be seen from this position */

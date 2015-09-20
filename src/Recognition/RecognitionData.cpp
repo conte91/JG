@@ -48,57 +48,70 @@ namespace Recognition{
 
     /** Blank the background */
     Mat blankedTemplate(matchSize, CV_8UC3), blankedMatch(matchSize, CV_8UC3);
+    constexpr int erosion_size = 1; 
+    cv::Mat erosion_element = cv::getStructuringElement(cv::MORPH_CROSS,
+            cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+            cv::Point(erosion_size, erosion_size) );
+    cv::Mat erodedMask;
+    // Apply erosion or dilation on the image
+    cv::erode(mask,erodedMask,erosion_element);
     blankedTemplate.setTo(cv::Scalar{0,0,0});
     blankedMatch.setTo(cv::Scalar{0,0,0});
 
-    matchingTemplate.copyTo(blankedTemplate, mask);
-    possibleMatch.copyTo(blankedMatch, mask);
+    matchingTemplate.copyTo(blankedTemplate, erodedMask);
+    possibleMatch.copyTo(blankedMatch, erodedMask);
     /** Remove a small border from the match, in order to compensate wrong-by-little positioning */
     cv::Rect section;
-    section.width=0.8*matchSize.width;
-    section.height=0.8*matchSize.height;
-    section.y=0.1*matchSize.height;
-    section.x=0.1*matchSize.width;
+    section.width=matchSize.width;
+    section.height=matchSize.height;
+    section.y=0;
+    section.x=0;
     Mat templatePart=blankedTemplate(section);
     Mat matchPart=blankedMatch(section);
     Mat maskPart=mask(section);
     Mat hsvTemplate, hsvMatch, filteredTemplate, filteredMatch;
     cv::cvtColor(templatePart, hsvTemplate, CV_BGR2HSV);
     cv::cvtColor(matchPart, hsvMatch, CV_BGR2HSV);
-    hsvTemplate.setTo(cv::Scalar{0,0,0}, ~maskPart);
-    hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
-    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 30, 30);
-    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 30, 30);
+    //hsvTemplate.setTo(cv::Scalar{0,0,0}, ~maskPart);
+    //hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
+    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 5, 5);
+    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 5, 5);
     Mat displayT, displayM;
-    cv::cvtColor(hsvTemplate, displayT, CV_HSV2BGR);
-    cv::cvtColor(hsvMatch, displayM, CV_HSV2BGR);
+    cv::cvtColor(filteredTemplate, displayT, CV_HSV2BGR);
+    cv::cvtColor(filteredMatch, displayM, CV_HSV2BGR);
 
     int totalPoints=0, matchingPoints=0;
-    Mat scaledTemplate, scaledMatch;
+    Mat scaledTemplate, scaledMatch, scaledMask;
     cv::resize(filteredTemplate, scaledTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
+    cv::resize(erodedMask, scaledMask, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     Mat matchingDraw(scaledTemplate.size(), CV_8UC1);
-    matchingDraw.setTo(0);
+    matchingDraw.setTo(130);
     for(int i=0; i<scaledTemplate.rows; ++i){
       for(int j=0; j<scaledTemplate.cols; ++j){
-        //if(maskPart.at<unsigned char>(i*scaleFactor, j*scaleFactor)){
+        if(scaledMask.at<unsigned char>(i,j)){
           totalPoints++;
           if(fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold){
             matchingPoints++;
             matchingDraw.at<unsigned char>(i,j)=255;
           }
-        //}
+          else{
+            matchingDraw.at<unsigned char>(i,j)=0;
+          }
+        }
       }
     }
 
     cv::imshow("T", displayT);
     cv::imshow("M", displayM);
     cv::imshow("D", matchingDraw);
-    //while((cv::waitKey() & 0xFF)!='q');
-    cv::waitKey(1);
+    cv::imshow("scaledMask", scaledMask);
+    while((cv::waitKey() & 0xFF)!='q');
+    //cv::waitKey(100);
     //cv::destroyWindow("T");
     //cv::destroyWindow("M");
     //cv::destroyWindow("D");
+    std::cout << "totalPoints: " << totalPoints << " matching: " << matchingPoints << "\n";
     return (double) matchingPoints/(double) totalPoints;
   }
 
@@ -137,14 +150,15 @@ namespace Recognition{
     }
 
     /** Create LINE-MOD detector with templates built from the object */
-    cv::Ptr<cv::linemod::DetectorWMasks> detector (new cv::linemod::DetectorWMasks(*cv::linemod::getDefaultLINEMOD()));
+    cv::Ptr<Model::Detector> detector (new Model::Detector(*cv::linemod::getDefaultLINEMOD()));
     for(auto& object_id_ : vect_objs_to_pick){
       _objectModels.at(object_id_).addAllTemplates(*detector);
     }
     std::cout << "#Templates: " << detector->numTemplates() << "\n";
 
     double currentThreshold=_threshold;
-    while(1){
+    std::vector<cv::linemod::Match> found;
+    while(found.size()<3){
     std::cout<<"Matching..."<<"\n";
     detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
 
@@ -177,7 +191,7 @@ namespace Recognition{
       std::cout << "Rotation matrix: \n" << R_match << "\n";
       float D_match = obj.getDist(tId);
       std::cout << "Distance:\n" << D_match << "\n";
-      const auto& K_match = obj.getK(tId);
+      //const auto& K_match = obj.getK(tId);
 
       //get the point cloud of the rendered object model
       Mat mask;
@@ -280,24 +294,27 @@ namespace Recognition{
       stiretti.x=match.x;
       stiretti.y=match.y;
       Mat matchingPart=newFrame(stiretti);
-      if(matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,10,2) < 0.7) {
-        std::cout << "Object rejected. Trying another template...\n";
+      assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
+      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1);
+      if(percentage < 0.6) {
+        std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
         continue;
       }
 
       /** Check for false positives by valuating hues values on the downsampled image */
       eigen2cv(matchTrans.matrix(), pose);
+      stimazzi.copyTo(newFrame(stiretti));
       imshow("Sbarubba", newFrame);
-      while((cv::waitKey() & 0xFF)!='q');
+      while((cv::waitKey() & 0xFF)!='Q');
       cv::destroyWindow("Sbarubba");
       cv::waitKey(100);
+      found.push_back(match);
 
-      return true;
-    }
       if(currentThreshold<0.1){
         break;
       }
       currentThreshold*=0.9;
+    }
     }
     return false;
   }

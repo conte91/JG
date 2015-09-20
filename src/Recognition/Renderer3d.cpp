@@ -81,16 +81,6 @@ Renderer3d::~Renderer3d()
   aiDetachAllLogStreams();
 }
 
-/*Eigen::Affine3d Renderer3d::tUpToWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-  gluLookAt(t[0], t[1], t[2], 0, 0, 0, up[0], up[1], up[2]);
-
-  Eigen::Matrix4d m=Eigen::glGet(GL_MODELVIEW_MATRIX);
-
-}*/
-
 void
 Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, double focal_length_y, double near,
                          double far)

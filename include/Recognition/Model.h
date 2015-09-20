@@ -30,12 +30,13 @@ namespace Recognition{
         cv::Mat hueHist;
       };
 
+      typedef cv::linemod::Detector Detector;
     private:
       std::string _myId;
 
       template<typename T>
         inline std::vector<T> readSequence(const cv::FileNode& n);
-      cv::Ptr<cv::linemod::DetectorWMasks> _detector;
+      cv::Ptr<Detector> _detector;
       std::shared_ptr<Renderer3d> _renderer;
       std::unordered_map<int, TrainingData> _myData;
 
@@ -60,7 +61,7 @@ namespace Recognition{
       const std::vector<cv::linemod::Template> getTemplates(int templateID) const;
 
       /** Gets all the templates of this model, for each template ID */
-      void addAllTemplates(cv::linemod::DetectorWMasks& det) const;
+      void addAllTemplates(Detector& det) const;
 
       /** Loads this model from YML data taken from a folder */
       void readFrom(const std::string& id, const boost::filesystem::path& myDir);

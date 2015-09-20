@@ -52,8 +52,10 @@
 #include <Recognition/GLUTInit.h>
 #include <C5G/Pose.h>
 #include <Eigen/Geometry>
+#include <Recognition/Utils.h>
 
 #include <opencv2/highgui/highgui.hpp>
+#include <Recognition/SphereSplitter.h>
 
 
 bool visualize_ ;
@@ -81,47 +83,42 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
 
   Recognition::Model model(object_id_, mesh_path.string(), cam);
 
+  std::vector<Eigen::Vector3d> myPts=Recognition::SphereSplitter(renderer_n_points_).points();
   /** Takes snapshots of the (ideal) object */
   long totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
-  totalTemplates*=int(1.0/renderer_angle_step_);
-  totalTemplates*=int(1.0/renderer_angle_step_);
-  totalTemplates*=int(1.0/renderer_angle_step_);
-  totalTemplates*=8;
+  totalTemplates*=myPts.size();
   long i=0; 
   long done=0;
   //std::unordered_set<long> tuanonna;
   
+  std::cout << "Requested UV sphere points: "<< renderer_n_points_ << ", total UV sphere points:" << myPts.size() << "\n";
   std::cout << "Loading images ";
   cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);
   cv::Mat depth2show(cam.getHeight(), cam.getWidth(), CV_16U);
   for (double radius=renderer_radius_min_; radius<=renderer_radius_max_; radius+=renderer_radius_step_)
   {
-    for(double x=-1; x<=1; x+=renderer_angle_step_){
-      for(double y=-1; y<=1; y+=renderer_angle_step_){
-        for(double z=-1; z<=1; z+=renderer_angle_step_){
-          i++;
-          double nAxis=x*x+y*y+z*z;
-          //long thevec=((long) (x/nAxis)*1000.0)*1000000+((long) (y/nAxis)*1000.0)*1000+((long)(z/nAxis)*1000.0);
-          if(nAxis<=1 /*&& tuanonna.find(thevec)==tuanonna.end()*/ ){
-            //tuanonna.insert(thevec);
-            for(int k=0; k<2; ++k){
+    for(const auto& p:myPts){
+            i++;
             done++;
-            double w=sqrt(1-x*x-y*y-z*z);
-            if(!k){
-              w=-w;
-            }
-
             std::stringstream status;
             status << (i) << "/" << totalTemplates;
             std::cout << status.str();
 
-
-            Eigen::Quaterniond q{w,x,y,z};
-
-            Eigen::Matrix3d rotation = Eigen::Quaterniond{w,x,y,z}.normalized().toRotationMatrix();
-            double x2=x*x, y2=y*y, z2=z*z;
+            /** 
+             * Cross product == double perpendicularity == longitude == arrr me gusta 
+             *
+             * Tangent to sphere is perpendicular to P
+             * "On meridian" is the plane containing P and Z axis, so is perpendicular to PxZ
+             * -> Up vector is perpendicular to P and PxZ
+             *  -> Up vector is Px(PxZ) (with positive z coordinate)
+             */
+            Eigen::Vector3d up=p.cross(p.cross(Eigen::Vector3d{0,0,1})).normalized();
+            if(up[2]<0){
+              up=-up;
+            }
+            Eigen::Matrix3d rotation = Recognition::tUpToWorldTransform(p, up).rotation().matrix();
             model.addTraining(rotation,radius, cam);
-            if((done % 5 ) && visualize_){
+            if((!(done % 5 )) && visualize_){
               image2show.setTo(cv::Scalar(0,0,0));
               depth2show.setTo(cv::Scalar(0,0,0));
               cv::Mat image, depth, mask;
@@ -145,10 +142,6 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
             for (size_t j = 0; j < status.str().size(); ++j) {
               std::cout << '\b';
             }
-            }
-          }
-        }
-      }
     }
   }
 
