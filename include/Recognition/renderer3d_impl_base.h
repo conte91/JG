@@ -70,7 +70,7 @@ public:
   /** Path of the mesh */
   std::string mesh_path_;
 
-  int width_, height_;
+  unsigned int width_, height_;
 };
 
 #endif /* ORK_RENDERER_RENDERER3D_IMPL_BASE_H_ */
