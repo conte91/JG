@@ -192,6 +192,34 @@ namespace Camera{
     }
     return modelCloudPtr;
   }
+  Eigen::Vector3d CameraModel::uvzToCameraFrame(double u, double v, double z) const{
+    /** From the OpenCV_RGBD contrib project - depth_to_3d.cpp */
+    float fx = _K(0, 0);
+    float fy = _K(1, 1);
+    float s = _K(0, 1);
+    float cx = _K(0, 2);
+    float cy = _K(1, 2);
+
+    Eigen::Vector3d coordinates;
+
+    coordinates[0] = (u - cx) / fx;
+
+    if (s != 0)
+      coordinates[0] = coordinates[0] + (-(s / fy) * v + cy * s / fy) / fx;
+
+    coordinates[0] = coordinates[0]*z;
+    coordinates[1] = (v - cy)*(z) * (1. / fy);
+    coordinates[2] = z;
+    return coordinates;
+  }
+  Eigen::Vector3d CameraModel::uvzToWorldFrame(double u, double v, double d) const{
+    auto cPos=uvzToCameraFrame(u,v,d);
+    Eigen::Vector4d cPos4{cPos[0], cPos[1], cPos[2], 1};
+
+    Eigen::Matrix4f mat;
+    cv2eigen(_extr, mat);
+    return (mat.cast<double>()*cPos4).topRows<3>();
+  }
 }
 
 namespace cv{
