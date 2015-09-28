@@ -35,6 +35,6 @@ int main(int argc, char** argv){
     cv::putText(newFrame, s.str(), cv::Point2f(stiretti.x,stiretti.y+step), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255-colori[i][0], 255-colori[i][1], 255-colori[i][2]));
   }
   imshow("REHFIWEUJHFWEIJFWEOIUFHWEIUFHWEIUFHWEIGFH", newFrame);
-  while(cv::waitKey(100)&0xFF!='q');
+  while((cv::waitKey(100)&0xFF)!='q');
   return 0;
 }
