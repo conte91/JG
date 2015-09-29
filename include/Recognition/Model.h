@@ -26,8 +26,10 @@ namespace Recognition{
         double a;
         double b;
         double g;
-        Camera::CameraModel cam;
         cv::Mat hueHist;
+        int centerX;
+        int centerY;
+        double centerDepth;
       };
 
       typedef cv::linemod::Detector Detector;
@@ -41,14 +43,10 @@ namespace Recognition{
       std::unordered_map<int, TrainingData> _myData;
 
       cv::Matx33d camTUp2ObjRot(const cv::Vec3d& tDir, const cv::Vec3d& upDir);
-      int renderer_width;
-      int renderer_height;
+      std::string mesh_file_path;
       double renderer_near;
       double renderer_far;
-      double renderer_focal_length_x;
-      double renderer_focal_length_y;
-      int renderer_n_points;
-      std::string mesh_file_path;
+
     public:
 
       /** Builds an ICP model from a training path */
@@ -78,6 +76,12 @@ namespace Recognition{
       void addTraining(const Eigen::Matrix3d& rot, double distance, const Camera::CameraModel& cam);
       void addTraining(const double dist, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam);
 
+      /** Gets the frame (i.e. camera-relative) transformation of this match keeping into account repositioning due to the render not being centered etc. */
+      Eigen::Affine3d matchToObjectPose(const cv::linemod::Match& match) const;
+
+      /** Render a linemod match for this object into its correct position */
+      void renderMatch(const cv::linemod::Match& match, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
+
       TrainingData getData(int templateID) const;
       cv::Matx33d getR(int templateID) const;
       //cv::Vec3f getT(int templateID) const;
@@ -85,10 +89,11 @@ namespace Recognition{
       float getA(int templateID) const;
       float getB(int templateID) const;
       float getG(int templateID) const;
-      cv::Matx33f getK(int templateID) const;
       cv::Mat getHueHist(int templateID) const;
-      Camera::CameraModel getCam(int templateID) const;
+      Camera::CameraModel getCam() const;
       const std::shared_ptr<Renderer3d> getRenderer() const;
+      int getXc(int templateID) const;
+      int getYc(int templateID) const;
       int numTemplates() const;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr getPointCloud(const C5G::Pose& pose) const;
       Camera::CameraModel _camModel;

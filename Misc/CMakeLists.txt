@@ -16,6 +16,7 @@ add_subdirectory("OpenCVCalib")
 add_subdirectory("Linemod")
 add_subdirectory("Test_Giorgio/")
 add_subdirectory("Test_depth/")
+add_subdirectory("Test_renderer/")
 add_subdirectory("Test_storage/")
 add_subdirectory("Test_models/")
 

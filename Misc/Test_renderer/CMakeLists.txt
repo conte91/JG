@@ -1,0 +1,4 @@
+MAYBE_FIND(OpenCV)
+
+add_executable( test_renderer Test_renderer.cpp )
+target_link_libraries( test_renderer renderer3d camera ${OpenCV_LIBRARIES})

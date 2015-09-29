@@ -33,6 +33,7 @@
  *
  */
 
+#include <Camera/CameraModel.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <Recognition/Renderer3d.h>
@@ -47,12 +48,8 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-//#if USE_GLUT
 #include <Recognition/renderer3d_impl_glut.h>
 #include <highgui.h>
-//#else
-//#include "renderer3d_impl_osmesa.h"
-//#endif
 
 Renderer3d::Renderer3d(const std::string & mesh_path)
     :
@@ -82,14 +79,15 @@ Renderer3d::~Renderer3d()
 }
 
 void
-Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, double focal_length_y, double near,
-                         double far)
-{
-  renderer_->width_ = width;
-  renderer_->height_ = height;
+Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
+                         double far) {
+  renderer_->width_ = cam.getWidth();
+  renderer_->height_ = cam.getHeight();
 
-  focal_length_x_ = focal_length_x;
-  focal_length_y_ = focal_length_y;
+  focal_length_x_ = cam.getFx();
+  focal_length_y_ = cam.getFy();
+  cx_=cam.getXc();
+  cy_=cam.getYc();
 
   near_ = near;
   far_ = far;
@@ -98,9 +96,7 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
 
   // Initialize the OpenGL context
   renderer_->set_parameters_low_level();
-  //+++
   model_->LoadMesh(renderer_->mesh_path_);
-
 
   // Initialize the environment
   glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -128,14 +124,50 @@ Renderer3d::set_parameters(size_t width, size_t height, double focal_length_x, d
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  double fx = Renderer3d::focal_length_x_;
-  double fy = Renderer3d::focal_length_y_;
-  double fovy = 2 * atan(0.5 * renderer_->height_ / fy) * 180 / CV_PI;
-  double aspect = (renderer_->width_ * fy) / (renderer_->height_ * fx);
+    // These parameters define the final viewport that is rendered into by
+    // the camera.
+    /* In camera's frame, X axis is left-to-right */
+    double L = 0;
+    double R = renderer_->width_;
+    /** We have downward Y axis in our camera system, so height is at bottom of image and 0 at top */
+    double B = renderer_->height_;
+    double T = 0;
+     
+    // near and far clipping planes, these only matter for the mapping from
+    // world-spaaace z-coordinate into the depth coordinate for OpenGL
+    double N = near;
+    double F = far;
+     
+    // construct an orthographic matrix which maps from projected
+    // coordinates to normalized device coordinates in the range
+    // [-1, 1].  OpenGL then maps coordinates in NDC to the current
+    // viewport
+    Eigen::Matrix4d ortho = Eigen::Matrix4d::Zero();
+    ortho(0,0) =  2.0/(R-L); ortho(0,3) = -(R+L)/(R-L);
+    ortho(1,1) =  2.0/(T-B); ortho(1,3) = -(T+B)/(T-B);
+    ortho(2,2) = -2.0/(F-N); ortho(2,3) = -(F+N)/(F-N);
+    ortho(3,3) =  1.0;
+     
+    // construct a projection matrix, this is identical to the 
+    // projection matrix computed for the intrinsicx, except an
+    // additional row is inserted to map the z-coordinate to
+    // OpenGL. 
+    Eigen::Matrix4d tproj = Eigen::Matrix4d::Zero();
+    tproj(0,0) = focal_length_x_; tproj(0,1) = 0; tproj(0,2) = -cx_;
+    tproj(1,1) = focal_length_y_; tproj(1,2) = -cy_;
+    tproj(2,2) = (N+F); tproj(2,3) = N*F;
+    tproj(3,2) = -1.0;
 
-  // set perspective
-  gluPerspective(fovy, aspect, near, far);
-  glViewport(0, 0, renderer_->width_, renderer_->height_);
+    // resulting OpenGL frustum is the product of the orthographic
+    // mapping to normalized device coordinates and the augmented
+    // camera intrinsic matrix
+    Eigen::Matrix4d frustum = ortho*tproj;
+    // set perspective
+    std::cout << "Proj: " << tproj << "\nOrtho: " << ortho << "\nFinal: " << frustum << "\n";
+    Eigen::glLoadMatrix(frustum);
+    glViewport(0, 0, renderer_->width_, renderer_->height_);
+    glDepthRange(near_, far_);
+
 }
 
 void
@@ -150,17 +182,7 @@ Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double 
 
   gluLookAt(x, y, z, 0, 0, 0, upx, upy, upz);
 
-  // scale the whole asset to fit into our view frustum
-  aiVector3D scene_min, scene_max, scene_center;
-  model_->get_bounding_box(&scene_min, &scene_max);
-  scene_center.x = (scene_min.x + scene_max.x) / 2.0f;
-  scene_center.y = (scene_min.y + scene_max.y) / 2.0f;
-  scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
-
-  // center the model
-  glTranslatef(-scene_center.x, -scene_center.y, -scene_center.z);
-  glScalef(1,-1,1);
-  glFrontFace(GL_CW);
+ //glDisable(GL_CULL_FACE);
 
   // if the display list has not been made yet, create a new one and
   // fill it with scene contents
@@ -191,8 +213,8 @@ void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
   // scale the whole asset to fit into our view frustum
   aiVector3D scene_min, scene_max, scene_center;
   model_->get_bounding_box(&scene_min, &scene_max);
-  glScalef(1,-1,1);
   glFrontFace(GL_CW);
+  //glDisable(GL_CULL_FACE);
   // if the display list has not been made yet, create a new one and
   // fill it with scene contents
   if (scene_list_ == 0)
@@ -219,10 +241,7 @@ void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
   Eigen::glMultMatrix(pose.inverse());//.inverse());
 
   // scale the whole asset to fit into our view frustum
-  aiVector3D scene_min, scene_max, scene_center;
-  model_->get_bounding_box(&scene_min, &scene_max);
-  glScalef(1,-1,1);
-  glFrontFace(GL_CW);
+  //glDisable(GL_CULL_FACE);
   // if the display list has not been made yet, create a new one and
   // fill it with scene contents
   if (scene_list_ == 0)

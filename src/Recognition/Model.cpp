@@ -28,15 +28,11 @@ namespace Recognition{
       mesh_file_path(meshFile),
       _detector(new Detector(*cv::linemod::getDefaultLINEMOD())),
       _camModel(cam),
-      renderer_width(cam.getWidth()),
-      renderer_height(cam.getHeight()),
-      renderer_focal_length_x(cam.getFx()),
-      renderer_focal_length_y(cam.getFy()),
       renderer_near(0.1),
-      renderer_far(10),
+      renderer_far(4),
       _renderer(new Renderer3d(meshFile))
   {
-    _renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
+    _renderer->set_parameters(cam, renderer_near, renderer_far);
   }
 
 
@@ -63,15 +59,11 @@ namespace Recognition{
     /** Initialize the renderer with the same parameters used for learning */
     _renderer=std::shared_ptr<Renderer3d>(new Renderer3d(mesh_file_path));
 
-    cv::FileNode fr = inFile["rendering"];
-    fr["renderer_width"] >> renderer_width;
-    fr["renderer_height"] >> renderer_height;
-    fr["renderer_focal_length_x"] >> renderer_focal_length_x;
-    fr["renderer_focal_length_y"] >> renderer_focal_length_y;
-    fr["renderer_near"] >> renderer_near;
-    fr["renderer_far"] >> renderer_far;
-    _camModel=Camera::CameraModel(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, 0, renderer_height/2.0, renderer_width/2.0);
-    _renderer->set_parameters(renderer_width, renderer_height, renderer_focal_length_x, renderer_focal_length_y, renderer_near, renderer_far);
+    cv::FileNode fr = inFile["rendering"]["trainCamera"];
+    _camModel=Camera::CameraModel::readFrom(fr);
+    inFile["rendering"]["renderer_near"] >> renderer_near;
+    inFile["rendering"]["renderer_far"] >> renderer_far;
+    _renderer->set_parameters(_camModel, renderer_near, renderer_far);
 
     _myData={};
     const cv::FileNode& n=inFile["trainData"];
@@ -80,8 +72,8 @@ namespace Recognition{
     for(const auto& it : n){
       int tID;
       it["id"] >> tID;
-      TrainingData t{{},{},{},{},{},{0,0,0,0,0,0,0},{}};
-      read(it["data"], t, {{},{},{},{},{},{0,0,0,0,0,0,0},{}});
+      TrainingData t;
+      read(it["data"], t, {});
       _myData.insert(std::make_pair(tID,t));
     }
   }
@@ -103,9 +95,6 @@ namespace Recognition{
   cv::Matx33d Model::getR(int templateID) const {
     return _myData.at(templateID).R;
   }
-  /*cv::Vec3f Model::getT(int templateID) const {
-    return _myData.at(templateID).T;
-  }*/
   float Model::getA(int templateID) const {
     return _myData.at(templateID).a;
   }
@@ -118,11 +107,8 @@ namespace Recognition{
   float Model::getDist(int templateID) const {
     return _myData.at(templateID).dist;
   }
-  cv::Matx33f Model::getK(int templateID) const {
-    return _myData.at(templateID).cam.getIntrinsic();
-  }
-  Camera::CameraModel Model::getCam(int templateID) const {
-    return _myData.at(templateID).cam;
+  Camera::CameraModel Model::getCam() const {
+    return _camModel;
   }
   cv::Mat Model::getHueHist(int templateID) const {
     return _myData.at(templateID).hueHist;
@@ -240,11 +226,15 @@ namespace Recognition{
     cv::normalize(Hue_Hist, Hue_Hist, 0.0, 1.0, cv::NORM_MINMAX, -1, cv::Mat() );
 #endif
 
+    /** Here we save the center of the object wrt to the border of the template's rectangle, so that if one knows the position of the rectangle in a bigger image he can know the position of the object the template refers to (thanks to the camera matrix)*/
+    int centerX=640/2-rect.x;
+    int centerY=480/2-rect.y;
+    double centerDepth=distance-depth.at<unsigned int>(centerX,centerY)/1000.0;
     /** Save the computed data */
     if(_myData.find(template_in)!=_myData.end()){
       std::cerr << "##############Duplicate template ID!!################\n";
     }
-    _myData.insert(std::make_pair(template_in,TrainingData{R, distance, 0, 0, 0, cam, cv::Mat()}));
+    _myData.insert(std::make_pair(template_in,TrainingData{R, distance, 0, 0, 0, cv::Mat(), centerX, centerY, centerDepth}));
   }
 
   void Model::addTraining(const double distance, const double alpha, const double beta, const double gamma, const Camera::CameraModel& cam){
@@ -288,13 +278,9 @@ namespace Recognition{
     fs << "]";
 
     fs << "rendering"  << "{";
-    fs << "renderer_width" <<  renderer_width;
-    fs << "renderer_height" <<  renderer_height;
-    fs << "renderer_focal_length_x" <<  renderer_focal_length_x;
-    fs << "renderer_focal_length_y" <<  renderer_focal_length_y;
     fs << "renderer_near" <<  renderer_near;
     fs << "renderer_far" <<  renderer_far;
-    fs << "renderer_n_points" <<  renderer_n_points;
+    fs << "trainCamera" << _camModel;
     fs << "}";
 
   }
@@ -356,6 +342,43 @@ namespace Recognition{
     }
     return modelCloudPtr;
   }
+
+  Eigen::Affine3d Model::matchToObjectPose(const cv::linemod::Match& match) const {
+    int tId=match.template_id;
+    cv::Matx33d R_match = _myData.at(tId).R;
+    float D_match = _myData.at(tId).dist;
+    Eigen::Matrix3d eRot;
+    cv2eigen(R_match, eRot);
+    Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
+    int u=match.x;//+_myData.at(tId).centerX;
+    int v=match.y;//+_myData.at(tId).centerY;
+    double d=D_match;
+    std::cout << "V:" << v << " U:" << u<<"\n";
+    Eigen::Vector3d position=_camModel.uvzToCameraFrame(u,v,D_match);
+    matchTrans.translation() << position;
+    matchTrans.linear()=eRot;
+    std::cout << "Pose: " << matchTrans.matrix() << "\n";
+    return matchTrans;
+  }
+
+  void Model::renderMatch(const cv::linemod::Match& match, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
+    assert(match.class_id==_myId && "Attempted to render a LineMOD match for a different object than the match's one!" );
+    std::cout << "match rect: " << match.x << "," << match.y << "\n";
+    //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
+    
+    int tId=match.template_id;
+    cv::Matx33d R_match = _myData.at(tId).R;
+    float D_match = _myData.at(tId).dist;
+    Eigen::Matrix3d eRot;
+    cv2eigen(R_match, eRot);
+    Eigen::Affine3d r=Eigen::Affine3d::Identity();
+    r.linear()=eRot;
+    r.translation() << 0, 0, D_match;
+    render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
+    rect_out.x=match.x;
+    rect_out.y=match.y;
+    std::cout << "After rect: " << rect_out << "\n";
+  }
 }
 namespace cv{
   void write( FileStorage& fs, const std::string& name, const Recognition::Model::TrainingData& data){
@@ -366,8 +389,10 @@ namespace cv{
     fs << "a" << data.a;
     fs << "b" << data.b;
     fs << "g" << data.g;
-    fs << "cam" << data.cam;
     fs << "hueHist" << data.hueHist;
+    fs << "cx" << data.centerX;
+    fs << "cy" << data.centerY;
+    fs << "cz" << data.centerDepth;
     fs << "}";
   }
   void read(const FileNode& node, Recognition::Model::TrainingData& x, const Recognition::Model::TrainingData& default_value){
@@ -380,15 +405,19 @@ namespace cv{
     cv::Mat R;
     cv::Vec3d T;
     float dist,a,b,g;
+    int centerX, centerY;
+    double centerDepth;
     cv::Mat hueHist;
 
     node["R"] >> R;
-    node["T"] >> T;
     node["dist"] >> dist;
     node["a"] >> a;
     node["b"] >> b;
     node["g"] >> g;
     node["hueHist"] >> hueHist;
-    x={R,dist,a,b,g,Camera::CameraModel::readFrom(node["cam"]), hueHist};
+    node["cx"] >> centerX;
+    node["cy"] >> centerY;
+    node["cz"] >> centerDepth;
+    x={R,dist,a,b,g,hueHist, centerX, centerY, centerDepth};
   }
 }

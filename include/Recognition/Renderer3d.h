@@ -38,6 +38,7 @@
 #define ORK_RENDERER_RENDERER3D_H_
 
 #include <string>
+#include <Camera/CameraModel.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -67,7 +68,7 @@ public:
   ~Renderer3d();
 
   void
-  set_parameters(size_t width, size_t height, double focal_length_x, double focal_length_y, double near, double far);
+  set_parameters(const Camera::CameraModel& cam, double near, double far);
 
   /** Similar to the gluLookAt function
    * @param x the x position of the eye pointt
@@ -108,7 +109,7 @@ public:
   renderImageOnly(cv::Mat &image_out, const cv::Rect &rect_out) const;
 
 protected:
-  double focal_length_x_, focal_length_y_, near_, far_;
+  double focal_length_x_, focal_length_y_, near_, far_, cx_, cy_;
   float angle_;
 
 //  Model* model_;

@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include <cmath>
 #include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
@@ -102,16 +103,6 @@ namespace Recognition{
       }
     }
 
-    cv::imshow("T", displayT);
-    cv::imshow("M", displayM);
-    cv::imshow("D", matchingDraw);
-    cv::imshow("scaledMask", scaledMask);
-    while((cv::waitKey() & 0xFF)!='q');
-    //cv::waitKey(100);
-    //cv::destroyWindow("T");
-    //cv::destroyWindow("M");
-    //cv::destroyWindow("D");
-    std::cout << "totalPoints: " << totalPoints << " matching: " << matchingPoints << "\n";
     return (double) matchingPoints/(double) totalPoints;
   }
 
@@ -158,6 +149,7 @@ namespace Recognition{
 
     double currentThreshold=_threshold;
     std::vector<cv::linemod::Match> found;
+    std::unordered_set<int> foundIDs;
     while(found.size()<3){
     std::cout<<"Matching..."<<"\n";
     detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
@@ -186,129 +178,103 @@ namespace Recognition{
       // Fill the pose object
       int tId=match.template_id;
       std::cout << "Template # " << tId << " matches.\n";
+      if(foundIDs.find(tId)!=foundIDs.end()){
+        std::cout << "(skipped)\n";
+        continue;
+      }
       auto& obj=_objectModels.at(match.class_id);
-      cv::Matx33d R_match = obj.getR(tId);
-      std::cout << "Rotation matrix: \n" << R_match << "\n";
-      float D_match = obj.getDist(tId);
-      std::cout << "Distance:\n" << D_match << "\n";
+      //std::cout << "Rotation matrix: \n" << R_match << "\n";
+      //std::cout << "Distance:\n" << D_match << "\n";
       //const auto& K_match = obj.getK(tId);
 
-      //get the point cloud of the rendered object model
-      Mat mask;
-      Rect rect;
-      /*
-      auto it_r = _objectModels.at(match.class_id).getRenderer();
-      Mat depth_ref_;
-      it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
+        /*
+        auto it_r = _objectModels.at(match.class_id).getRenderer();
+        Mat depth_ref_;
+        it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
 
-      cv::Mat_<cv::Vec3f> depth_real_model_raw;
-      cv::rgbd::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
+        cv::Mat_<cv::Vec3f> depth_real_model_raw;
+        cv::rgbd::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
 
-      //prepare the bounding box for the model and reference point clouds
-      cv::Rect_<int> rect_model(0, 0, depth_real_model_raw.cols, depth_real_model_raw.rows);
-      //prepare the bounding box for the reference point cloud: add the offset
-      cv::Rect_<int> rect_ref(rect_model);
-      rect_ref.x += match.x;
-      rect_ref.y += match.y;
+        //prepare the bounding box for the model and reference point clouds
+        cv::Rect_<int> rect_model(0, 0, depth_real_model_raw.cols, depth_real_model_raw.rows);
+        //prepare the bounding box for the reference point cloud: add the offset
+        cv::Rect_<int> rect_ref(rect_model);
+        rect_ref.x += match.x;
+        rect_ref.y += match.y;
 
-      rect_ref = rect_ref & Rect(0, 0, depth_real_ref_raw.cols, depth_real_ref_raw.rows);
-      if ((rect_ref.width < 5) || (rect_ref.height < 5))
-        continue;
-      //adjust both rectangles to be equal to the smallest among them
-      if (rect_ref.width > rect_model.width)
-        rect_ref.width = rect_model.width;
-      if (rect_ref.height > rect_model.height)
-        rect_ref.height = rect_model.height;
-      if (rect_model.width > rect_ref.width)
-        rect_model.width = rect_ref.width;
-      if (rect_model.height > rect_ref.height)
-        rect_model.height = rect_ref.height;
+        rect_ref = rect_ref & Rect(0, 0, depth_real_ref_raw.cols, depth_real_ref_raw.rows);
+        if ((rect_ref.width < 5) || (rect_ref.height < 5))
+          continue;
+        //adjust both rectangles to be equal to the smallest among them
+        if (rect_ref.width > rect_model.width)
+          rect_ref.width = rect_model.width;
+        if (rect_ref.height > rect_model.height)
+          rect_ref.height = rect_model.height;
+        if (rect_model.width > rect_ref.width)
+          rect_model.width = rect_ref.width;
+        if (rect_model.height > rect_ref.height)
+          rect_model.height = rect_ref.height;
 
-      //prepare the reference data: from the sensor : crop images
-      cv::Mat_<cv::Vec3f> depth_real_ref = depth_real_ref_raw(rect_ref);
+        //prepare the reference data: from the sensor : crop images
+        cv::Mat_<cv::Vec3f> depth_real_ref = depth_real_ref_raw(rect_ref);
 
-      //plot Red Rect around the match in the full image
-      cv::rectangle(rgb,rect_ref,cv::Scalar(0,0,255),2);
+        //plot Red Rect around the match in the full image
+        cv::rectangle(rgb,rect_ref,cv::Scalar(0,0,255),2);
 
-      cv::imshow("rgb",rgb);
+        cv::imshow("rgb",rgb);
 
-      cv::waitKey(1);
+        cv::waitKey(1);
 
-      //prepare the model data: from the match
-      cv::Mat_<cv::Vec3f> depth_real_model = depth_real_model_raw(rect_model);
+        //prepare the model data: from the match
+        cv::Mat_<cv::Vec3f> depth_real_model = depth_real_model_raw(rect_model);
 
-      //initialize the translation based on reference data
-      cv::Vec3f T_crop = depth_real_ref(depth_real_ref.rows / 2.0f, depth_real_ref.cols / 2.0f);
-      //add the object's depth
-      T_crop(2) += D_match;
+        //initialize the translation based on reference data
+        cv::Vec3f T_crop = depth_real_ref(depth_real_ref.rows / 2.0f, depth_real_ref.cols / 2.0f);
+        //add the object's depth
+        T_crop(2) += D_match;
 
-      if (!cv::checkRange(T_crop))
-        continue;
-      cv::Vec3f T_real_icp(T_crop);
+        if (!cv::checkRange(T_crop))
+          continue;
+        cv::Vec3f T_real_icp(T_crop);
 
-      //initialize the rotation based on model data
-      if (!cv::checkRange(R_match))
-        continue;
-      cv::Matx33f R_real_icp(R_match);
+        //initialize the rotation based on model data
+        if (!cv::checkRange(R_match))
+          continue;
+        cv::Matx33f R_real_icp(R_match);
 
-      //get the point clouds (for both reference and model)
-      std::vector<cv::Vec3f> pts_real_model_temp;
-      std::vector<cv::Vec3f> pts_real_ref_temp;
-      double px_ratio_missing = matToVec(depth_real_model, depth_real_ref, pts_real_model_temp, pts_real_ref_temp);
-      std::cout<<"px_ratio_missing > px_match_min_ ?: "<<px_ratio_missing<<" > " <<  px_match_min_ <<"\n";
-      if (px_ratio_missing > px_match_min_)
-        continue;
+        //get the point clouds (for both reference and model)
+        std::vector<cv::Vec3f> pts_real_model_temp;
+        std::vector<cv::Vec3f> pts_real_ref_temp;
+        double px_ratio_missing = matToVec(depth_real_model, depth_real_ref, pts_real_model_temp, pts_real_ref_temp);
+        std::cout<<"px_ratio_missing > px_match_min_ ?: "<<px_ratio_missing<<" > " <<  px_match_min_ <<"\n";
+        if (px_ratio_missing > px_match_min_)
+          continue;
 
-      Eigen::Matrix4f finalTransformationMatrix;
-      //TODO if(!pclICP(pts_real_model_temp, pts_real_ref_temp, finalTransformationMatrix, resultPointClouds)){
-      //TODO   continue;
-      //TODO }
+        Eigen::Matrix4f finalTransformationMatrix;
+        //TODO if(!pclICP(pts_real_model_temp, pts_real_ref_temp, finalTransformationMatrix, resultPointClouds)){
+        //TODO   continue;
+        //TODO }
 
-      */
-      /** Take the best match and return it as a position */
-
-      /** Fill the transformation matrix */
-      Eigen::Matrix3d eRot;
-
-      cv2eigen(R_match, eRot);
-
-      Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
-
-      matchTrans.translation() << 0,0,D_match;
-      matchTrans.linear()=eRot;
-      const auto& Cam_match = obj.getCam(tId);
-      Eigen::Affine3d cameraToWorld(Cam_match.getExtrinsic().inverse());
-
-      /** Move to global positions */
-      std::cout << "Matrix0: \n" <<
-        matchTrans.matrix() << "\n";
-      Eigen::Affine3d mattiaEUnTrans(matchTrans);
-      matchTrans = cameraToWorld * matchTrans;
-
-      std::cout << "Matrix: \n" <<
-        matchTrans.matrix() << "\n";
-      Mat sticazzi, stimazzi, stimaski;
-      Mat newFrame=const_rgb.clone();
-      Rect stiretti;
-      obj.render(mattiaEUnTrans, stimazzi, sticazzi, stimaski, stiretti);
-      stiretti.x=match.x;
-      stiretti.y=match.y;
+        */
+      cv::Mat sticazzi, stimazzi, stimaski;
+      cv::Rect stiretti;
+      obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
+      cv::Mat newFrame=const_rgb.clone();
       Mat matchingPart=newFrame(stiretti);
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
       double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1);
-      if(percentage < 0.6) {
-        std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
-        continue;
-      }
 
       /** Check for false positives by valuating hues values on the downsampled image */
-      eigen2cv(matchTrans.matrix(), pose);
       stimazzi.copyTo(newFrame(stiretti));
+
       imshow("Sbarubba", newFrame);
       while((cv::waitKey() & 0xFF)!='Q');
-      cv::destroyWindow("Sbarubba");
-      cv::waitKey(100);
+      if(percentage < 0.6) {
+        //std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
+        continue;
+      }
       found.push_back(match);
+      foundIDs.insert(tId);
 
       if(currentThreshold<0.1){
         break;

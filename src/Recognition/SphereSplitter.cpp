@@ -14,12 +14,12 @@ namespace Recognition{
         std::vector<Vertex> icoV;
         icoV.emplace_back(M_PI/2, 0);
         for(int i=0; i<5; ++i){
-          icoV.emplace_back(lat1, 2*M_PI*i/5);
+          icoV.emplace_back(lat1, 2*M_PI*i/5.0);
         }
         for(int i=0; i<5; ++i){
-          icoV.emplace_back(lat2, M_PI/5+2*M_PI*i/5);
+          icoV.emplace_back(lat2, M_PI/5.0+2*M_PI*i/5.0);
         }
-        icoV.emplace_back(-M_PI/2, 0);
+        icoV.emplace_back(-M_PI/2.0, 0);
 
         std::vector<Face> faces;
 

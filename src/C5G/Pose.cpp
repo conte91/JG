@@ -12,10 +12,12 @@ namespace C5G{
   Eigen::Affine3d Pose::poseToTransform(const Pose& x){
     Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
     transformation.translation() << x.x, x.y, x.z;
+    Eigen::Affine3d rotation = Eigen::Affine3d::Identity();
     /** Apply Euler angle rotations */
-    transformation.rotate (Eigen::AngleAxisd (x.alpha, Eigen::Vector3d::UnitX()));
-    transformation.rotate (Eigen::AngleAxisd (x.beta, Eigen::Vector3d::UnitY()));
-    transformation.rotate (Eigen::AngleAxisd (x.gamma, Eigen::Vector3d::UnitZ()));
+    rotation.rotate (Eigen::AngleAxisd (x.alpha, Eigen::Vector3d::UnitX()));
+    rotation.rotate (Eigen::AngleAxisd (x.beta, Eigen::Vector3d::UnitY()));
+    rotation.rotate (Eigen::AngleAxisd (x.gamma, Eigen::Vector3d::UnitZ()));
+    transformation.linear()=rotation.linear();
     return transformation;
   }
 

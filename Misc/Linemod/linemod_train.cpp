@@ -154,13 +154,13 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   std::cout<<"Reading back the data I just wrote..\n";
   {
     Recognition::Model testModel(object_id_, trainDir);
+    cv::Matx33f kTest(testModel.getCam().getIntrinsic());
+    assert(cv::countNonZero(kTest!=model.getCam().getIntrinsic())==0 && "Failed to read back data");
     for(int tID=0; tID<testModel.numTemplates(); ++tID){
       cv::Matx33d rTest(testModel.getR(tID));
       float dTest=testModel.getDist(tID);
-      cv::Matx33f kTest(testModel.getK(tID));
       cv::Mat hTest(testModel.getHueHist(tID));
       assert(cv::countNonZero(rTest!=model.getR(tID))==0 && "Failed to read back data");
-      assert(cv::countNonZero(kTest!=model.getK(tID))==0 && "Failed to read back data");
       assert(dTest==model.getDist(tID) && "Failed to read back data");
       assert(cv::countNonZero(hTest!=model.getHueHist(tID))==0 && "Failed to read back data");
     }
