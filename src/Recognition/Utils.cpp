@@ -1,9 +1,11 @@
+#include <cmath>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Recognition/Utils.h>
 
 namespace Recognition{
-Eigen::Affine3d tUpToWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
+
+Eigen::Affine3d tUpToOpenGLWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
   /** Camera is at position T with up vector U, and is looking at the origin */
   /** We want to know the world transform wrt to the camera system
    */
@@ -26,4 +28,9 @@ Eigen::Affine3d tUpToWorldTransform(const Eigen::Vector3d& t, const Eigen::Vecto
   return result;
 
 }
+
+Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
+    return Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())*tUpToOpenGLWorldTransform(t,up);
+}
+
 }

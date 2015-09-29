@@ -116,8 +116,8 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
             if(up[2]<0){
               up=-up;
             }
-            Eigen::Matrix3d rotation = Recognition::tUpToWorldTransform(p, up).rotation().matrix();
-            model.addTraining(rotation,radius, cam);
+            Eigen::Matrix3d transformation = Recognition::tUpToCameraWorldTransform(p, up).rotation().matrix();
+            model.addTraining(transformation,radius, cam);
             if((!(done % 5 )) && visualize_){
               image2show.setTo(cv::Scalar(0,0,0));
               depth2show.setTo(cv::Scalar(0,0,0));
@@ -125,7 +125,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
               cv::Rect rect;
               Eigen::Affine3d tr=Eigen::Affine3d::Identity();
               tr.translation() << 0,0,radius;
-              tr.linear() = rotation;
+              tr.linear() = transformation;
               model.render(tr, image, depth, mask, rect);
               if(!image.empty()){
                 image.copyTo(image2show(rect));

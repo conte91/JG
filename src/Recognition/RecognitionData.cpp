@@ -149,7 +149,7 @@ namespace Recognition{
 
     double currentThreshold=_threshold;
     std::vector<cv::linemod::Match> found;
-    std::unordered_set<int> foundIDs;
+    std::unordered_set<cv::linemod::Match> foundMatches;
     while(found.size()<3){
     std::cout<<"Matching..."<<"\n";
     detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
@@ -158,6 +158,7 @@ namespace Recognition{
     const std::vector<cv::linemod::Match>& matches=nonconst_matches;
     std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
     if(matches.size() == 0){
+      std::cout << "LineMOD matching returned no valid matches.\n";
       return false;
     }
 
@@ -178,7 +179,7 @@ namespace Recognition{
       // Fill the pose object
       int tId=match.template_id;
       std::cout << "Template # " << tId << " matches.\n";
-      if(foundIDs.find(tId)!=foundIDs.end()){
+      if(foundMatches.find(match)!=foundMatches.end()){
         std::cout << "(skipped)\n";
         continue;
       }
@@ -267,22 +268,25 @@ namespace Recognition{
       /** Check for false positives by valuating hues values on the downsampled image */
       stimazzi.copyTo(newFrame(stiretti));
 
-      imshow("Sbarubba", newFrame);
-      while((cv::waitKey() & 0xFF)!='Q');
       if(percentage < 0.6) {
-        //std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
+        std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
         continue;
       }
+      imshow("Sbarubba", newFrame);
+      while((cv::waitKey() & 0xFF)!='Q');
       found.push_back(match);
-      foundIDs.insert(tId);
+      foundMatches.insert(match);
 
-      if(currentThreshold<0.1){
+      if(currentThreshold<0.5){
         break;
       }
       currentThreshold*=0.9;
     }
     }
-    return false;
+    if(foundMatches.size()==0){
+      std::cout << "LineMOD matching filtering returned no valid matches.\n";
+      return false;
+    }
   }
 
   /*

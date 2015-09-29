@@ -350,8 +350,8 @@ namespace Recognition{
     Eigen::Matrix3d eRot;
     cv2eigen(R_match, eRot);
     Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
-    int u=match.x;//+_myData.at(tId).centerX;
-    int v=match.y;//+_myData.at(tId).centerY;
+    int u=match.x+_myData.at(tId).centerX;
+    int v=match.y+_myData.at(tId).centerY;
     double d=D_match;
     std::cout << "V:" << v << " U:" << u<<"\n";
     Eigen::Vector3d position=_camModel.uvzToCameraFrame(u,v,D_match);
@@ -364,19 +364,19 @@ namespace Recognition{
   void Model::renderMatch(const cv::linemod::Match& match, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
     assert(match.class_id==_myId && "Attempted to render a LineMOD match for a different object than the match's one!" );
     std::cout << "match rect: " << match.x << "," << match.y << "\n";
-    //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
-    
-    int tId=match.template_id;
-    cv::Matx33d R_match = _myData.at(tId).R;
-    float D_match = _myData.at(tId).dist;
-    Eigen::Matrix3d eRot;
-    cv2eigen(R_match, eRot);
-    Eigen::Affine3d r=Eigen::Affine3d::Identity();
-    r.linear()=eRot;
-    r.translation() << 0, 0, D_match;
     render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
-    rect_out.x=match.x;
-    rect_out.y=match.y;
+    
+    //int tId=match.template_id;
+    //cv::Matx33d R_match = _myData.at(tId).R;
+    //float D_match = _myData.at(tId).dist;
+    //Eigen::Matrix3d eRot;
+    //cv2eigen(R_match, eRot);
+    //Eigen::Affine3d r=Eigen::Affine3d::Identity();
+    //r.linear()=eRot;
+    //r.translation() << 0, 0, D_match;
+    //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
+    //rect_out.x=match.x;
+    //rect_out.y=match.y;
     std::cout << "After rect: " << rect_out << "\n";
   }
 }

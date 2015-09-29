@@ -238,7 +238,7 @@ void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  Eigen::glMultMatrix(pose.inverse());//.inverse());
+  Eigen::glMultMatrix(pose.inverse());
 
   // scale the whole asset to fit into our view frustum
   //glDisable(GL_CULL_FACE);
