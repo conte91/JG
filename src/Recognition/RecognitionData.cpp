@@ -123,13 +123,12 @@ namespace Recognition{
     /** The depth_ matrix is given in m, but we want to use it in mm now */
     CV_Assert(depth_m.type() == CV_32FC1);
     Mat depth_mm;
-    depth_m.convertTo(depth_mm, CV_16UC1, 1000);
+    depth_m.convertTo(depth_mm, CV_16UC1, 1000.0);
 
     std::vector<Mat> sources;
     sources.push_back(rgb);
     sources.push_back(depth_mm);
 
-    std::vector<cv::linemod::Match> nonconst_matches;
     std::vector<Mat> theMasks;
     theMasks.push_back(filter_mask);
     theMasks.push_back(filter_mask);
@@ -147,11 +146,27 @@ namespace Recognition{
     }
     std::cout << "#Templates: " << detector->numTemplates() << "\n";
 
-    double currentThreshold=_threshold;
-    std::vector<cv::linemod::Match> found;
+    /** First of all, we match with decreasing thresholds until at least 3 not-so-badly-matching templates have been found */
+    struct FirstPassFoundItems{
+      cv::linemod::Match match;
+      Eigen::Affine3d objPose;
+      Mat rgb;
+      Mat depth;
+      Mat mask;
+      Rect rect;
+      double matchPercentage;
+    };
+    /** Here we will save all matching parts */
+    std::vector<FirstPassFoundItems> found;
+
+
+    /** To avoid re-evaluating the same match in different steps */
     std::unordered_set<cv::linemod::Match> foundMatches;
+
+    double currentThreshold=_threshold;
     while(found.size()<3){
-    std::cout<<"Matching..."<<"\n";
+    std::cout<<"Matching... with threshold " << currentThreshold << "..."<<"\n";
+    std::vector<cv::linemod::Match> nonconst_matches;
     detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
 
     /** Just to be sure it's not changed in the Rastafari loop */
@@ -162,30 +177,18 @@ namespace Recognition{
       return false;
     }
 
-    Mat depth_real_ref_raw;
-    cv::rgbd::depthTo3d(depth_mm, _cameraModel.getIntrinsic(), depth_real_ref_raw);
-    assert(depth_real_ref_raw.type()==CV_32FC3);
-
-    /** The buffer with detected objects and their info */
-    std::vector <object_recognition_core::db::ObjData> objs_;
-
-    /** Keep the point cloud of the best match */
-    std::array< pcl::PointCloud<pcl::PointXYZRGB>::Ptr , 3 > resultPointClouds;
-
     for(const auto& match : matches) {
 
-      using Eigen::Affine3f;
+      using Eigen::Affine3d;
 
-      // Fill the pose object
       int tId=match.template_id;
       std::cout << "Template # " << tId << " matches.\n";
       if(foundMatches.find(match)!=foundMatches.end()){
         std::cout << "(skipped)\n";
         continue;
       }
+      foundMatches.insert(match);
       auto& obj=_objectModels.at(match.class_id);
-      //std::cout << "Rotation matrix: \n" << R_match << "\n";
-      //std::cout << "Distance:\n" << D_match << "\n";
       //const auto& K_match = obj.getK(tId);
 
         /*
@@ -257,6 +260,7 @@ namespace Recognition{
         //TODO }
 
         */
+      /** Renders the match to check for hue correctness (drops some false positives) */
       cv::Mat sticazzi, stimazzi, stimaski;
       cv::Rect stiretti;
       obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
@@ -265,28 +269,34 @@ namespace Recognition{
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
       double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1);
 
-      /** Check for false positives by valuating hues values on the downsampled image */
-      stimazzi.copyTo(newFrame(stiretti));
-
-      if(percentage < 0.6) {
+      if(percentage < 0.55) {
         std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
         continue;
       }
+      std::cout << "Object taken (percentage=" << percentage << ").\n";
+      /** Check for false positives by valuating hues values on the downsampled image */
+      stimazzi.copyTo(newFrame(stiretti));
       imshow("Sbarubba", newFrame);
       while((cv::waitKey() & 0xFF)!='Q');
-      found.push_back(match);
-      foundMatches.insert(match);
+      found.push_back({match, obj.matchToObjectPose(match), sticazzi, stimazzi, stimaski, stiretti, percentage});
 
-      if(currentThreshold<0.5){
+    }
+      if(currentThreshold<70){
         break;
       }
       currentThreshold*=0.9;
     }
-    }
-    if(foundMatches.size()==0){
+    if(found.size()==0){
       std::cout << "LineMOD matching filtering returned no valid matches.\n";
       return false;
     }
+
+    /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
+    for(auto& x:found){
+
+
+    }
+
   }
 
   /*
@@ -391,9 +401,15 @@ namespace Recognition{
     std::cout << "Reading model names from " << objNamesPath << "..\n";
     {
       std::ifstream names(objNamesPath.string());
-      while(names.good()){
+      while(1){
         std::string s;
         names >> s;
+        if(!names.good()){
+          break;
+        }
+        if(s[0]=='#'){
+          continue;
+        }
         std::cout << "Will elaborate directory: " << s << "\n";
         objNames.insert(s);
       }
@@ -404,23 +420,23 @@ namespace Recognition{
 
     fs::path targetDir(objsfolder_path); 
 
-    fs::directory_iterator it(targetDir), eod;
-    BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod))   
-    { 
+    for(auto& name : objNames){
+
+      fs::path p=objsfolder_path / fs::path(name);
       if(is_directory(p))
       {
         std::cout<<p.filename().string()<<"\n";
         if(objNames.find(p.filename().string()) == objNames.end()) {
           continue;
         }
-
         /** Loads a model from the trained ones */
         std::string object_id_ = p.filename().string();
         std::cout<<"Loading object: " << object_id_<<"\n";
         _objectModels.emplace(std::make_pair(object_id_, Model(object_id_, objsfolder_path)));
-
       }
-
+      else{
+        std::cout << "\n\n\n####################\n\n\nInvalid object was put for recognition!!!\n\n\n####################\n\n\n";
+      }
     }
   }
 

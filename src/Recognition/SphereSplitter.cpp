@@ -12,14 +12,18 @@ namespace Recognition{
         double lat1=atan(1.0/2.0);
         double lat2=-atan(1.0/2.0);
         std::vector<Vertex> icoV;
-        icoV.emplace_back(M_PI/2, 0);
+        for(int i=0; i<5; ++i){
+          icoV.emplace_back(M_PI/2, M_PI/5.0+2*M_PI*i/5.0);
+        }
         for(int i=0; i<5; ++i){
           icoV.emplace_back(lat1, 2*M_PI*i/5.0);
         }
         for(int i=0; i<5; ++i){
           icoV.emplace_back(lat2, M_PI/5.0+2*M_PI*i/5.0);
         }
-        icoV.emplace_back(-M_PI/2.0, 0);
+        for(int i=0; i<5; ++i){
+          icoV.emplace_back(-M_PI/2, 2*M_PI*i/5.0);
+        }
 
         std::vector<Face> faces;
 
@@ -30,42 +34,63 @@ namespace Recognition{
         std::cout << "}\n";
         auto addV=[&faces, &icoV](int a, int b, int c){
           faces.push_back({icoV[a], icoV[b], icoV[c]});
+          std::cout << "Adding face:\n" << faces.back()[0] << "\n;\n" << faces.back()[1] << "\n;\n" << faces.back()[2] << "\n\n";
         };
 
         // 5 faces around point 0
-        addV(0,1,2);
-        addV(0,2,3);
-        addV(0,3,4);
-        addV(0,4,5);
-        addV(0,5,1);
-        addV(1,6,2);
-        addV(2,7,3);
-        addV(3,8,4);
+        addV(0,5,6);
+        addV(1,6,7);
+        addV(2,7,8);
+        addV(3,8,9);
         addV(4,9,5);
-        addV(5,10,1);
-        addV(6,2,7);
-        addV(7,3,8);
-        addV(8,4,9);
-        addV(9,5,10);
-        addV(10,1,6);
-        addV(11,6,7);
-        addV(11,7,8);
-        addV(11,8,9);
-        addV(11,9,10);
-        addV(11,10,6);
+        addV(5,6,10);
+        addV(6,7,11);
+        addV(7,8,12);
+        addV(8,9,13);
+        addV(9,5,14);
+        addV(10,11,15);
+        addV(10,11,6);
+        addV(11,12,16);
+        addV(11,12,7);
+        addV(12,13,17);
+        addV(12,13,8);
+        addV(13,14,18);
+        addV(13,14,9);
+        addV(14,10,19);
+        addV(14,10,5);
 
         // refine triangles
         size_t nVertex=12;
         assert(faces.size()==20);
+        const auto& medianPoint=[](const Eigen::Vector2d& x, const Eigen::Vector2d& y) -> Eigen::Vector2d {
+          double lon1=x[1];
+          double lon2=y[1];
+          auto xx=x, yy=y;
+          /** If latitude difference is > 180°, take the other side of the arc */
+          if(fabs(lon1-lon2)>=M_PI){
+            if(xx[1] < yy[1]){
+              xx[1]+=2*M_PI;
+            }
+            else{
+              yy[1]+=2*M_PI;
+            }
+          }
+          return (xx+yy)/2.0;
+        };
+
         while(nVertex<minimumNPoints) {
           std::vector<Face> newFaces;
           for (auto& tri : faces)
           {
-            newFaces.push_back({(tri[0]+tri[1])/2, (tri[0]+tri[2])/2, tri[0]});
-            newFaces.push_back({(tri[1]+tri[0])/2, (tri[1]+tri[2])/2, tri[1]});
-            newFaces.push_back({(tri[2]+tri[0])/2, (tri[2]+tri[1])/2, tri[2]});
-            newFaces.push_back({(tri[2]+tri[0])/2, (tri[2]+tri[1])/2, (tri[1]+tri[0])/2});
+            auto m01=medianPoint(tri[0],tri[1]);
+            auto m12=medianPoint(tri[1],tri[2]);
+            auto m02=medianPoint(tri[0],tri[2]);
+            newFaces.push_back({m01, m02, tri[0]});
+            newFaces.push_back({m12, m01, tri[1]});
+            newFaces.push_back({m02, m12, tri[2]});
+            newFaces.push_back({m01, m02, m12});
           }
+          std::cout << "Old: " << faces.size() << "new: " << newFaces.size() << "\n";
           assert(newFaces.size()>faces.size());
           faces=newFaces;
 
@@ -76,20 +101,25 @@ namespace Recognition{
 
         /* Done, now add vertex to our set 
          * Notice that, coming from the SAME calculations, we CAN use == operator between floats for our set :) */
+        int i=0, j=0;
         for (auto& tri:faces) {
-          polarV.insert(tri[0]);
-          polarV.insert(tri[1]);
-          polarV.insert(tri[2]);
+          std::cout << "inserting " << i << "\n";
+          i++;
+          std::cout << (polarV.insert(tri[0]).second? "Success" : "Nope") << tri[0]<<"\n";
+          std::cout << (polarV.insert(tri[1]).second? "Success" : "Nope") << tri[1]<<"\n";
+          std::cout << (polarV.insert(tri[2]).second? "Success" : "Nope") << tri[2]<<"\n";
         }
         std::cout << "v: " << polarV.size() << "\n";
         assert(polarV.size()>=minimumNPoints);
 
         for(auto& v: polarV){
-          double t=v[1], p=v[0];
-          myPoints.emplace_back(sin(t)*cos(p), sin(t)*sin(p), cos(t));
+          double lat=v[0], lon=v[1];
+          myPoints.emplace(cos(lat)*cos(lon), cos(lat)*sin(lon), sin(lat));
+          //myPoints.emplace(lat, lon, 0);
         }
+        std::cout << "My points #elements: " << myPoints.size() << "\n";
   }
-  const std::vector<Eigen::Vector3d>& SphereSplitter::points(){
+  const SphereSplitter::UvPoints& SphereSplitter::points() const{
     return myPoints;
   }
 }

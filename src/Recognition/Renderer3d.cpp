@@ -112,13 +112,20 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
   //glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
   //glEnable(GL_COLOR_MATERIAL);
 /****/
-  GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 2.0f };
-  GLfloat LightDiffuse[]= { 2.0f, 2.0f, 2.0f, 2.0f };
-  GLfloat LightPosition[]= { 0.0f, -5.0f, 0.0f, 1.0f };
+  GLfloat LightAmbient[]= {1.0f, 1.0f, 1.0f, 1.0f};
+  GLfloat LightDiffuse[]= {1.0f, 1.0f, 1.0f, 1.0f};
+  GLfloat LightPosition[]= { 0.0f, 0.0f, 1.0f, 0.0f };
+  GLfloat LightAmbient2[]= {1.0f, 1.0f, 1.0f, 1.0f};
+  GLfloat LightDiffuse2[]= {1.0f, 1.0f, 1.0f, 1.0f};
+  GLfloat LightPosition2[]= { 0.0f, 0.0f, -1.0f, 0.0f };
     glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
     glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
     glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
     glEnable(GL_LIGHT1);
+    glLightfv(GL_LIGHT2, GL_AMBIENT, LightAmbient2);
+    glLightfv(GL_LIGHT2, GL_DIFFUSE, LightDiffuse2);
+    glLightfv(GL_LIGHT2, GL_POSITION, LightPosition2);
+    glEnable(GL_LIGHT2);
 
   // Initialize the projection
   glMatrixMode(GL_PROJECTION);

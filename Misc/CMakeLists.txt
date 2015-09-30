@@ -19,6 +19,8 @@ add_subdirectory("Test_depth/")
 add_subdirectory("Test_renderer/")
 add_subdirectory("Test_storage/")
 add_subdirectory("Test_models/")
+add_subdirectory("Test_uvz2pcl/")
+add_subdirectory("Test_spheresplitter/")
 
 
 #include(${OpenCV_CONFIG_PATH}/OpenCVConfig.cmake)

@@ -53,9 +53,7 @@ namespace Camera{
 
       Eigen::Vector3d uvzToCameraFrame(double u, double v, double d) const;
       Eigen::Vector3d uvzToWorldFrame(double u, double v, double d) const;
-      pcl::PointCloud<pcl::PointXYZ>::Ptr sceneToGlobalPointCloud(const Img::ImageWMask& _myData) const ;
-
-      pcl::PointCloud<pcl::PointXYZ>::Ptr sceneToGlobalPointCloud(const Img::Image& _myData, const cv::Mat& mask=cv::Mat()) const ;
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr sceneToCameraPointCloud(const cv::Mat& rgb, const cv::Mat& depth, const cv::Mat& mask=cv::Mat()) const ;
     private:
       /** The intrinsic params of the camera */
       cv::Matx33f _K;

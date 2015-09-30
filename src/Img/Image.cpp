@@ -19,7 +19,6 @@ namespace Img{
     if(d.depth()!=CV_32F){
       if(d.depth()==CV_16U){
         /** Depth is in mm - convert it! */
-        std::cout << "Converting to MMMMM\n";
         d.convertTo(depth, CV_32F, 0.001);
       }
       else{

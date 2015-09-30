@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cv.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -162,34 +163,59 @@ namespace Camera{
     return result;
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr CameraModel::sceneToGlobalPointCloud(const Img::ImageWMask& _myData) const {
-    return sceneToGlobalPointCloud(_myData, _myData.mask);
-  }
+  //pcl::PointCloud<pcl::PointXYZ>::Ptr CameraModel::sceneToGlobalPointCloud(const Img::ImageWMask& _myData) const {
+  //  return sceneToGlobalPointCloud(_myData, _myData.mask);
+  //}
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr CameraModel::sceneToGlobalPointCloud(const Img::Image& _myData, const cv::Mat& mask) const {
-    cv::Mat_<cv::Vec3f> pointsXYZ;
-    cv::rgbd::depthTo3d(_myData.depth, _K, pointsXYZ, mask);
-
-    /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZ>);
-
-    /** Model PointCloud*/
-    int mySize = pointsXYZ.rows*pointsXYZ.cols;
-    modelCloudPtr->resize(mySize);
-    modelCloudPtr->height = 1;
-    modelCloudPtr->is_dense = true;
-
-    for(int i=0; i<pointsXYZ.rows; ++i)
-    {
-      for(int j=0; j<pointsXYZ.cols; ++j){
-        auto& tia=pointsXYZ[i][j];
-        cv::Vec4f pt{tia[0],tia[1],tia[2],1};
-        cv::Vec4f result=(_extr.inv()*pt);
-        modelCloudPtr->points[i*pointsXYZ.cols+j].x=result[0];
-        modelCloudPtr->points[i*pointsXYZ.cols+j].y=result[1];
-        modelCloudPtr->points[i*pointsXYZ.cols+j].z=result[2];
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr CameraModel::sceneToCameraPointCloud(const cv::Mat& rgb, const cv::Mat& depth, const cv::Mat& m) const {
+    cv::Mat mask;
+    if(!m.empty()){
+      mask=m;
+    }
+    else{
+      mask=cv::Mat(rgb.rows, rgb.cols, CV_8UC1);
+      mask.setTo(cv::Scalar{255});
+    }
+    assert(rgb.size()==depth.size() && rgb.size()==mask.size() && "Images of different dimensions provided!");
+    Eigen::Matrix<double, 6, Eigen::Dynamic> pointsUVDRGB(6,rgb.rows*rgb.cols);
+    int countV=0;
+    for(int v=0; v<rgb.rows; ++v){
+      for(int u=0; u<rgb.cols; ++u){
+        const auto& pt=rgb.at<cv::Vec3b>(v,u);
+        double d=depth.at<float>(v,u);
+        if(d>0 && d <10 && d==d){
+          pointsUVDRGB.col(countV) << d*u,d*v,d,pt[2],pt[1],pt[0];
+          countV++;
+        }
       }
     }
+    pointsUVDRGB.conservativeResize(Eigen::NoChange, countV+1);
+    
+    std::cout << "Resized\n";
+    Eigen::Matrix<double, 6, 6> toMul=Eigen::Matrix<double,6,6>::Identity();
+    Eigen::Matrix3f k;
+    Eigen::Matrix3d kInv;
+    cv2eigen(_K, k);
+    kInv=k.inverse().cast<double>();
+
+    toMul.block<3,3>(0,0)=kInv;
+    auto pointsXYZRGB=toMul*pointsUVDRGB;
+
+    /** Eigen storage is row-major, so it is IMPORTANT to scan matrices in row order, otherwise cache misses -> HUNDREDS of times moar to execute (from 0.1s to >15min :| )*/
+    Eigen::Matrix<double, Eigen::Dynamic, 6> pT=pointsXYZRGB.transpose();
+    std::cout << "Mianonna\n";
+    /** Fills cloud with points taken from (X,Y,Z) coordinates */
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    modelCloudPtr->resize(pointsXYZRGB.cols());
+    for(int i=0; i<countV; ++i){
+      auto vec=pT.row(i);
+      pcl::PointXYZRGB pt{(uint8_t)vec[3],(uint8_t)vec[4],(uint8_t)vec[5]};
+      pt.x=vec[0];
+      pt.y=vec[1];
+      pt.z=vec[2];
+      modelCloudPtr->push_back(pt);
+    }
+    std::cout << "Tuanonna\n";
     return modelCloudPtr;
   }
   Eigen::Vector3d CameraModel::uvzToCameraFrame(double u, double v, double z) const{

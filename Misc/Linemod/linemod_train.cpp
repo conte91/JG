@@ -58,9 +58,9 @@
 #include <Recognition/SphereSplitter.h>
 
 
-bool visualize_ ;
+bool visualize_ , slow_;
 int renderer_n_points_;
-double renderer_angle_step_;
+int renderer_n_turns;
 double renderer_radius_min_;
 double renderer_radius_max_;
 double renderer_radius_step_;
@@ -78,12 +78,18 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   std::cout<<"Elaborating " << object_id_<<"..\n";
 
   //Use our own models made in Blender....
-  path mesh_path = p / path("textured_meshes") / path(object_id_+".obj");
+  
+  path model_path = p / path("model.yml");
+  cv::FileStorage modelFile (model_path.string(), cv::FileStorage::READ);
+  std::string meshName;
+  modelFile["mesh"] >> meshName;
+
+  path mesh_path = p / path(meshName);
   std::cout<< "Mesh filename: " << mesh_path.string() << "\n";
 
   Recognition::Model model(object_id_, mesh_path.string(), cam);
 
-  std::vector<Eigen::Vector3d> myPts=Recognition::SphereSplitter(renderer_n_points_).points();
+  auto myPts=Recognition::SphereSplitter(renderer_n_points_).points();
   /** Takes snapshots of the (ideal) object */
   long totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
   totalTemplates*=myPts.size();
@@ -98,6 +104,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   for (double radius=renderer_radius_min_; radius<=renderer_radius_max_; radius+=renderer_radius_step_)
   {
     for(const auto& p:myPts){
+      for(int k=0; k<renderer_n_turns; ++k){
             i++;
             done++;
             std::stringstream status;
@@ -112,13 +119,19 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
              * -> Up vector is perpendicular to P and PxZ
              *  -> Up vector is Px(PxZ) (with positive z coordinate)
              */
-            Eigen::Vector3d up=p.cross(p.cross(Eigen::Vector3d{0,0,1})).normalized();
-            if(up[2]<0){
-              up=-up;
-            }
+            Eigen::Vector3d zAxis;
+            zAxis << 0, 0, 1;
+            Eigen::Vector3d perpToDiameter=p.cross(zAxis).normalized();
+            Eigen::Vector3d tangToDiameter=p.cross(perpToDiameter).normalized();
+
+            double angle=k*2*M_PI/renderer_n_turns;
+            Eigen::Vector3d up=perpToDiameter*sin(angle)+tangToDiameter*cos(angle);
+           // if(up[2]<0){
+           //   up=-up;
+           // }
             Eigen::Matrix3d transformation = Recognition::tUpToCameraWorldTransform(p, up).rotation().matrix();
             model.addTraining(transformation,radius, cam);
-            if((!(done % 5 )) && visualize_){
+            if((!(done % 1 )) && visualize_){
               image2show.setTo(cv::Scalar(0,0,0));
               depth2show.setTo(cv::Scalar(0,0,0));
               cv::Mat image, depth, mask;
@@ -132,7 +145,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
                 depth.copyTo(depth2show(rect));
                 imshow("mastamazza", image2show);
                 imshow("mastadepth", depth2show);
-                cv::waitKey(1);
+                cv::waitKey((slow_) ? 500 : 1);
               }
             }
 
@@ -142,6 +155,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
             for (size_t j = 0; j < status.str().size(); ++j) {
               std::cout << '\b';
             }
+      }
     }
   }
 
@@ -157,12 +171,14 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
     cv::Matx33f kTest(testModel.getCam().getIntrinsic());
     assert(cv::countNonZero(kTest!=model.getCam().getIntrinsic())==0 && "Failed to read back data");
     for(int tID=0; tID<testModel.numTemplates(); ++tID){
+      std::cout << "Reading template #" << tID << "..";
       cv::Matx33d rTest(testModel.getR(tID));
       float dTest=testModel.getDist(tID);
-      cv::Mat hTest(testModel.getHueHist(tID));
+      //cv::Mat hTest(testModel.getHueHist(tID));
       assert(cv::countNonZero(rTest!=model.getR(tID))==0 && "Failed to read back data");
       assert(dTest==model.getDist(tID) && "Failed to read back data");
-      assert(cv::countNonZero(hTest!=model.getHueHist(tID))==0 && "Failed to read back data");
+      //assert(cv::countNonZero(hTest!=model.getHueHist(tID))==0 && "Failed to read back data");
+      std::cout << "Done.\n";
     }
   }
   std::cout << "Success!\n";
@@ -182,13 +198,14 @@ int main(int argc, char* argv[])
 
   /** True or False to output debug image */
   lmTConfig["visualizeTraining"] >> visualize_;
+  lmTConfig["slowMotion"] >> slow_;
   const cv::FileNode& rParams=lmConfig["rendering"];
 
   //Set the Values:
   // Define the display
   //assign the parameters of the renderer
   rParams["nPoints"] >> renderer_n_points_ ;
-  rParams["angleStep"] >> renderer_angle_step_ ;
+  rParams["nTurns"] >> renderer_n_turns ;
   rParams["radiusMin"] >> renderer_radius_min_ ;
   rParams["radiusMax"] >> renderer_radius_max_ ;
   rParams["radiusStep"] >> renderer_radius_step_ ;
@@ -213,6 +230,12 @@ int main(int argc, char* argv[])
     while(names.good()){
       std::string s;
       names >> s;
+      if(!names.good()){
+        break;
+      }
+      if(s[0]=='#'){
+        continue;
+      }
       std::cout << "Elaborating directory: " << s << "\n";
       trainObject(objsfolder_path, s, camModel);
     }
