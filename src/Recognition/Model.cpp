@@ -362,7 +362,19 @@ namespace Recognition{
 
   void Model::renderMatch(const cv::linemod::Match& match, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
     assert(match.class_id==_myId && "Attempted to render a LineMOD match for a different object than the match's one!" );
-    render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
+    int tId=match.template_id;
+    cv::Matx33d R_match = _myData.at(tId).R;
+    float D_match = _myData.at(tId).dist;
+    Eigen::Matrix3d eRot;
+    cv2eigen(R_match, eRot);
+    Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
+    double d=D_match;
+    matchTrans.translation() <<0, 0, d;
+    matchTrans.linear()=eRot;
+    render(matchTrans, image_out, depth_out, mask_out, rect_out);
+    rect_out.x=match.x;
+    rect_out.y=match.y;
+    //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
   }
 }
 namespace cv{

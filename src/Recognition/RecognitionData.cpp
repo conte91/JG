@@ -113,11 +113,14 @@ namespace Recognition{
    * this crap how crappy his crap is. Just don't touch it and it shall work.                                                *
    ***************************************************************************************************************************/
   bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
-      cv::Mat& pose, const std::vector<std::string>& vect_objs_to_pick) const
+      ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const
   {
 
     using cv::Rect;
     using cv::Mat;
+
+    /** TODO remove me when multiple objects are considered */
+    assert(vect_objs_to_pick.size()==1);
     Mat rgb=const_rgb.clone();
     CV_Assert(filter_mask.depth() == CV_8UC1);
     /** The depth_ matrix is given in m, but we want to use it in mm now */
@@ -189,77 +192,6 @@ namespace Recognition{
       }
       foundMatches.insert(match);
       auto& obj=_objectModels.at(match.class_id);
-      //const auto& K_match = obj.getK(tId);
-
-        /*
-        auto it_r = _objectModels.at(match.class_id).getRenderer();
-        Mat depth_ref_;
-        it_r->renderDepthOnly(depth_ref_, mask, rect, -T_match, up);
-
-        cv::Mat_<cv::Vec3f> depth_real_model_raw;
-        cv::rgbd::depthTo3d(depth_ref_, K_match, depth_real_model_raw);
-
-        //prepare the bounding box for the model and reference point clouds
-        cv::Rect_<int> rect_model(0, 0, depth_real_model_raw.cols, depth_real_model_raw.rows);
-        //prepare the bounding box for the reference point cloud: add the offset
-        cv::Rect_<int> rect_ref(rect_model);
-        rect_ref.x += match.x;
-        rect_ref.y += match.y;
-
-        rect_ref = rect_ref & Rect(0, 0, depth_real_ref_raw.cols, depth_real_ref_raw.rows);
-        if ((rect_ref.width < 5) || (rect_ref.height < 5))
-          continue;
-        //adjust both rectangles to be equal to the smallest among them
-        if (rect_ref.width > rect_model.width)
-          rect_ref.width = rect_model.width;
-        if (rect_ref.height > rect_model.height)
-          rect_ref.height = rect_model.height;
-        if (rect_model.width > rect_ref.width)
-          rect_model.width = rect_ref.width;
-        if (rect_model.height > rect_ref.height)
-          rect_model.height = rect_ref.height;
-
-        //prepare the reference data: from the sensor : crop images
-        cv::Mat_<cv::Vec3f> depth_real_ref = depth_real_ref_raw(rect_ref);
-
-        //plot Red Rect around the match in the full image
-        cv::rectangle(rgb,rect_ref,cv::Scalar(0,0,255),2);
-
-        cv::imshow("rgb",rgb);
-
-        cv::waitKey(1);
-
-        //prepare the model data: from the match
-        cv::Mat_<cv::Vec3f> depth_real_model = depth_real_model_raw(rect_model);
-
-        //initialize the translation based on reference data
-        cv::Vec3f T_crop = depth_real_ref(depth_real_ref.rows / 2.0f, depth_real_ref.cols / 2.0f);
-        //add the object's depth
-        T_crop(2) += D_match;
-
-        if (!cv::checkRange(T_crop))
-          continue;
-        cv::Vec3f T_real_icp(T_crop);
-
-        //initialize the rotation based on model data
-        if (!cv::checkRange(R_match))
-          continue;
-        cv::Matx33f R_real_icp(R_match);
-
-        //get the point clouds (for both reference and model)
-        std::vector<cv::Vec3f> pts_real_model_temp;
-        std::vector<cv::Vec3f> pts_real_ref_temp;
-        double px_ratio_missing = matToVec(depth_real_model, depth_real_ref, pts_real_model_temp, pts_real_ref_temp);
-        std::cout<<"px_ratio_missing > px_match_min_ ?: "<<px_ratio_missing<<" > " <<  px_match_min_ <<"\n";
-        if (px_ratio_missing > px_match_min_)
-          continue;
-
-        Eigen::Matrix4f finalTransformationMatrix;
-        //TODO if(!pclICP(pts_real_model_temp, pts_real_ref_temp, finalTransformationMatrix, resultPointClouds)){
-        //TODO   continue;
-        //TODO }
-
-        */
       /** Renders the match to check for hue correctness (drops some false positives) */
       cv::Mat sticazzi, stimazzi, stimaski;
       cv::Rect stiretti;
@@ -275,10 +207,10 @@ namespace Recognition{
       }
       std::cout << "Object taken (percentage=" << percentage << ").\n";
       /** Check for false positives by valuating hues values on the downsampled image */
-      stimazzi.copyTo(newFrame(stiretti));
-      imshow("Sbarubba", newFrame);
-      while((cv::waitKey() & 0xFF)!='Q');
-      found.push_back({match, obj.matchToObjectPose(match), sticazzi, stimazzi, stimaski, stiretti, percentage});
+      //stimazzi.copyTo(newFrame(stiretti));
+      //imshow("Sbarubba", newFrame);
+      //while((cv::waitKey() & 0xFF)!='Q');
+      found.push_back({match, obj.matchToObjectPose(match), stimazzi, sticazzi, stimaski, stiretti, percentage});
 
     }
       if(currentThreshold<70){
@@ -291,93 +223,105 @@ namespace Recognition{
       return false;
     }
 
+    std::vector<Match> refound;
+
     /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
     for(auto& x:found){
+      using cv::Rect;
+      using cv::Mat;
 
+      /** Take the corresponding parts of the match into the main image */
+      Rect imgRect=x.rect;
+      imgRect.x-=x.rect.width*0.05;
+      imgRect.y-=x.rect.height*0.05;
+      imgRect.width*=1.1;
+      imgRect.height*=1.1;
+      if(imgRect.x<0){
+        imgRect.width+=imgRect.x;
+        imgRect.x=0;
+      }
+      if(imgRect.y<0){
+        imgRect.height+=imgRect.y;
+        imgRect.y=0;
+      }
+      int diff=imgRect.width+imgRect.x-const_rgb.cols;
+      if(diff>0){
+        imgRect.width-=diff;
+      }
+      diff=imgRect.height+imgRect.y-const_rgb.rows;
+      if(diff>0){
+        imgRect.height-=diff;
+      }
 
+      Mat matchingPart=const_rgb(imgRect);
+      Mat matchingDepth=depth_m(imgRect);
+      assert(depth_m.type()==CV_32FC1);
+      const auto& obj=_objectModels.at(x.match.class_id);
+      Mat x_d_m;
+      x.depth.convertTo(x_d_m, CV_32FC1, 1.0/1000.0);
+      assert(x_d_m.type()==CV_32FC1);
+      auto templatePC=obj.getCam().sceneToCameraPointCloud(x.rgb, x_d_m, x.mask);
+      templatePC->is_dense=true;
+      auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth);
+      scenePC->is_dense=true;
+
+      /** Use ICP to refine the pose estimation of the object */
+      pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+      icp.setMaximumIterations (100);
+      icp.setInputSource (templatePC);//Model
+      icp.setInputTarget (scenePC);//Ref scene
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalModelCloudPtr (new PCloud);
+      icp.align (*finalModelCloudPtr);
+      if(!icp.hasConverged()){
+        continue;
+      }
+      std::cout << "Score: " << icp.getFitnessScore() << "\n";
+
+      if(icp.getFitnessScore()>0.001){
+        continue;
+      }
+      Eigen::Affine3d finalTransformationMatrix;
+      finalTransformationMatrix.matrix()  = icp.getFinalTransformation().cast<double>();
+      auto finalPose = finalTransformationMatrix*x.objPose;
+      refound.push_back({icp.getFitnessScore(), finalPose});
+      
+      /** Visualization of the result */
+      Mat stimazzi, sticazzi, stimaski;
+      Rect stiretti;
+      obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
+      auto newFrame=const_rgb.clone();
+      stimazzi.copyTo(newFrame(stiretti));
+      imshow("Wow!", newFrame);
+      while((cv::waitKey() & 0xFF)!= 'q');
+
+      pcl::visualization::PCLVisualizer viewer("Scene's PCL");
+      viewer.addCoordinateSystem(0.1);
+      //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> templatecolors (templatePC);
+      pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> templatecolors (templatePC, 255, 0, 0);
+      viewer.addPointCloud<pcl::PointXYZRGB>(templatePC, templatecolors, "template");
+      //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> finalModelColors (finalModelCloudPtr);
+      pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> finalModelColors (finalModelCloudPtr, 0, 255, 0);
+      viewer.addPointCloud<pcl::PointXYZRGB>(finalModelCloudPtr, finalModelColors, "aligned");
+      pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> scenecolors (scenePC);
+      viewer.addPointCloud<pcl::PointXYZRGB>(scenePC, scenecolors, "scene");
+      while(!viewer.wasStopped()){
+        viewer.spinOnce(100);
+      }
+      viewer.close();
     }
 
-  }
-
-  /*
-  bool RecognitionData::pclICP(const PCloud::Ptr& pointsFromModel, const PCloud::Ptr& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const {
-
-  */
-#if 0
-    /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
-    PCloud::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    PCloud::Ptr refCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    /** Model PointCloud*/
-    modelCloudPtr->points.resize(pointsFromModel.size());
-    modelCloudPtr->width =  modelCloudPtr->points.size();
-    modelCloudPtr->height = 1;
-    modelCloudPtr->is_dense = true;
-
-    for(unsigned int ii=0;ii<modelCloudPtr->points.size();++ii)
-    {
-      modelCloudPtr->points[ii].x = pointsFromModel[ii][0];
-      modelCloudPtr->points[ii].y = pointsFromModel[ii][1];
-      modelCloudPtr->points[ii].z = pointsFromModel[ii][2];
-
-      modelCloudPtr->points[ii].r = 0;
-      modelCloudPtr->points[ii].g = 255;
-      modelCloudPtr->points[ii].b = 0;
-
-    }
-
-    /*Ref PointCloud*/
-    refCloudPtr->points.resize(pointsFromReference.size());
-    refCloudPtr->width =  refCloudPtr->points.size();
-    refCloudPtr->height = 1;
-    refCloudPtr->is_dense = true;
-    for(unsigned int ii=0;ii<refCloudPtr->points.size();++ii)
-    {
-      refCloudPtr->points[ii].x = pointsFromReference[ii][0];
-      refCloudPtr->points[ii].y = pointsFromReference[ii][1];
-      refCloudPtr->points[ii].z = pointsFromReference[ii][2];
-
-      refCloudPtr->points[ii].r = 255;
-      refCloudPtr->points[ii].g = 0;
-      refCloudPtr->points[ii].b = 0;
-    }
-#endif
-
-
-    /*
-    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
-    icp.setMaximumIterations (20);
-    icp.setInputSource (modelCloudPtr);//Model
-    icp.setInputTarget (refCloudPtr);//Ref scene
-    PCloud::Ptr finalModelCloudPtr (new PCloud);
-
-    icp.align (*finalModelCloudPtr);
-    finalTransformationMatrix = icp.getFinalTransformation().cast<float>();
-
-    if(!icp.hasConverged()){
+    if(refound.size()==0){
       return false;
     }
 
-    resultPointClouds[0] = modelCloudPtr;
-    resultPointClouds[1] = refCloudPtr;
+    std::sort(refound.begin(), refound.end(),
+        [](const Match& a, const Match& b) -> bool{
+        return (a.matchScore < b.matchScore);
+        });
 
-    //Color the aligned PC
-    for(unsigned int ii=0;ii<finalModelCloudPtr->points.size();++ii)
-    {
-
-
-      finalModelCloudPtr->points[ii].r = 0;
-      finalModelCloudPtr->points[ii].g = 0;
-      finalModelCloudPtr->points[ii].b = 255;
-
-    } 
-
-    resultPointClouds[2] = finalModelCloudPtr;
-
+    result[vect_objs_to_pick[0]]=refound;
     return true;
   }
-
-  */
 
   RecognitionData::RecognitionData(const std::string& trainPath, const CameraModel& m)
     :
@@ -440,15 +384,17 @@ namespace Recognition{
     }
   }
 
-  C5G::Pose RecognitionData::recognize(const Img::ImageWMask& frame, std::string what){
+  RecognitionData::ObjectMatches RecognitionData::recognize(const Img::ImageWMask& frame, std::string what){
 
     std::vector<std::string> vect_objs_to_pick(1);
     vect_objs_to_pick[0]=what;
     cv::Mat pose;
-    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, pose, vect_objs_to_pick)){
+
+    ObjectMatches result;
+    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, result, vect_objs_to_pick)){
       throw std::string("Could not match anything :(");
     }
-    return matrixToPose(pose);
+    return result;
   }
 
   RecognitionData::PCloud::Ptr RecognitionData::objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const {

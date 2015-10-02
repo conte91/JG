@@ -63,8 +63,8 @@ int main(int argc, char** argv){
     std::cout << "Which object do you want to recognize?\n";
     std::cin >> s;
     try{
-      C5G::Pose result=mySister.recognize(finalFrame, s);
-      std::cout << "I think the object is @pose " << result << "\n";
+      auto result=mySister.recognize(finalFrame, s);
+      std::cout << "I think the object is @pose " << result["s"][0].pose.matrix() << "\n";
     }
     catch (std::string e){
       std::cout << "No, baybo, didn't get it. Maybe you could try again?\nDetails: " << e << "\n";

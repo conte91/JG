@@ -169,6 +169,9 @@ namespace Camera{
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr CameraModel::sceneToCameraPointCloud(const cv::Mat& rgb, const cv::Mat& depth, const cv::Mat& m) const {
     cv::Mat mask;
+
+    assert(depth.type()==CV_32FC1);
+    assert(rgb.type()==CV_8UC3);
     if(!m.empty()){
       mask=m;
     }
@@ -181,11 +184,13 @@ namespace Camera{
     int countV=0;
     for(int v=0; v<rgb.rows; ++v){
       for(int u=0; u<rgb.cols; ++u){
-        const auto& pt=rgb.at<cv::Vec3b>(v,u);
-        double d=depth.at<float>(v,u);
-        if(d>0 && d <10 && d==d){
-          pointsUVDRGB.col(countV) << d*u,d*v,d,pt[2],pt[1],pt[0];
-          countV++;
+        if(mask.at<uint8_t>(v,u)){
+          const auto& pt=rgb.at<cv::Vec3b>(v,u);
+          double d=depth.at<float>(v,u);
+          if(d>0 && d <10 && d==d){
+            pointsUVDRGB.col(countV) << d*u,d*v,d,pt[2],pt[1],pt[0];
+            countV++;
+          }
         }
       }
     }

@@ -14,6 +14,13 @@
 
 namespace Recognition{
   class RecognitionData{
+    public:
+      struct Match{
+        double matchScore;
+        Eigen::Affine3d pose;
+      };
+
+      typedef std::map<std::string, std::vector<Match> > ObjectMatches;
     private:
 
       static C5G::Pose matrixToPose(cv::Mat m);
@@ -42,11 +49,11 @@ namespace Recognition{
        */
       bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
 
-      bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_mm, const cv::Mat& filter_mask, 
-      cv::Mat& Pose, const std::vector<std::string>& vect_objs_to_pick) const;
+      bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
+      ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const;
 
     public:
-      C5G::Pose recognize(const Img::ImageWMask& frame, std::string what);
+      RecognitionData::ObjectMatches recognize(const Img::ImageWMask& frame, std::string what);
 
       /**
        * @param trainPath path to the trained models data
@@ -57,5 +64,6 @@ namespace Recognition{
       PCloud::Ptr objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const;
 
       const Model& getModel(const std::string& name) const;
+
   };
 }
