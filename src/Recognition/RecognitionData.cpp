@@ -17,7 +17,12 @@
 #include <pcl/point_representation.h>
 //PCL ICP
 #include <pcl/registration/icp.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/fpfh_omp.h>
+#include <pcl/registration/sample_consensus_prerejective.h>
+
 
 #include <Recognition/GLUTInit.h>
 #include <Recognition/Utils.h>
@@ -201,7 +206,7 @@ namespace Recognition{
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
       double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1);
 
-      if(percentage < 0.55) {
+      if(percentage < 0.6) {
         std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
         continue;
       }
@@ -229,6 +234,13 @@ namespace Recognition{
     for(auto& x:found){
       using cv::Rect;
       using cv::Mat;
+      typedef pcl::PointXYZRGB PointType;
+      typedef pcl::PointCloud<PointType> Cloud;
+      using pcl::PointXYZ;
+      using pcl::PointNormal;
+      using pcl::FPFHSignature33;
+      typedef pcl::PointCloud<FPFHSignature33> FeatureCloud;
+      typedef pcl::PointCloud<PointNormal> CloudXYZ;
 
       /** Take the corresponding parts of the match into the main image */
       Rect imgRect=x.rect;
@@ -260,17 +272,70 @@ namespace Recognition{
       Mat x_d_m;
       x.depth.convertTo(x_d_m, CV_32FC1, 1.0/1000.0);
       assert(x_d_m.type()==CV_32FC1);
+
+      /** Obtain the PCs relative to the parts to be aligned */
       auto templatePC=obj.getCam().sceneToCameraPointCloud(x.rgb, x_d_m, x.mask);
       templatePC->is_dense=true;
       auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth);
       scenePC->is_dense=true;
+      // Create the filtering object: downsample the dataset using a leaf size of 1cm
+      pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
+      CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
+      pcl::copyPointCloud(*templatePC, *templatePCXYZ);
+      pcl::copyPointCloud(*scenePC, *scenePCXYZ);
 
+      templateVox.setInputCloud (templatePCXYZ);
+      templateVox.setLeafSize (0.005f, 0.005f, 0.005f);
+      templateVox.filter (*templatePCDownsampled);
+      sceneVox.setInputCloud (scenePCXYZ);
+      sceneVox.setLeafSize (0.005f, 0.005f, 0.005f);
+      sceneVox.filter (*scenePCDownsampled);
+      /* Estimate normals for clouds */
+      pcl::console::print_highlight ("Estimating scene normals...\n");
+      pcl::NormalEstimationOMP<PointNormal, PointNormal> nest;
+      nest.setRadiusSearch (0.02);
+      nest.setInputCloud (templatePCDownsampled);
+      nest.compute (*templatePCDownsampled);
+      nest.setInputCloud (scenePCDownsampled);
+      nest.compute (*scenePCDownsampled);
+      FeatureCloud::Ptr template_features(new FeatureCloud), scene_features(new FeatureCloud);
+      pcl::FPFHEstimationOMP<PointNormal, PointNormal, pcl::FPFHSignature33> fest;
+      fest.setRadiusSearch (0.05);
+      fest.setInputCloud (templatePCDownsampled);
+      fest.setInputNormals (templatePCDownsampled);
+      fest.compute (*template_features);
+      fest.setInputCloud (scenePCDownsampled);
+      fest.setInputNormals (scenePCDownsampled);
+      fest.compute (*scene_features);
+
+      // Perform alignment
+      pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
+      align.setInputSource (templatePCDownsampled  );
+      align.setSourceFeatures (template_features);
+      align.setInputTarget (scenePCDownsampled);
+      align.setTargetFeatures (scene_features);
+      align.setMaximumIterations (200000); // Number of RANSAC iterations
+      align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
+      align.setCorrespondenceRandomness (5); // Number of nearest features to use
+      align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
+      align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
+      align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
+      CloudXYZ::Ptr alignModelCloudPtr (new CloudXYZ);
+      align.align (*alignModelCloudPtr);
+
+      if(!align.hasConverged()){
+        continue;
+      }
+
+      CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
+      Eigen::Affine3d finalTransformationMatrix;
+      finalTransformationMatrix.matrix()  = align.getFinalTransformation().cast<double>();
+      auto middlePose = x.objPose*finalTransformationMatrix;
       /** Use ICP to refine the pose estimation of the object */
-      pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+      pcl::IterativeClosestPoint<PointNormal, PointNormal> icp;
       icp.setMaximumIterations (100);
-      icp.setInputSource (templatePC);//Model
-      icp.setInputTarget (scenePC);//Ref scene
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalModelCloudPtr (new PCloud);
+      icp.setInputSource (alignModelCloudPtr);//Model
+      icp.setInputTarget (scenePCDownsampled);//Ref scene
       icp.align (*finalModelCloudPtr);
       if(!icp.hasConverged()){
         continue;
@@ -280,34 +345,36 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      Eigen::Affine3d finalTransformationMatrix;
       finalTransformationMatrix.matrix()  = icp.getFinalTransformation().cast<double>();
-      auto finalPose = finalTransformationMatrix*x.objPose;
+      auto finalPose = middlePose*finalTransformationMatrix;
       refound.push_back({icp.getFitnessScore(), finalPose});
       
-      /** Visualization of the result */
-      Mat stimazzi, sticazzi, stimaski;
-      Rect stiretti;
-      obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
-      auto newFrame=const_rgb.clone();
-      stimazzi.copyTo(newFrame(stiretti));
-      imshow("Wow!", newFrame);
-      while((cv::waitKey() & 0xFF)!= 'q');
 
       pcl::visualization::PCLVisualizer viewer("Scene's PCL");
       viewer.addCoordinateSystem(0.1);
       //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> templatecolors (templatePC);
-      pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> templatecolors (templatePC, 255, 0, 0);
-      viewer.addPointCloud<pcl::PointXYZRGB>(templatePC, templatecolors, "template");
+      pcl::visualization::PointCloudColorHandlerCustom<PointNormal> templatecolors (templatePCDownsampled, 255, 0, 0);
+      viewer.addPointCloud<PointNormal>(templatePCDownsampled, templatecolors, "template");
       //pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> finalModelColors (finalModelCloudPtr);
-      pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGB> finalModelColors (finalModelCloudPtr, 0, 255, 0);
-      viewer.addPointCloud<pcl::PointXYZRGB>(finalModelCloudPtr, finalModelColors, "aligned");
+      pcl::visualization::PointCloudColorHandlerCustom<PointNormal> finalModelColors (finalModelCloudPtr, 0, 255, 0);
+      viewer.addPointCloud<PointNormal>(finalModelCloudPtr, finalModelColors, "aligned");
       pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> scenecolors (scenePC);
       viewer.addPointCloud<pcl::PointXYZRGB>(scenePC, scenecolors, "scene");
       while(!viewer.wasStopped()){
         viewer.spinOnce(100);
       }
       viewer.close();
+      /** Visualization of the result */
+      Mat stimazzi, sticazzi, stimaski;
+      Rect stiretti;
+      obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
+      if(stiretti.width<0 || stiretti.height<0){
+        continue;
+      }
+      auto newFrame=const_rgb.clone();
+      stimazzi.copyTo(newFrame(stiretti));
+      imshow("Wow!", newFrame);
+      while((cv::waitKey() & 0xFF)!= 'q');
     }
 
     if(refound.size()==0){
