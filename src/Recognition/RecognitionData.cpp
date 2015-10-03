@@ -23,7 +23,6 @@
 #include <pcl/features/fpfh_omp.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
 
-
 #include <Recognition/GLUTInit.h>
 #include <Recognition/Utils.h>
 
@@ -111,12 +110,6 @@ namespace Recognition{
     return (double) matchingPoints/(double) totalPoints;
   }
 
-  /***************************************************************************************************************************
-   *      AS THIS WILL BE POSTED TO GITHUB SOME DAY: DEAR PERSON-WHO-WANTS-TO-HIRE-ME, READ THIS BEFORE BURNING MY CV        *
-   * I'm not responsible for this static functions. It's not me who made it. Naming is horrible. Pointers do kill people.    *
-   * I know this. But it's 3 days to the deadline and I don't have enough time to explain to the "developer" who made        *
-   * this crap how crappy his crap is. Just don't touch it and it shall work.                                                *
-   ***************************************************************************************************************************/
   bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
       ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const
   {
@@ -127,9 +120,9 @@ namespace Recognition{
     /** TODO remove me when multiple objects are considered */
     assert(vect_objs_to_pick.size()==1);
     Mat rgb=const_rgb.clone();
-    CV_Assert(filter_mask.depth() == CV_8UC1);
+    assert(filter_mask.depth() == CV_8UC1 && "Filtering mask should be CV_8UC1" );
     /** The depth_ matrix is given in m, but we want to use it in mm now */
-    CV_Assert(depth_m.type() == CV_32FC1);
+    assert(depth_m.type() == CV_32FC1 && "Depth should be CV_32FC1 (in meters)");
     Mat depth_mm;
     depth_m.convertTo(depth_mm, CV_16UC1, 1000.0);
 
@@ -142,9 +135,9 @@ namespace Recognition{
     theMasks.push_back(filter_mask);
 
     /** Check consistent input have been provided */
-    CV_Assert(sources.size()==theMasks.size());
+    assert(sources.size()==theMasks.size() && "Masks and sources of different sizes!");
     for(unsigned int i=0; i<sources.size(); ++i){
-      CV_Assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows);
+      assert(sources[i].cols==theMasks[i].cols && sources[i].rows==theMasks[i].rows && "Masks and sources images of different sizes");
     }
 
     /** Create LINE-MOD detector with templates built from the object */
@@ -212,9 +205,6 @@ namespace Recognition{
       }
       std::cout << "Object taken (percentage=" << percentage << ").\n";
       /** Check for false positives by valuating hues values on the downsampled image */
-      //stimazzi.copyTo(newFrame(stiretti));
-      //imshow("Sbarubba", newFrame);
-      //while((cv::waitKey() & 0xFF)!='Q');
       found.push_back({match, obj.matchToObjectPose(match), stimazzi, sticazzi, stimaski, stiretti, percentage});
 
     }
@@ -278,7 +268,7 @@ namespace Recognition{
       templatePC->is_dense=true;
       auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth);
       scenePC->is_dense=true;
-      // Create the filtering object: downsample the dataset using a leaf size of 1cm
+      /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
       pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
       CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
       pcl::copyPointCloud(*templatePC, *templatePCXYZ);
@@ -308,7 +298,7 @@ namespace Recognition{
       fest.setInputNormals (scenePCDownsampled);
       fest.compute (*scene_features);
 
-      // Perform alignment
+      /* Perform alignment */
       pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
       align.setInputSource (templatePCDownsampled  );
       align.setSourceFeatures (template_features);
@@ -378,6 +368,7 @@ namespace Recognition{
     }
 
     if(refound.size()==0){
+      std::cout << "Result alignment returned no valid matches.\n";
       return false;
     }
 
