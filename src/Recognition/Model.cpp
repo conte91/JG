@@ -17,6 +17,7 @@ namespace Recognition{
     :
       _myId(id),
       _camModel(1,1,1,1,1,1,1,1,1,1,1,1,1),
+      _renderer(Renderer3d::globalRenderer()),
       _detector(new Detector(*cv::linemod::getDefaultLINEMOD()))
   {
     readFrom(id, trainDir);
@@ -30,9 +31,11 @@ namespace Recognition{
       _camModel(cam),
       renderer_near(0.1),
       renderer_far(4),
-      _renderer(new Renderer3d(meshFile))
+      _mesh(meshFile),
+      _renderer(Renderer3d::globalRenderer())
   {
-    _renderer->set_parameters(cam, renderer_near, renderer_far);
+    _mesh.LoadMesh(meshFile);
+    _renderer.set_parameters(cam, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
   }
 
 
@@ -47,9 +50,9 @@ namespace Recognition{
 
     cv::FileStorage inFile(lmSaveFile.string(), cv::FileStorage::READ);
     inFile["mesh_file_path"] >> mesh_file_path;
+    _mesh.LoadMesh(mesh_file_path);
     _detector->read(inFile.root());
     std::cout<<"\tNumber of templates:"<<_detector->numTemplates()<<"\n";
-
 
     /** Read the trained class ID for this object */
     cv::FileNode fn = inFile["object"];
@@ -57,13 +60,11 @@ namespace Recognition{
     _detector->readClass(fn);
 
     /** Initialize the renderer with the same parameters used for learning */
-    _renderer=std::shared_ptr<Renderer3d>(new Renderer3d(mesh_file_path));
-
     cv::FileNode fr = inFile["rendering"]["trainCamera"];
     _camModel=Camera::CameraModel::readFrom(fr);
     inFile["rendering"]["renderer_near"] >> renderer_near;
     inFile["rendering"]["renderer_far"] >> renderer_far;
-    _renderer->set_parameters(_camModel, renderer_near, renderer_far);
+    _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
 
     _myData={};
     const cv::FileNode& n=inFile["trainData"];
@@ -123,20 +124,22 @@ namespace Recognition{
   }
 
   void Model::renderImageOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &image_out, cv::Rect &rect_out) const {
-    _renderer->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
-    _renderer->renderImageOnly(image_out, rect_out);
+    _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
+    _renderer.lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer.renderImageOnly(_mesh, image_out, rect_out);
   }
 
   void Model::renderDepthOnly(cv::Vec3d T, cv::Vec3d up, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
-    _renderer->lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
-    _renderer->renderDepthOnly(depth_out, mask_out, rect_out);
+    _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
+    _renderer.lookAt(T(0), T(1), T(2), up(0), up(1), up(2));
+    _renderer.renderDepthOnly(_mesh, depth_out, mask_out, rect_out);
   }
 
   //TODO pcl::PointCloud<pcl::PointXYZRGB> Model::getPointCloud(cv::Vec3d T, cv::Vec3d up, const Camera::CameraModel& cam ){
   //TODO   cv::Matrix
   //TODO }
 
-  const std::shared_ptr<Renderer3d> Model::getRenderer() const {
+  Renderer3d& Model::getRenderer() const {
     return _renderer;
   }
 
@@ -294,9 +297,10 @@ namespace Recognition{
     constexpr double PI  =3.141592653589793238463;
     auto newPose=Eigen::AngleAxisd(PI, Eigen::Vector3d::UnitX())*pose;
 
-    _renderer->setObjectPose(newPose);
-    _renderer->renderDepthOnly(depth_out, mask_out, rect_out);
-    _renderer->renderImageOnly(rgb_out, rect_out);
+    _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
+    _renderer.setObjectPose(newPose);
+    _renderer.renderDepthOnly(_mesh, depth_out, mask_out, rect_out);
+    _renderer.renderImageOnly(_mesh, rgb_out, rect_out);
   }
 
   void Model::render(const C5G::Pose& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {

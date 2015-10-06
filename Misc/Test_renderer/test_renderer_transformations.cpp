@@ -14,7 +14,8 @@ int main(int argc, char** argv){
 
   cv::FileStorage fs(argv[2], cv::FileStorage::READ);
   const Camera::CameraModel& cam=Camera::CameraModel::readFrom(fs["camera_model"]);
-  Renderer3d renderer(argv[1]);
+  Mesh mesh(argv[1]);
+  auto& renderer=Recognition::Renderer3d::globalRenderer();
   cv::Mat depth_out, image_out, mask_out;
   cv::Mat frame(480,640,CV_8UC3), mattia(480,640,CV_8UC3);
   frame.setTo(cv::Scalar{0,0,0});
@@ -33,8 +34,8 @@ int main(int argc, char** argv){
   auto openGLTrans=Recognition::tUpToOpenGLWorldTransform({x,y,z},{a,b,g});
   std::cout << "Up vector to world transform: \n"<< openGLTrans.matrix() << "\n\n";
   renderer.setObjectPose(openGLTrans);
-  renderer.renderDepthOnly(depth_out, mask_out, rect_out);
-  renderer.renderImageOnly(image_out, rect_out);
+  renderer.renderDepthOnly(mesh, depth_out, mask_out, rect_out);
+  renderer.renderImageOnly(mesh, image_out, rect_out);
   if(rect_out.width<0 || rect_out.height<0){
     std::cerr << "Object didn't render in a visible manner, sry\n";
     return -1;

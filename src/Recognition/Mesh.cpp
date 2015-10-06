@@ -33,7 +33,14 @@ Mesh::Mesh(const std::string& file_path)
     :
       scene(NULL)
 {
-//  LoadMesh(file_path);
+  ///** To avoid mess with temporary scopes
+  //LoadMesh(file_path);
+}
+
+Mesh::Mesh()
+  :
+    scene(NULL)
+{
 }
 
 Mesh::~Mesh()
@@ -41,7 +48,9 @@ Mesh::~Mesh()
   // cleanup - calling 'aiReleaseImport' is important, as the library
   // keeps internal resources until the scene is freed again. Not
   // doing so can cause severe resource leaking.
-  aiReleaseImport(scene);
+  if(scene){
+    aiReleaseImport(scene);
+  }
 }
 
 void
@@ -57,12 +66,7 @@ Mesh::LoadMesh(const std::string & file_path)
 void
 Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
 {
-  aiMatrix4x4 m = nd->mTransformation;
 
-  // update transform
-  aiTransposeMatrix4(&m);
-  glPushMatrix();
-  glMultMatrixf((float*) &m);
 
   // draw all meshes assigned to this node
   for (unsigned int n=0; n < nd->mNumMeshes; ++n) {

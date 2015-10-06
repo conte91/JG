@@ -42,6 +42,7 @@
 
 #include <iostream>
 
+#include "GLUTInit.h"
 #include <boost/filesystem/path.hpp>
 
 #define aisgl_min(x,y) (x<y?x:y)
@@ -60,6 +61,7 @@ private:
   const struct aiScene* scene;
   boost::filesystem::path _directory;
   boost::filesystem::path _meshFile;
+  Recognition::GLUTInit _initer;
 
   void
   recursiveTextureLoad(const struct aiScene *sc, const struct aiNode* nd);
@@ -77,6 +79,7 @@ public:
   LoadMesh(const std::string & fileName);
 
   Mesh(const std::string& file_path);
+  Mesh();
   ~Mesh();
 
   void

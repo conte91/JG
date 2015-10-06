@@ -51,21 +51,21 @@
 #include <Recognition/renderer3d_impl_glut.h>
 #include <highgui.h>
 
-Renderer3d::Renderer3d(const std::string & mesh_path)
+namespace Recognition{
+Renderer3d::Renderer3d()
     :
-      renderer_(new Renderer3dImpl(mesh_path, 0, 0)),
+      impl_(new Renderer3dImpl(0, 0)),
       angle_(0),
       focal_length_x_(0),
       focal_length_y_(0),
       near_(0),
       far_(0),
-      model_(new Mesh(mesh_path)),
       scene_list_(0)
 {
   // get a handle to the predefined STDOUT log stream and attach
   // it to the logging system. It remains active for all further
   // calls to aiImportFile(Ex) and aiApplyPostProcessing.
-  //renderer_.is_glut_initialized_ = true;
+  //impl_.is_glut_initialized_ = true;
   ai_stream_ = new aiLogStream(aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL));
   aiAttachLogStream(ai_stream_);
 }
@@ -80,9 +80,13 @@ Renderer3d::~Renderer3d()
 
 void
 Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
-                         double far) {
-  renderer_->width_ = cam.getWidth();
-  renderer_->height_ = cam.getHeight();
+                         double far, const std::string& id) {
+  if(id==lastDrawer){
+    return;
+  }
+  lastDrawer=id;
+  impl_->width_ = cam.getWidth();
+  impl_->height_ = cam.getHeight();
 
   focal_length_x_ = cam.getFx();
   focal_length_y_ = cam.getFy();
@@ -92,40 +96,11 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
   near_ = near;
   far_ = far;
 
-  renderer_->clean_buffers();
+  impl_->clean_buffers();
 
   // Initialize the OpenGL context
-  renderer_->set_parameters_low_level();
-  model_->LoadMesh(renderer_->mesh_path_);
+  impl_->set_parameters_low_level();
 
-  // Initialize the environment
-  glClearColor(0.f, 0.f, 0.f, 1.f);
-
-  glEnable(GL_LIGHTING);
-  glEnable(GL_LIGHT0); // Uses default lighting parameters
-
-  glEnable(GL_DEPTH_TEST);
-
-  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-  glEnable(GL_NORMALIZE);
-/****/
-  //glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
-  //glEnable(GL_COLOR_MATERIAL);
-/****/
-  GLfloat LightAmbient[]= {1.0f, 1.0f, 1.0f, 1.0f};
-  GLfloat LightDiffuse[]= {1.0f, 1.0f, 1.0f, 1.0f};
-  GLfloat LightPosition[]= { 0.0f, 0.0f, 1.0f, 0.0f };
-  GLfloat LightAmbient2[]= {1.0f, 1.0f, 1.0f, 1.0f};
-  GLfloat LightDiffuse2[]= {1.0f, 1.0f, 1.0f, 1.0f};
-  GLfloat LightPosition2[]= { 0.0f, 0.0f, -1.0f, 0.0f };
-    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
-    glLightfv(GL_LIGHT1, GL_POSITION, LightPosition);
-    glEnable(GL_LIGHT1);
-    glLightfv(GL_LIGHT2, GL_AMBIENT, LightAmbient2);
-    glLightfv(GL_LIGHT2, GL_DIFFUSE, LightDiffuse2);
-    glLightfv(GL_LIGHT2, GL_POSITION, LightPosition2);
-    glEnable(GL_LIGHT2);
 
   // Initialize the projection
   glMatrixMode(GL_PROJECTION);
@@ -135,9 +110,9 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
     // the camera.
     /* In camera's frame, X axis is left-to-right */
     double L = 0;
-    double R = renderer_->width_;
+    double R = impl_->width_;
     /** We have downward Y axis in our camera system, so height is at bottom of image and 0 at top */
-    double B = renderer_->height_;
+    double B = impl_->height_;
     double T = 0;
      
     // near and far clipping planes, these only matter for the mapping from
@@ -170,9 +145,12 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
     // camera intrinsic matrix
     Eigen::Matrix4d frustum = ortho*tproj;
     // set perspective
-    std::cout << "Proj: " << tproj << "\nOrtho: " << ortho << "\nFinal: " << frustum << "\n";
+    //std::cout << "Proj: " << tproj << "\nOrtho: " << ortho << "\nFinal: " << frustum << "\n";
     Eigen::glLoadMatrix(frustum);
-    glViewport(0, 0, renderer_->width_, renderer_->height_);
+    Eigen::Affine3d resultP;
+    //Eigen::glGet(GL_PROJECTION_MATRIX, resultP.matrix());
+    //std::cout << "Setted projection matrix: \n" << resultP.matrix() << "\n";
+    glViewport(0, 0, impl_->width_, impl_->height_);
     glDepthRange(near_, far_);
 
 }
@@ -180,7 +158,7 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
 void
 Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double upz)
 {
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -188,27 +166,10 @@ Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double 
   glLoadIdentity();
 
   gluLookAt(x, y, z, 0, 0, 0, upx, upy, upz);
-
- //glDisable(GL_CULL_FACE);
-
-  // if the display list has not been made yet, create a new one and
-  // fill it with scene contents
-  if (scene_list_ == 0)
-  {
-    scene_list_ = glGenLists(1);
-    glNewList(scene_list_, GL_COMPILE);
-    // now begin at the root node of the imported data and traverse
-    // the scenegraph by multiplying subsequent local transforms
-    // together on GL's matrix stack.
-    model_->Draw();
-    glEndList();
-  }
-
-  glCallList(scene_list_);
 }
 
 void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -216,29 +177,10 @@ void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
   glLoadIdentity();
 
   Eigen::glMultMatrix(pose);
-
-  // scale the whole asset to fit into our view frustum
-  aiVector3D scene_min, scene_max, scene_center;
-  model_->get_bounding_box(&scene_min, &scene_max);
-  glFrontFace(GL_CW);
-  //glDisable(GL_CULL_FACE);
-  // if the display list has not been made yet, create a new one and
-  // fill it with scene contents
-  if (scene_list_ == 0)
-  {
-    scene_list_ = glGenLists(1);
-    glNewList(scene_list_, GL_COMPILE);
-    // now begin at the root node of the imported data and traverse
-    // the scenegraph by multiplying subsequent local transforms
-    // together on GL's matrix stack.
-    model_->Draw();
-    glEndList();
-  }
-
-  glCallList(scene_list_);
 }
+
 void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -247,10 +189,16 @@ void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
 
   Eigen::glMultMatrix(pose.inverse());
 
-  // scale the whole asset to fit into our view frustum
-  //glDisable(GL_CULL_FACE);
-  // if the display list has not been made yet, create a new one and
-  // fill it with scene contents
+}
+
+void
+Renderer3d::render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect) const
+{
+  // Create images to copy the buffers to
+  cv::Mat_ < cv::Vec3b > image(impl_->height_, impl_->width_);
+  cv::Mat_<float> depth(impl_->height_, impl_->width_);
+  cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
+
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -258,41 +206,31 @@ void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
     // now begin at the root node of the imported data and traverse
     // the scenegraph by multiplying subsequent local transforms
     // together on GL's matrix stack.
-    model_->Draw();
+    mesh.Draw();
     glEndList();
   }
 
   glCallList(scene_list_);
-}
-
-void
-Renderer3d::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect) const
-{
-  // Create images to copy the buffers to
-  cv::Mat_ < cv::Vec3b > image(renderer_->height_, renderer_->width_);
-  cv::Mat_<float> depth(renderer_->height_, renderer_->width_);
-  cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(renderer_->width_, renderer_->height_));
-
   glFlush();
 
   // Get data from the depth/image buffers
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   // Deal with the RGB image
   glReadBuffer(GL_COLOR_ATTACHMENT0);
-  glReadPixels(0, 0, renderer_->width_, renderer_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
+  glReadPixels(0, 0, impl_->width_, impl_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
 
   // Deal with the depth image
   glReadBuffer(GL_DEPTH_ATTACHMENT);
-  glReadPixels(0, 0, renderer_->width_, renderer_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
+  glReadPixels(0, 0, impl_->width_, impl_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
 
   float zNear = near_, zFar = far_;
   cv::Mat_<float>::iterator it = depth.begin(), end = depth.end();
   float max_allowed_z = zFar * 0.99;
 
-  unsigned int i_min = renderer_->width_, i_max = 0, j_min = renderer_->height_, j_max = 0;
-  for (unsigned int j = 0; j < renderer_->height_; ++j)
-    for (unsigned int i = 0; i < renderer_->width_; ++i, ++it)
+  unsigned int i_min = impl_->width_, i_max = 0, j_min = impl_->height_, j_max = 0;
+  for (unsigned int j = 0; j < impl_->height_; ++j)
+    for (unsigned int i = 0; i < impl_->width_; ++i, ++it)
     {
       //need to undo the depth buffer mapping
       //http://olivers.posterous.com/linear-depth-in-glsl-for-real
@@ -316,17 +254,17 @@ Renderer3d::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv
     }
 
   // Rescale the depth to be in millimeters
-  cv::Mat depth_scale(cv::Size(renderer_->width_, renderer_->height_), CV_16UC1);
+  cv::Mat depth_scale(cv::Size(impl_->width_, impl_->height_), CV_16UC1);
   depth.convertTo(depth_scale, CV_16UC1, 1e3);
 
   // Crop the images, just so that they are smaller to write/read
   if (i_min > 0)
     --i_min;
-  if (i_max < renderer_->width_ - 1)
+  if (i_max < impl_->width_ - 1)
     ++i_max;
   if (j_min > 0)
     --j_min;
-  if (j_max < renderer_->height_ - 1)
+  if (j_max < impl_->height_ - 1)
     ++j_max;
   rect = cv::Rect(i_min, j_min, i_max - i_min + 1, j_max - j_min + 1);
 
@@ -342,28 +280,42 @@ Renderer3d::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv
 }
 
 void
-Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect) const
+Renderer3d::renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect) const
 {
   // Create images to copy the buffers to
-  cv::Mat_<float> depth(renderer_->height_, renderer_->width_);
-  cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(renderer_->width_, renderer_->height_));
+  cv::Mat_<float> depth(impl_->height_, impl_->width_);
+  cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
 
+  if (scene_list_ == 0)
+  {
+    scene_list_ = glGenLists(1);
+    glNewList(scene_list_, GL_COMPILE);
+    // now begin at the root node of the imported data and traverse
+    // the scenegraph by multiplying subsequent local transforms
+    // together on GL's matrix stack.
+    mesh.Draw();
+    glEndList();
+  }
+
+  glCallList(scene_list_);
   glFlush();
+  glDeleteLists(scene_list_, 1);
+  scene_list_=0;
 
   // Get data from the OpenGL buffers
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   // Deal with the depth image
   glReadBuffer(GL_DEPTH_ATTACHMENT);
-  glReadPixels(0, 0, renderer_->width_, renderer_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
+  glReadPixels(0, 0, impl_->width_, impl_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
 
   float zNear = near_, zFar = far_;
   cv::Mat_<float>::iterator it = depth.begin(), end = depth.end();
   float max_allowed_z = zFar * 0.99;
 
-  unsigned int i_min = renderer_->width_, i_max = 0, j_min = renderer_->height_, j_max = 0;
-  for (unsigned int j = 0; j < renderer_->height_; ++j)
-    for (unsigned int i = 0; i < renderer_->width_; ++i, ++it)
+  unsigned int i_min = impl_->width_, i_max = 0, j_min = impl_->height_, j_max = 0;
+  for (unsigned int j = 0; j < impl_->height_; ++j)
+    for (unsigned int i = 0; i < impl_->width_; ++i, ++it)
     {
       //need to undo the depth buffer mapping
       //http://olivers.posterous.com/linear-depth-in-glsl-for-real
@@ -387,17 +339,17 @@ Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rec
     }
 
   // Rescale the depth to be in millimeters
-  cv::Mat depth_scale(cv::Size(renderer_->width_, renderer_->height_), CV_16UC1);
+  cv::Mat depth_scale(cv::Size(impl_->width_, impl_->height_), CV_16UC1);
   depth.convertTo(depth_scale, CV_16UC1, 1e3);
 
   // Crop the images, just so that they are smaller to write/read
   if (i_min > 0)
     --i_min;
-  if (i_max < renderer_->width_ - 1)
+  if (i_max < impl_->width_ - 1)
     ++i_max;
   if (j_min > 0)
     --j_min;
-  if (j_max < renderer_->height_ - 1)
+  if (j_max < impl_->height_ - 1)
     ++j_max;
   rect = cv::Rect(i_min, j_min, i_max - i_min + 1, j_max - j_min + 1);
 
@@ -411,23 +363,44 @@ Renderer3d::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rec
 }
 
 void
-Renderer3d::renderImageOnly(cv::Mat &image_out, const cv::Rect &rect) const
+Renderer3d::renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect &rect) const
 {
   // Create images to copy the buffers to
-  cv::Mat_ < cv::Vec3b > image(renderer_->height_, renderer_->width_);
+  cv::Mat_ < cv::Vec3b > image(impl_->height_, impl_->width_);
 
+  if (scene_list_ == 0)
+  {
+    scene_list_ = glGenLists(1);
+    glNewList(scene_list_, GL_COMPILE);
+    // now begin at the root node of the imported data and traverse
+    // the scenegraph by multiplying subsequent local transforms
+    // together on GL's matrix stack.
+    mesh.Draw();
+    glEndList();
+  }
+
+  glCallList(scene_list_);
   glFlush();
+  glDeleteLists(scene_list_, 1);
+  scene_list_=0;
 
   // Get data from the OpenGL buffers
-  renderer_->bind_buffers();
+  impl_->bind_buffers();
 
   // Deal with the RGB image
   glReadBuffer(GL_COLOR_ATTACHMENT0);
-  glReadPixels(0, 0, renderer_->width_, renderer_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
+  glReadPixels(0, 0, impl_->width_, impl_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
 
   if ((rect.width <=0) || (rect.height <= 0)) {
     image_out = cv::Mat();
   } else {
     image(rect).copyTo(image_out);
   }
+}
+
+Renderer3d& Renderer3d::globalRenderer(){
+  static Renderer3d result;
+  return result;
+}
+
 }

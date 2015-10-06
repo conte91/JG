@@ -38,6 +38,7 @@
 #include "Recognition/GiorgioUtils.h"
 #include <Recognition/Utils.h>
 
+namespace Recognition{
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //RendererIterator::RendererIterator(Renderer *renderer, size_t n_points)
@@ -92,8 +93,8 @@ RendererIterator::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_o
 
   renderer_->lookAt(t(0), t(1), t(2), up(0), up(1), up(2));
   //renderer_->render(image_out, depth_out, mask_out, rect_out);
-  renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
-  renderer_->renderImageOnly(image_out, rect_out);
+  renderer_->renderDepthOnly(Mesh(), depth_out, mask_out, rect_out);
+  renderer_->renderImageOnly(Mesh(), image_out, rect_out);
 }
 
 /**
@@ -108,8 +109,8 @@ void
 RendererIterator::render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out, const cv::Vec3d &t, const cv::Vec3d &up)
 {
   renderer_->lookAt(t(0), t(1), t(2), up(0), up(1), up(2));
-  renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
-  renderer_->renderImageOnly(image_out, rect_out);
+  renderer_->renderDepthOnly(Mesh(), depth_out, mask_out, rect_out);
+  renderer_->renderImageOnly(Mesh(), image_out, rect_out);
 }
 
 /**
@@ -123,7 +124,7 @@ void
 RendererIterator::renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out, const cv::Vec3d &t, const cv::Vec3d &up)
 {
   renderer_->lookAt(t(0), t(1), t(2), up(0), up(1), up(2));
-  renderer_->renderDepthOnly(depth_out, mask_out, rect_out);
+  renderer_->renderDepthOnly(Mesh(), depth_out, mask_out, rect_out);
 }
 
 /**
@@ -136,7 +137,7 @@ void
 RendererIterator::renderImageOnly(cv::Mat &image_out, const cv::Rect &rect_out, const cv::Vec3d &t, const cv::Vec3d &up)
 {
   renderer_->lookAt(t(0), t(1), t(2), up(0), up(1), up(2));
-  renderer_->renderImageOnly(image_out, rect_out);
+  renderer_->renderImageOnly(Mesh(), image_out, rect_out);
 }
 
 
@@ -287,4 +288,5 @@ RendererIterator::view_params(cv::Vec3d &T, cv::Vec3d &up) const
 
   up = T.cross(l);  // cross product
   normalize_vector(up(0), up(1), up(2));
+}
 }

@@ -37,8 +37,6 @@
 #ifndef ORK_RENDERER_RENDERER3D_IMPL_BASE_H_
 #define ORK_RENDERER_RENDERER3D_IMPL_BASE_H_
 
-#include <string>
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Class that displays a scene in a Frame Buffer Object
@@ -50,8 +48,8 @@ public:
   /**
    * @param file_path the path of the mesh file
    */
-  Renderer3dImplBase(const std::string & mesh_path, int width, int height) :
-    mesh_path_(mesh_path), width_(width), height_(height)
+  Renderer3dImplBase(int width, int height) :
+    width_(width), height_(height)
   {}
 
   virtual
@@ -67,8 +65,6 @@ public:
   virtual void
   bind_buffers() const = 0;
 
-  /** Path of the mesh */
-  std::string mesh_path_;
 
   unsigned int width_, height_;
 };

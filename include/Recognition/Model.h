@@ -39,13 +39,14 @@ namespace Recognition{
       template<typename T>
         inline std::vector<T> readSequence(const cv::FileNode& n);
       cv::Ptr<Detector> _detector;
-      std::shared_ptr<Renderer3d> _renderer;
+      Renderer3d& _renderer;
       std::unordered_map<int, TrainingData> _myData;
 
       cv::Matx33d camTUp2ObjRot(const cv::Vec3d& tDir, const cv::Vec3d& upDir);
       std::string mesh_file_path;
       double renderer_near;
       double renderer_far;
+      Mesh _mesh;
 
     public:
 
@@ -91,7 +92,7 @@ namespace Recognition{
       float getG(int templateID) const;
       cv::Mat getHueHist(int templateID) const;
       Camera::CameraModel getCam() const;
-      const std::shared_ptr<Renderer3d> getRenderer() const;
+      Renderer3d& getRenderer() const;
       int getXc(int templateID) const;
       int getYc(int templateID) const;
       int numTemplates() const;

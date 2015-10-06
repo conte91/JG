@@ -58,7 +58,7 @@ class Renderer3dImpl : public Renderer3dImplBase
     /**
      * @param file_path the path of the mesh file
      */
-    Renderer3dImpl(const std::string & file_path, int width, int height);
+    Renderer3dImpl(int width, int height);
 
     virtual ~Renderer3dImpl();
 
@@ -71,8 +71,6 @@ class Renderer3dImpl : public Renderer3dImplBase
     virtual void
       bind_buffers() const;
 
-    /** States whether GLUT has been initialized or not */
-    bool is_glut_initialized_;
     /** The frame buffer object used for offline rendering */
     GLuint fbo_id_;
     /** The render buffer object used for offline depth rendering */

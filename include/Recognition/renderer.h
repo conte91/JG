@@ -35,16 +35,17 @@
  *
  */
 
-#ifndef ORK_RENDERER_RENDERER_H_
-#define ORK_RENDERER_RENDERER_H_
+#pragma once
 
 #include <string>
 
 #include <Eigen/Geometry>
 #include <opencv2/core/core.hpp>
+#include "Mesh.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+namespace Recognition{
 /** Base class to render a 3d or 2d scene under different view points
  */
 class Renderer
@@ -73,7 +74,7 @@ public:
    * @param rect_out the bounding box of the rendered image
    */
   virtual void
-  render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const = 0;
+  render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const = 0;
 
   /** Renders the depth image from the current OpenGL buffers
    * @param depth_out the depth image
@@ -81,14 +82,14 @@ public:
    * @param rect_out the bounding box of the rendered image
    */
   virtual void
-  renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const = 0;
+  renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const = 0;
 
   /** Renders the RGB image from the current OpenGL buffers
    * @param image_out the RGB image
    * @param rect_out the bounding box of the rendered image
    */
   virtual void
-  renderImageOnly(cv::Mat &image_out, const cv::Rect &rect_out) const = 0;
+  renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect &rect_out) const = 0;
 
   virtual void setObjectPose(const Eigen::Affine3d& pose)=0;
   virtual void setCameraPose(const Eigen::Affine3d& pose)=0;
@@ -98,4 +99,4 @@ protected:
   float angle_;
 };
 
-#endif /* ORK_RENDERER_RENDERER_H_ */
+}

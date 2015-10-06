@@ -41,9 +41,8 @@
 
 #include "Recognition/renderer3d_impl_glut.h"
 
-Renderer3dImpl::Renderer3dImpl(const std::string & file_path, int width, int height) :
-        Renderer3dImplBase(file_path, width, height),
-        is_glut_initialized_(false)
+Renderer3dImpl::Renderer3dImpl(int width, int height) :
+        Renderer3dImplBase(width, height)
 {
 };
 
@@ -63,12 +62,10 @@ Renderer3dImpl::clean_buffers()
   rbo_id_ = 0;
 }
 
+
 void
 Renderer3dImpl::set_parameters_low_level()
 {
-  // By doing so, the window is not open
-  glutInitDisplayMode(GLUT_DOUBLE);
-  _myWinID=glutCreateWindow("Assimp renderer");
 
   // create a framebuffer object
   glGenFramebuffers(1, &fbo_id_);
@@ -96,6 +93,5 @@ Renderer3dImpl::bind_buffers() const
 
 Renderer3dImpl::~Renderer3dImpl(){
       clean_buffers();
-      glutDestroyWindow(_myWinID);
 
 }

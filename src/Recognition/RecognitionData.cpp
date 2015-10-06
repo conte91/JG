@@ -189,7 +189,7 @@ namespace Recognition{
         continue;
       }
       foundMatches.insert(match);
-      auto& obj=_objectModels.at(match.class_id);
+      const auto& obj=_objectModels.at(match.class_id);
       /** Renders the match to check for hue correctness (drops some false positives) */
       cv::Mat sticazzi, stimazzi, stimaski;
       cv::Rect stiretti;
@@ -218,10 +218,26 @@ namespace Recognition{
       return false;
     }
 
+    for(auto& x : found){
+        Mat stimazzi, sticazzi, stimaski;
+        Rect stiretti;
+        std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
+        const auto& obj=_objectModels.at(x.match.class_id);
+        obj.render(x.objPose, stimazzi, sticazzi, stimaski, stiretti);
+        if(stimazzi.empty()){
+          std::cout << "Image is empty!!!\n";
+          continue;
+        }
+        auto newFrame=const_rgb.clone();
+        stimazzi.copyTo(newFrame(stiretti));
+        imshow("Ciao!", newFrame);
+        while((cv::waitKey() & 0xFF)!= 'q');
+    }
+
     std::vector<Match> refound;
 
     /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
-    for(auto& x:found){
+    for(const auto& x:found){
       using cv::Rect;
       using cv::Mat;
       typedef pcl::PointXYZRGB PointType;
@@ -259,6 +275,25 @@ namespace Recognition{
       Mat matchingDepth=depth_m(imgRect);
       assert(depth_m.type()==CV_32FC1);
       const auto& obj=_objectModels.at(x.match.class_id);
+      {
+        /** TODO REMOVE ME */
+        /** Visualization of the result */
+        std::cout << "Rendering object #" << x.match.class_id;
+        Mat stimazzi, sticazzi, stimaski;
+        Rect stiretti;
+        std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
+        Eigen::Affine3d objPose=Eigen::Affine3d::Identity();
+        objPose.translation() << 0,0,1.5;
+        obj.render(objPose, stimazzi, sticazzi, stimaski, stiretti);
+        if(stimazzi.empty()){
+          std::cout << "Image is empty!!!\n";
+          continue;
+        }
+        auto newFrame=const_rgb.clone();
+        stimazzi.copyTo(newFrame(stiretti));
+        imshow("Lol!", newFrame);
+        while((cv::waitKey() & 0xFF)!= 'q');
+      }
       Mat x_d_m;
       x.depth.convertTo(x_d_m, CV_32FC1, 1.0/1000.0);
       assert(x_d_m.type()==CV_32FC1);
@@ -314,13 +349,20 @@ namespace Recognition{
       align.align (*alignModelCloudPtr);
 
       if(!align.hasConverged()){
+        std::cout << "Align did not converge\n";
         continue;
       }
 
       CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
       Eigen::Affine3d finalTransformationMatrix;
+      std::cout << "Final transform (align): " << align.getFinalTransformation().matrix() << "\n";
       finalTransformationMatrix.matrix()  = align.getFinalTransformation().cast<double>();
-      auto middlePose = x.objPose*finalTransformationMatrix;
+      std::cout << "Transform (align):" << finalTransformationMatrix.matrix() << "\n";
+      //finalTransformationMatrix=finalTransformationMatrix.inverse();
+      std::cout << "Inverse (align):" << finalTransformationMatrix.matrix() << "\n";
+      auto middlePose = finalTransformationMatrix*x.objPose;
+      std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
+      std::cout << "Middle pose: " << middlePose.matrix() << "\n";
       /** Use ICP to refine the pose estimation of the object */
       pcl::IterativeClosestPoint<PointNormal, PointNormal> icp;
       icp.setMaximumIterations (100);
@@ -335,9 +377,18 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
+      std::cout << "Final transform (icp): " << align.getFinalTransformation().matrix() << "\n";
       finalTransformationMatrix.matrix()  = icp.getFinalTransformation().cast<double>();
-      auto finalPose = middlePose*finalTransformationMatrix;
+      std::cout << "Transform (icp):" << finalTransformationMatrix.matrix() << "\n";
+      //finalTransformationMatrix=finalTransformationMatrix.inverse();
+      std::cout << "Inverse (align):" << finalTransformationMatrix.matrix() << "\n";
+      auto finalPose = finalTransformationMatrix*middlePose;
+      std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
+      std::cout << "Middle pose: " << finalPose.matrix() << "\n";
       refound.push_back({icp.getFitnessScore(), finalPose});
+      Eigen::Vector3d origin{0,0,0};
+      auto noOrigin=finalPose*origin;
+      std::cout << "Final position guess: " << noOrigin << "\n";
       
 
       pcl::visualization::PCLVisualizer viewer("Scene's PCL");
@@ -357,8 +408,11 @@ namespace Recognition{
       /** Visualization of the result */
       Mat stimazzi, sticazzi, stimaski;
       Rect stiretti;
+      std::cout << "Final rendering pose:\n" << finalPose.matrix() << "\n\n\n";
+      finalPose.linear().matrix()=Eigen::Matrix3d::Identity();
       obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
-      if(stiretti.width<0 || stiretti.height<0){
+      if(stimazzi.empty()){
+        std::cout << "Image is empty!!!\n";
         continue;
       }
       auto newFrame=const_rgb.clone();

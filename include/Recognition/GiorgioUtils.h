@@ -34,17 +34,17 @@
  *
  */
 
-#ifndef ORK_RENDERER_UTILS_H
-#define ORK_RENDERER_UTILS_H
+#pragma once
 
 #include <string>
 #include <memory>
 
 #include <opencv2/core/core.hpp>
 
-class Renderer;
+#include "renderer.h"
 
 
+namespace Recognition{
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Class that enables iterating the viewpoint over a sphere.
@@ -163,4 +163,4 @@ public:
   view_params(cv::Vec3d &T, cv::Vec3d &up) const;
 };
 
-#endif /* ORK_RENDERER_UTILS_H */
+}

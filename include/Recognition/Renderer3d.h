@@ -34,10 +34,8 @@
  *
  */
 
-#ifndef ORK_RENDERER_RENDERER3D_H_
-#define ORK_RENDERER_RENDERER3D_H_
+#pragma once
 
-#include <string>
 #include <Camera/CameraModel.h>
 
 #include <opencv2/core/core.hpp>
@@ -53,22 +51,22 @@ class aiLogStream;
 
 class Renderer3dImpl;
 
+namespace Recognition{
 /** Class that displays a scene in a Frame Buffer Object
  * Inspired by http://www.songho.ca/opengl/gl_fbo.html
  */
 class Renderer3d : public Renderer
 {
+private:
+  Renderer3d();
 public:
-  /**
-   * @param file_path the path of the mesh file
-   */
-  Renderer3d(const std::string & file_path);
 
+  static Renderer3d& globalRenderer();
   virtual
   ~Renderer3d();
 
   void
-  set_parameters(const Camera::CameraModel& cam, double near, double far);
+  set_parameters(const Camera::CameraModel& cam, double near, double far, const std::string& id);
 
   /** Similar to the gluLookAt function
    * @param x the x position of the eye pointt
@@ -91,7 +89,7 @@ public:
    * @param rect_out the bounding box of the rendered image
    */
   void
-  render(cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
+  render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
 
   /** Renders the depth image from the current OpenGL buffers
    * @param depth_out the depth image
@@ -99,29 +97,28 @@ public:
    * @param rect_out the bounding box of the rendered image
    */
   void
-  renderDepthOnly(cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
+  renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const;
 
   /** Renders the RGB image from the current OpenGL buffers
    * @param image_out the RGB image
    * @param rect_out the bounding box of the rendered image
    */
   void
-  renderImageOnly(cv::Mat &image_out, const cv::Rect &rect_out) const;
+  renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect &rect_out) const;
 
 protected:
   double focal_length_x_, focal_length_y_, near_, far_, cx_, cy_;
   float angle_;
 
-//  Model* model_;
-  std::shared_ptr<Mesh> model_;
-  GLuint scene_list_;
+  mutable GLuint scene_list_;
 
   /** stream for storing the logs from Assimp */
   aiLogStream* ai_stream_;
 
   /** Private implementation of the renderer (GLUT or OSMesa) */
-//  Renderer3dImpl* renderer_;
-  std::shared_ptr<Renderer3dImpl> renderer_;
+  std::shared_ptr<Renderer3dImpl> impl_;
+
+  std::string lastDrawer;
 };
 
-#endif /* ORK_RENDERER_RENDERER3D_H_ */
+}
