@@ -22,7 +22,7 @@ int main(int argc, char** argv){
   mattia.setTo(cv::Scalar{0,0,0});
 
   cv::Rect rect_out, rect_out2;
-  renderer.set_parameters(cam, 0.1, 10.0);
+  renderer.set_parameters(cam, 0.1, 10.0, "Test renderer transformations");
   /*T*/
   double x=atof(argv[3]);
   double y=atof(argv[4]);

@@ -22,6 +22,7 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/fpfh_omp.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
+#include <pcl/registration/ia_ransac.h>
 
 #include <Recognition/GLUTInit.h>
 #include <Recognition/Utils.h>
@@ -81,6 +82,9 @@ namespace Recognition{
     //hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
     turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 5, 5);
     turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 5, 5);
+    imshow("Blue template", filteredTemplate);
+    imshow("Blue match", filteredMatch);
+    while((cv::waitKey() & 0xFF)!= 'q');
     Mat displayT, displayM;
     cv::cvtColor(filteredTemplate, displayT, CV_HSV2BGR);
     cv::cvtColor(filteredMatch, displayM, CV_HSV2BGR);
@@ -165,8 +169,8 @@ namespace Recognition{
     std::unordered_set<cv::linemod::Match> foundMatches;
 
     double currentThreshold=_threshold;
-    while(found.size()<3){
-    std::cout<<"Matching... with threshold " << currentThreshold << "..."<<"\n";
+    while(found.size()==0){
+    std::cout<<"Matching with threshold " << currentThreshold << "..."<<"\n";
     std::vector<cv::linemod::Match> nonconst_matches;
     detector->match(sources, currentThreshold, nonconst_matches,vect_objs_to_pick, cv::noArray(), theMasks);
 
@@ -274,35 +278,16 @@ namespace Recognition{
       Mat matchingPart=const_rgb(imgRect);
       Mat matchingDepth=depth_m(imgRect);
       assert(depth_m.type()==CV_32FC1);
-      const auto& obj=_objectModels.at(x.match.class_id);
-      {
-        /** TODO REMOVE ME */
-        /** Visualization of the result */
-        std::cout << "Rendering object #" << x.match.class_id;
-        Mat stimazzi, sticazzi, stimaski;
-        Rect stiretti;
-        std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
-        Eigen::Affine3d objPose=Eigen::Affine3d::Identity();
-        objPose.translation() << 0,0,1.5;
-        obj.render(objPose, stimazzi, sticazzi, stimaski, stiretti);
-        if(stimazzi.empty()){
-          std::cout << "Image is empty!!!\n";
-          continue;
-        }
-        auto newFrame=const_rgb.clone();
-        stimazzi.copyTo(newFrame(stiretti));
-        imshow("Lol!", newFrame);
-        while((cv::waitKey() & 0xFF)!= 'q');
-      }
       Mat x_d_m;
       x.depth.convertTo(x_d_m, CV_32FC1, 1.0/1000.0);
-      assert(x_d_m.type()==CV_32FC1);
 
       /** Obtain the PCs relative to the parts to be aligned */
+      const auto& obj=_objectModels.at(x.match.class_id);
       auto templatePC=obj.getCam().sceneToCameraPointCloud(x.rgb, x_d_m, x.mask);
       templatePC->is_dense=true;
       auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth);
       scenePC->is_dense=true;
+
       /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
       pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
       CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
@@ -334,17 +319,18 @@ namespace Recognition{
       fest.compute (*scene_features);
 
       /* Perform alignment */
-      pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
+      //pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
+      pcl::SampleConsensusInitialAlignment<PointNormal, PointNormal, FPFHSignature33> align;
       align.setInputSource (templatePCDownsampled  );
       align.setSourceFeatures (template_features);
       align.setInputTarget (scenePCDownsampled);
       align.setTargetFeatures (scene_features);
-      align.setMaximumIterations (200000); // Number of RANSAC iterations
+      align.setMaximumIterations (1000); // Number of RANSAC iterations
       align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
       align.setCorrespondenceRandomness (5); // Number of nearest features to use
-      align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
-      align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
-      align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
+      //align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
+      //align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
+      //align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
       CloudXYZ::Ptr alignModelCloudPtr (new CloudXYZ);
       align.align (*alignModelCloudPtr);
 
@@ -355,12 +341,9 @@ namespace Recognition{
 
       CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
       Eigen::Affine3d finalTransformationMatrix;
-      std::cout << "Final transform (align): " << align.getFinalTransformation().matrix() << "\n";
       finalTransformationMatrix.matrix()  = align.getFinalTransformation().cast<double>();
       std::cout << "Transform (align):" << finalTransformationMatrix.matrix() << "\n";
-      //finalTransformationMatrix=finalTransformationMatrix.inverse();
-      std::cout << "Inverse (align):" << finalTransformationMatrix.matrix() << "\n";
-      auto middlePose = finalTransformationMatrix*x.objPose;
+      auto middlePose = finalTransformationMatrix;
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
       std::cout << "Middle pose: " << middlePose.matrix() << "\n";
       /** Use ICP to refine the pose estimation of the object */
@@ -377,19 +360,17 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      std::cout << "Final transform (icp): " << align.getFinalTransformation().matrix() << "\n";
       finalTransformationMatrix.matrix()  = icp.getFinalTransformation().cast<double>();
       std::cout << "Transform (icp):" << finalTransformationMatrix.matrix() << "\n";
-      //finalTransformationMatrix=finalTransformationMatrix.inverse();
-      std::cout << "Inverse (align):" << finalTransformationMatrix.matrix() << "\n";
       auto finalPose = finalTransformationMatrix*middlePose;
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
-      std::cout << "Middle pose: " << finalPose.matrix() << "\n";
+      std::cout << "Final pose: " << x.objPose*finalPose.matrix() << "\n";
       refound.push_back({icp.getFitnessScore(), finalPose});
       Eigen::Vector3d origin{0,0,0};
       auto noOrigin=finalPose*origin;
       std::cout << "Final position guess: " << noOrigin << "\n";
       
+      /*
 
       pcl::visualization::PCLVisualizer viewer("Scene's PCL");
       viewer.addCoordinateSystem(0.1);
@@ -405,11 +386,11 @@ namespace Recognition{
         viewer.spinOnce(100);
       }
       viewer.close();
+      */
       /** Visualization of the result */
       Mat stimazzi, sticazzi, stimaski;
       Rect stiretti;
       std::cout << "Final rendering pose:\n" << finalPose.matrix() << "\n\n\n";
-      finalPose.linear().matrix()=Eigen::Matrix3d::Identity();
       obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
       if(stimazzi.empty()){
         std::cout << "Image is empty!!!\n";

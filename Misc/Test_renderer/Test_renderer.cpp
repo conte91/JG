@@ -20,7 +20,7 @@ int main(int argc, char** argv){
   frame.setTo(cv::Scalar{0,0,0});
 
   cv::Rect rect_out, rect_out2;
-  renderer.set_parameters(cam, 0.1, 10.0);
+  renderer.set_parameters(cam, 0.1, 10.0, "Renderer test");
   double x=atof(argv[3]);
   double y=atof(argv[4]);
   double z=atof(argv[5]);
@@ -46,7 +46,7 @@ int main(int argc, char** argv){
   depth_out=cv::Mat{};
   image_out=cv::Mat{};
   rect_out=cv::Rect{};
-  renderer.set_parameters(Camera::CameraModel{640, 480, 1000, 1000, 0, 320, 240}, 0.5, 15);
+  renderer.set_parameters(Camera::CameraModel{640, 480, 1000, 1000, 0, 320, 240}, 0.5, 15, "Test renderer");
   renderer.setObjectPose(C5G::Pose{x,y,z,a,b,g}.toTransform());
   renderer.renderDepthOnly(mesh2,depth_out, mask_out, rect_out);
   renderer.renderImageOnly(mesh2,image_out, rect_out);

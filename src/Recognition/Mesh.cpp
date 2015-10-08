@@ -33,8 +33,7 @@ Mesh::Mesh(const std::string& file_path)
     :
       scene(NULL)
 {
-  ///** To avoid mess with temporary scopes
-  //LoadMesh(file_path);
+  LoadMesh(file_path);
 }
 
 Mesh::Mesh()
@@ -49,7 +48,7 @@ Mesh::~Mesh()
   // keeps internal resources until the scene is freed again. Not
   // doing so can cause severe resource leaking.
   if(scene){
-    aiReleaseImport(scene);
+    //aiReleaseImport(scene);
   }
 }
 

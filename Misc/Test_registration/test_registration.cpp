@@ -79,6 +79,7 @@ int main(){
   auto scenePC=getCube(1, 0.5, 0.2, 0, 0, -20, 1000);
   scenePC->is_dense=true;
   Eigen::Affine3d initialPose=Eigen::Affine3d::Identity();
+  initialPose.translation() << 0,0,100;
   /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
   pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
   CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
@@ -176,7 +177,7 @@ int main(){
   auto finalPose = finalTransformationMatrix*middlePose;
   std::cout << "Final pose: " << finalPose.matrix() << "\n";
 
-  Eigen::Vector3d origin{0,0,100};
+  Eigen::Vector3d origin{0,0,0};
   std::cout << "Initial pose: " << origin << "\n";
   auto noOrigin=finalPose*origin;
   std::cout << "Final pose guess: " << noOrigin << "\n";

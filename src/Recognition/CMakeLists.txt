@@ -9,7 +9,7 @@ include_directories(${Eigen_INCLUDE_DIRECTORIES} ${PCL_INCLUDE_DIRS} ${OpenCV_IN
 
 add_library(linemod_with_masks SHARED DetectorWMasks.cpp)
 
-add_library(renderer3d SHARED renderer3d_impl_glut.cpp Renderer3d.cpp Mesh.cpp GiorgioUtils.cpp GLUTInit.cpp)
+add_library(renderer3d SHARED renderer3d_impl_glut.cpp Renderer3d.cpp Mesh.cpp GLUTInit.cpp)
 target_link_libraries(renderer3d ${GLUT_LIBRARIES} freeimage ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} linemod_with_masks)
 SET_TARGET_PROPERTIES(renderer3d PROPERTIES COMPILE_FLAGS "-fPIC" )
 
