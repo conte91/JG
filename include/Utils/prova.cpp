@@ -13,26 +13,35 @@ Utils::Options<int, 3, xxx, int, 2, xxx, int, 1, xxx> a;
 /** Values are indeces from N+1 to something */
 template<int N, int ... VALUES >
 struct mif{
-  static constexpr decltype(auto) value(){
+  static constexpr auto value() -> decltype(mif<N-1, N, VALUES ...>::value()){
     return mif<N-1, N, VALUES...>::value();
   }
 };
 
 template<int ... VALUES>
 struct mif<0, VALUES... >{
-  static constexpr decltype(auto) value(){
+  static constexpr auto value() -> decltype(std::make_tuple(0, VALUES...))  {
     return std::make_tuple(0, VALUES...);
   }
 };
 
 /** Gets indeces from 0 to N */
 template<int N>
-constexpr decltype(auto) make_indices(){
+constexpr auto make_indices() -> decltype(mif<N>::value()){
   return mif<N>::value();
 }
+#if 0
+
+template<char... CHARS>
+constexpr std::string strAdded(){
+  return std::string{CHARS...}+"mianonna";
+}
+
+#endif
 
 int main(){
-  auto x=make_indices<5>();
+  constexpr std::string x = strAdded<'A','B','C'>;
+  std::cout << x  << "\n";
   return 0;
 }
 

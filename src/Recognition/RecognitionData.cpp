@@ -80,20 +80,17 @@ namespace Recognition{
     cv::cvtColor(matchPart, hsvMatch, CV_BGR2HSV);
     //hsvTemplate.setTo(cv::Scalar{0,0,0}, ~maskPart);
     //hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
-    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 5, 5);
-    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 5, 5);
-    imshow("Blue template", filteredTemplate);
-    imshow("Blue match", filteredMatch);
-    while((cv::waitKey() & 0xFF)!= 'q');
-    Mat displayT, displayM;
-    cv::cvtColor(filteredTemplate, displayT, CV_HSV2BGR);
-    cv::cvtColor(filteredMatch, displayM, CV_HSV2BGR);
+    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 6, 2);
+    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 6, 2);
 
     int totalPoints=0, matchingPoints=0;
     Mat scaledTemplate, scaledMatch, scaledMask;
     cv::resize(filteredTemplate, scaledTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(erodedMask, scaledMask, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
+    Mat displayT, displayM;
+    cv::cvtColor(scaledTemplate, displayT, CV_HSV2BGR);
+    cv::cvtColor(scaledMatch, displayM, CV_HSV2BGR);
     Mat matchingDraw(scaledTemplate.size(), CV_8UC1);
     matchingDraw.setTo(130);
     for(int i=0; i<scaledTemplate.rows; ++i){
@@ -111,6 +108,12 @@ namespace Recognition{
       }
     }
 
+    double percentage=(double) matchingPoints/(double) totalPoints;
+    if(percentage > 0.6){
+      imshow("Blue template", displayT);
+      imshow("Blue match", displayM);
+      while((cv::waitKey() & 0xFF)!= 'q');
+    }
     return (double) matchingPoints/(double) totalPoints;
   }
 
@@ -197,11 +200,44 @@ namespace Recognition{
       /** Renders the match to check for hue correctness (drops some false positives) */
       cv::Mat sticazzi, stimazzi, stimaski;
       cv::Rect stiretti;
+
+      /** Align depth before rendering */
+      auto mPose=obj.matchToObjectPose(match);
+      std::cout << "Initial translation: \n" << mPose.matrix() << "\n";
       obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
+      cv::Mat newFrame2=const_rgb.clone();
+      stimazzi.at<cv::Vec3b>(obj.getYc(tId), obj.getXc(tId))=cv::Vec3b{0,0,255};
+      stimazzi.copyTo(newFrame2(stiretti));
+      imshow("Stimazzi", newFrame2);
+      while((cv::waitKey() & 0xFF)!= 'Q');
+      //std::cout << "Distance: " << distanceToMoveBackward << "\n";
+      Eigen::Matrix3d eRot;
+      cv2eigen(obj.getR(tId), eRot);
+      int u=match.x+obj.getXc(tId);
+      int v=match.y+obj.getYc(tId);
+      double d=(depth_mm(stiretti).at<uint16_t>(obj.getYc(tId), obj.getXc(tId)))/1000.0-obj.getZc(tId);
+
+      std::cout << "Depth change: " << obj.getZc(tId);
+      Eigen::Vector3d position=obj.getCam().uvzToCameraFrame(u,v,d);
+      Eigen::Affine3d matchTrans;
+      matchTrans.translation() << position;
+      matchTrans.linear()=eRot;
+      mPose=matchTrans;
+      std::cout << "Next translation: \n" << mPose.matrix() << "\n";
+
+
+      obj.render(mPose, stimazzi, sticazzi, stimaski, stiretti);
+      if(stimazzi.empty()){
+        std::cout << "Empty image after movement\n";
+        continue;
+      }
       cv::Mat newFrame=const_rgb.clone();
-      Mat matchingPart=newFrame(stiretti);
+      stimazzi.copyTo(newFrame(stiretti));
+      imshow("Stimazzi", newFrame);
+      while((cv::waitKey() & 0xFF)!= 'Q');
+      Mat matchingPart=const_rgb(stiretti);
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
-      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1);
+      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,3);
 
       if(percentage < 0.6) {
         std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
@@ -209,7 +245,7 @@ namespace Recognition{
       }
       std::cout << "Object taken (percentage=" << percentage << ").\n";
       /** Check for false positives by valuating hues values on the downsampled image */
-      found.push_back({match, obj.matchToObjectPose(match), stimazzi, sticazzi, stimaski, stiretti, percentage});
+      found.push_back({match, mPose, stimazzi, sticazzi, stimaski, stiretti, percentage});
 
     }
       if(currentThreshold<70){
@@ -228,10 +264,7 @@ namespace Recognition{
         std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
         const auto& obj=_objectModels.at(x.match.class_id);
         obj.render(x.objPose, stimazzi, sticazzi, stimaski, stiretti);
-        if(stimazzi.empty()){
-          std::cout << "Image is empty!!!\n";
-          continue;
-        }
+        assert(!stimazzi.empty());
         auto newFrame=const_rgb.clone();
         stimazzi.copyTo(newFrame(stiretti));
         imshow("Ciao!", newFrame);
@@ -240,6 +273,7 @@ namespace Recognition{
 
     std::vector<Match> refound;
 
+#if 0
     /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
     for(const auto& x:found){
       using cv::Rect;
@@ -319,18 +353,19 @@ namespace Recognition{
       fest.compute (*scene_features);
 
       /* Perform alignment */
-      //pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
-      pcl::SampleConsensusInitialAlignment<PointNormal, PointNormal, FPFHSignature33> align;
+      pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
+      //pcl::SampleConsensusInitialAlignment<PointNormal, PointNormal, FPFHSignature33> align;
       align.setInputSource (templatePCDownsampled  );
       align.setSourceFeatures (template_features);
       align.setInputTarget (scenePCDownsampled);
       align.setTargetFeatures (scene_features);
-      align.setMaximumIterations (1000); // Number of RANSAC iterations
-      align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
-      align.setCorrespondenceRandomness (5); // Number of nearest features to use
-      //align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
-      //align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
-      //align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
+      //align.setMaximumIterations (1000); // Number of RANSAC iterations
+      align.setMaximumIterations (20000); // Number of RANSAC iterations
+      align.setNumberOfSamples (5); // Number of points to sample for generating/prerejecting a pose
+      align.setCorrespondenceRandomness (20); // Number of nearest features to use
+      align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
+      align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
+      align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
       CloudXYZ::Ptr alignModelCloudPtr (new CloudXYZ);
       align.align (*alignModelCloudPtr);
 
@@ -340,10 +375,11 @@ namespace Recognition{
       }
 
       CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
-      Eigen::Affine3d finalTransformationMatrix;
-      finalTransformationMatrix.matrix()  = align.getFinalTransformation().cast<double>();
-      std::cout << "Transform (align):" << finalTransformationMatrix.matrix() << "\n";
-      auto middlePose = finalTransformationMatrix;
+      Eigen::Matrix4d finalTransformationMatrix;
+      finalTransformationMatrix  = align.getFinalTransformation().cast<double>().inverse();
+      std::cout << "Transform (align):" << finalTransformationMatrix << "\n";
+      std::cout << "Inverse (align):" << finalTransformationMatrix << "\n";
+      auto middlePose = finalTransformationMatrix*x.objPose.matrix();
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
       std::cout << "Middle pose: " << middlePose.matrix() << "\n";
       /** Use ICP to refine the pose estimation of the object */
@@ -360,14 +396,15 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      finalTransformationMatrix.matrix()  = icp.getFinalTransformation().cast<double>();
-      std::cout << "Transform (icp):" << finalTransformationMatrix.matrix() << "\n";
+      finalTransformationMatrix  = icp.getFinalTransformation().cast<double>().inverse();
+      std::cout << "Transform (icp):" << finalTransformationMatrix << "\n";
+      std::cout << "Inverse (icp):" << finalTransformationMatrix.inverse() << "\n";
       auto finalPose = finalTransformationMatrix*middlePose;
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
-      std::cout << "Final pose: " << x.objPose*finalPose.matrix() << "\n";
-      refound.push_back({icp.getFitnessScore(), finalPose});
+      std::cout << "Final pose: " << finalPose << "\n";
+      refound.push_back({icp.getFitnessScore(), Eigen::Affine3d{finalPose}});
       Eigen::Vector3d origin{0,0,0};
-      auto noOrigin=finalPose*origin;
+      auto noOrigin=Eigen::Affine3d{finalPose}*origin;
       std::cout << "Final position guess: " << noOrigin << "\n";
       
       /*
@@ -390,13 +427,22 @@ namespace Recognition{
       /** Visualization of the result */
       Mat stimazzi, sticazzi, stimaski;
       Rect stiretti;
-      std::cout << "Final rendering pose:\n" << finalPose.matrix() << "\n\n\n";
-      obj.render(finalPose, stimazzi, sticazzi, stimaski, stiretti);
+      std::cout << "Final rendering pose:\n" << finalPose<< "\n\n\n";
+      obj.render(x.objPose, stimazzi, sticazzi, stimaski, stiretti);
       if(stimazzi.empty()){
         std::cout << "Image is empty!!!\n";
         continue;
       }
       auto newFrame=const_rgb.clone();
+      stimazzi.copyTo(newFrame(stiretti));
+      imshow("Wow!", newFrame);
+      while((cv::waitKey() & 0xFF)!= 'q');
+      obj.render(Eigen::Affine3d{finalPose}, stimazzi, sticazzi, stimaski, stiretti);
+      if(stimazzi.empty()){
+        std::cout << "Image is empty!!!\n";
+        continue;
+      }
+      newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
       imshow("Wow!", newFrame);
       while((cv::waitKey() & 0xFF)!= 'q');
@@ -406,6 +452,12 @@ namespace Recognition{
       std::cout << "Result alignment returned no valid matches.\n";
       return false;
     }
+#else
+    for(auto& x: found){
+      refound.push_back({1-x.matchPercentage, x.objPose});
+
+    }
+#endif
 
     std::sort(refound.begin(), refound.end(),
         [](const Match& a, const Match& b) -> bool{

@@ -114,6 +114,15 @@ namespace Recognition{
   cv::Mat Model::getHueHist(int templateID) const {
     return _myData.at(templateID).hueHist;
   }
+  int Model::getXc(int templateID) const{
+    return _myData.at(templateID).centerX;
+  }
+  int Model::getYc(int templateID) const{
+    return _myData.at(templateID).centerY;
+  }
+  double Model::getZc(int templateID) const{
+    return _myData.at(templateID).centerDepth;
+  }
   Model::TrainingData Model::getData(int templateID) const {
     return _myData.at(templateID);
   }
@@ -231,9 +240,9 @@ namespace Recognition{
 #endif
 
     /** Here we save the center of the object wrt to the border of the template's rectangle, so that if one knows the position of the rectangle in a bigger image he can know the position of the object the template refers to (thanks to the camera matrix)*/
-    int centerX=640/2-rect.x;
-    int centerY=480/2-rect.y;
-    double centerDepth=distance-depth.at<unsigned int>(centerX,centerY)/1000.0;
+    int centerX=_camModel.getXc()-rect.x;
+    int centerY=_camModel.getYc()-rect.y;
+    double centerDepth=distance-depth.at<uint16_t>(centerY,centerX)/1000.0;
     /** Save the computed data */
     if(_myData.find(template_in)!=_myData.end()){
       std::cerr << "##############Duplicate template ID!!################\n";
@@ -366,19 +375,19 @@ namespace Recognition{
 
   void Model::renderMatch(const cv::linemod::Match& match, cv::Mat &image_out, cv::Mat &depth_out, cv::Mat &mask_out, cv::Rect &rect_out) const {
     assert(match.class_id==_myId && "Attempted to render a LineMOD match for a different object than the match's one!" );
-    //int tId=match.template_id;
-    //cv::Matx33d R_match = _myData.at(tId).R;
-    //float D_match = _myData.at(tId).dist;
-    //Eigen::Matrix3d eRot;
-    //cv2eigen(R_match, eRot);
-    //Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
-    //double d=D_match;
-    //matchTrans.translation() <<0, 0, d;
-    //matchTrans.linear()=eRot;
-    //render(matchTrans, image_out, depth_out, mask_out, rect_out);
-    //rect_out.x=match.x;
-    //rect_out.y=match.y;
-    render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
+    int tId=match.template_id;
+    cv::Matx33d R_match = _myData.at(tId).R;
+    float D_match = _myData.at(tId).dist;
+    Eigen::Matrix3d eRot;
+    cv2eigen(R_match, eRot);
+    Eigen::Affine3d matchTrans=Eigen::Affine3d::Identity();
+    double d=D_match;
+    matchTrans.translation() <<0, 0, d;
+    matchTrans.linear()=eRot;
+    render(matchTrans, image_out, depth_out, mask_out, rect_out);
+    rect_out.x=match.x;
+    rect_out.y=match.y;
+    //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
   }
 }
 namespace cv{

@@ -51,6 +51,7 @@ int main(int argc, char** argv){
 
   Recognition::RecognitionData mySister(std::string(argv[1]), Camera::CameraModel::readFrom(cameraFile["camera_model"]));
 
+  Camera::CameraModel cam=Camera::CameraModel::readFrom(cameraFile["camera_model"]);
   bool haveFinished=false;
   while(!haveFinished){
 
@@ -64,7 +65,11 @@ int main(int argc, char** argv){
     std::cin >> s;
     try{
       auto result=mySister.recognize(finalFrame, s);
-      std::cout << "I think the object is @pose " << result["s"][0].pose.matrix() << "\n";
+      std::cout << "I think the object is @pose " << result[s][0].pose.matrix() << "\n";
+      Eigen::Affine3d extr;
+      extr.matrix()=cam.getExtrinsic().matrix().cast<double>();
+      auto globalPose=extr.inverse()*result[s][0].pose;
+      std::cout << "Global pose: \n" << globalPose.matrix() << "\n";
     }
     catch (std::string e){
       std::cout << "No, baybo, didn't get it. Maybe you could try again?\nDetails: " << e << "\n";

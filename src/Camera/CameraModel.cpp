@@ -235,10 +235,7 @@ namespace Camera{
 
     coordinates[0] = (u - cx) / fx;
 
-    if (s != 0){
-      std::cout << "Ouch\n";
-      coordinates[0] = coordinates[0] + (-(s / fy) * v + cy * s / fy) / fx;
-    }
+    assert(s==0);
 
     coordinates[0] = coordinates[0]*z;
     coordinates[1] = (v - cy)*(z) * (1. / fy);

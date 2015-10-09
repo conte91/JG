@@ -131,7 +131,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
            // }
             Eigen::Matrix3d transformation = Recognition::tUpToCameraWorldTransform(p, up).rotation().matrix();
             model.addTraining(transformation,radius, cam);
-            if((!(done % 1 )) && visualize_){
+            if((!(done % 3 )) && visualize_){
               image2show.setTo(cv::Scalar(0,0,0));
               depth2show.setTo(cv::Scalar(0,0,0));
               cv::Mat image, depth, mask;

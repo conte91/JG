@@ -95,6 +95,7 @@ namespace Recognition{
       Renderer3d& getRenderer() const;
       int getXc(int templateID) const;
       int getYc(int templateID) const;
+      double getZc(int templateID) const;
       int numTemplates() const;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr getPointCloud(const C5G::Pose& pose) const;
       Camera::CameraModel _camModel;
