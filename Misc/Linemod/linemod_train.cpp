@@ -61,6 +61,7 @@
 bool visualize_ , slow_;
 int renderer_n_points_;
 int renderer_n_turns;
+int nViz_;
 double renderer_radius_min_;
 double renderer_radius_max_;
 double renderer_radius_step_;
@@ -93,6 +94,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   /** Takes snapshots of the (ideal) object */
   long totalTemplates=(renderer_radius_max_-renderer_radius_min_)/renderer_radius_step_+1;
   totalTemplates*=myPts.size();
+  totalTemplates*=renderer_n_turns;
   long i=0; 
   long done=0;
   //std::unordered_set<long> tuanonna;
@@ -131,7 +133,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
            // }
             Eigen::Matrix3d transformation = Recognition::tUpToCameraWorldTransform(p, up).rotation().matrix();
             model.addTraining(transformation,radius, cam);
-            if((!(done % 3 )) && visualize_){
+            if((!(done % nViz_ )) && visualize_){
               image2show.setTo(cv::Scalar(0,0,0));
               depth2show.setTo(cv::Scalar(0,0,0));
               cv::Mat image, depth, mask;
@@ -199,6 +201,7 @@ int main(int argc, char* argv[])
   /** True or False to output debug image */
   lmTConfig["visualizeTraining"] >> visualize_;
   lmTConfig["slowMotion"] >> slow_;
+  lmTConfig["nVisualize"] >> nViz_;
   const cv::FileNode& rParams=lmConfig["rendering"];
 
   //Set the Values:
