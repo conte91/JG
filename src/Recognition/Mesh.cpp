@@ -337,9 +337,12 @@ apply_material(const struct aiMaterial *mtl)
     color4_to_float4(&specular, c);
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, c);
 
-  set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
-  if (AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
-    color4_to_float4(&ambient, c);
+  //set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
+  set_float4(c, 1.0f, 1.0f, 1.0f, 1.0f);
+  //if (AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient)){
+  //  std::cout << "Wow!" << ambient[0] << " " << ambient[1] << " " << ambient[2] << " " << ambient[3] << "\n";
+  //  color4_to_float4(&ambient, c);
+  //}
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, c);
 
   set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
