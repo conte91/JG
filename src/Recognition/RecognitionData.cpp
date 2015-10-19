@@ -97,7 +97,10 @@ namespace Recognition{
       for(int j=0; j<scaledTemplate.cols; ++j){
         if(scaledMask.at<unsigned char>(i,j)){
           totalPoints++;
-          if(fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold){
+          cv::Vec3b tVec=scaledTemplate.at<cv::Vec3b>(i,j), mVec=scaledMatch.at<cv::Vec3b>(i,j);
+          cv::Vec3b white{30,255,255};
+          cv::Vec3b black{120,255,255};
+          if((tVec==white && mVec==white) || (tVec==black && mVec==black) || (fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold)){
             matchingPoints++;
             matchingDraw.at<unsigned char>(i,j)=255;
           }
@@ -110,9 +113,9 @@ namespace Recognition{
 
     double percentage=(double) matchingPoints/(double) totalPoints;
     if(percentage > 0.6){
-      imshow("Blue template", displayT);
-      imshow("Blue match", displayM);
-      while((cv::waitKey() & 0xFF)!= 'q');
+      //imshow("Blue template", displayT);
+      //imshow("Blue match", displayM);
+      //while((cv::waitKey() & 0xFF)!= 'q');
     }
     return (double) matchingPoints/(double) totalPoints;
   }
@@ -204,18 +207,26 @@ namespace Recognition{
       /** Align depth before rendering */
       auto mPose=obj.matchToObjectPose(match);
       std::cout << "Initial translation: \n" << mPose.matrix() << "\n";
-      obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
-      cv::Mat newFrame2=const_rgb.clone();
-      stimazzi.at<cv::Vec3b>(obj.getYc(tId), obj.getXc(tId))=cv::Vec3b{0,0,255};
-      stimazzi.copyTo(newFrame2(stiretti));
-      imshow("Stimazzi", newFrame2);
-      while((cv::waitKey() & 0xFF)!= 'Q');
+      //obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
+      //cv::Mat newFrame2=const_rgb.clone();
+      //if(obj.getYc(tId)<stiretti.height && obj.getYc(tId)>0 && obj.getXc(tId)<stiretti.width && obj.getXc(tId)>0){
+      //  stimazzi.at<cv::Vec3b>(obj.getYc(tId), obj.getXc(tId))=cv::Vec3b{0,0,255};
+      //}
+      //stimazzi.copyTo(newFrame2(stiretti));
+      //imshow("Stimazzi", newFrame2);
+      //while((cv::waitKey() & 0xFF)!= 'Q');
       //std::cout << "Distance: " << distanceToMoveBackward << "\n";
       Eigen::Matrix3d eRot;
       cv2eigen(obj.getR(tId), eRot);
       int u=match.x+obj.getXc(tId);
       int v=match.y+obj.getYc(tId);
-      double d=(depth_mm(stiretti).at<uint16_t>(obj.getYc(tId), obj.getXc(tId)))/1000.0-obj.getZc(tId);
+      double dAt=depth_mm.at<uint16_t>(u,v);
+      if(dAt!=dAt || dAt<0.1 || dAt>10){
+        /** Fall back to known depth */
+        obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
+        dAt=sticazzi.at<uint16_t>(obj.getYc(tId), obj.getXc(tId));
+      }
+      double d=(dAt/1000.0-obj.getZc(tId));
 
       std::cout << "Depth change: " << obj.getZc(tId);
       Eigen::Vector3d position=obj.getCam().uvzToCameraFrame(u,v,d);
@@ -233,11 +244,11 @@ namespace Recognition{
       }
       cv::Mat newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
-      imshow("Stimazzi", newFrame);
-      while((cv::waitKey() & 0xFF)!= 'Q');
+      //imshow("Stimazzi", newFrame);
+      //while((cv::waitKey() & 0xFF)!= 'Q');
       Mat matchingPart=const_rgb(stiretti);
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
-      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,3);
+      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1.5);
 
       if(percentage < 0.6) {
         std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
@@ -267,8 +278,8 @@ namespace Recognition{
         assert(!stimazzi.empty());
         auto newFrame=const_rgb.clone();
         stimazzi.copyTo(newFrame(stiretti));
-        imshow("Ciao!", newFrame);
-        while((cv::waitKey() & 0xFF)!= 'q');
+        //imshow("Ciao!", newFrame);
+        //while((cv::waitKey() & 0xFF)!= 'q');
     }
 
     std::vector<Match> refound;
@@ -435,8 +446,8 @@ namespace Recognition{
       }
       auto newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
-      imshow("Wow!", newFrame);
-      while((cv::waitKey() & 0xFF)!= 'q');
+      //imshow("Wow!", newFrame);
+      //while((cv::waitKey() & 0xFF)!= 'q');
       obj.render(Eigen::Affine3d{finalPose}, stimazzi, sticazzi, stimaski, stiretti);
       if(stimazzi.empty()){
         std::cout << "Image is empty!!!\n";
@@ -444,8 +455,8 @@ namespace Recognition{
       }
       newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
-      imshow("Wow!", newFrame);
-      while((cv::waitKey() & 0xFF)!= 'q');
+      //imshow("Wow!", newFrame);
+      //while((cv::waitKey() & 0xFF)!= 'q');
     }
 
     if(refound.size()==0){
@@ -465,6 +476,18 @@ namespace Recognition{
         });
 
     result[vect_objs_to_pick[0]]=refound;
+    for(auto& x : result[vect_objs_to_pick[0]]){
+      cv::Mat stimazzi, sticazzi, stimaski;
+      cv::Rect stiretti;
+      const auto& obj=_objectModels.at(vect_objs_to_pick[0]);
+      std::cout << "Object pose: \n" << x.pose.matrix() << "\n";
+      std::cout << "Percentage: " << x.matchScore << "\n";
+      obj.render(x.pose, stimazzi, sticazzi, stimaski, stiretti);
+      cv::Mat newFrame2=const_rgb.clone();
+      stimazzi.copyTo(newFrame2(stiretti));
+      imshow("Stimazzi", newFrame2);
+      while((cv::waitKey() & 0xFF)!= 'Q');
+    }
     return true;
   }
 
