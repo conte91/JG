@@ -79,3 +79,5 @@ nonGitTestBed/
 
 #FreeCAD
 *.fcstd1
+
+*.blend1
