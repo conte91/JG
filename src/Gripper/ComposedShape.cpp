@@ -21,4 +21,12 @@ namespace Gripper{
       _components(comp)
   {
   }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr ComposedShape::getPC() const{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr result(new pcl::PointCloud<pcl::PointXYZ>);
+    for(const auto& x: _components){
+      (*result)+=*(x.getPC());
+    }
+    return result;
+  }
 }

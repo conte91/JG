@@ -11,6 +11,7 @@
 #include <C5G/Pose.h>
 #include <Recognition/DetectorWMasks.h>
 #include <Recognition/Utils.h>
+#include <Recognition/ColorGradientPyramidFull.h>
 
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& trainDir)
@@ -18,16 +19,26 @@ namespace Recognition{
       _myId(id),
       _camModel(1,1,1,1,1,1,1,1,1,1,1,1,1),
       _renderer(Renderer3d::globalRenderer()),
-      _detector(new Detector(*cv::linemod::getDefaultLINEMOD()))
+      _detector(nullptr)
   {
     readFrom(id, trainDir);
   }
 
-  Model::Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam)
+  static inline cv::Ptr<cv::linemod::Detector> detectorByString(const std::string& name){
+    if(name=="LINEMOD"){
+      return cv::linemod::getDefaultLINEMOD();
+    }
+    if(name=="FULL_OBJECT"){
+      return cv::linemod::getFullObjectLINEMOD();
+    }
+    throw std::string("Invalid linemod detector string");
+    return cv::Ptr<cv::linemod::Detector>(nullptr);
+  }
+  Model::Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam, const std::string& detectorType)
     :
       _myId(id),
       mesh_file_path(meshFile),
-      _detector(new Detector(*cv::linemod::getDefaultLINEMOD())),
+      _detector(detectorByString(detectorType)),
       _camModel(cam),
       renderer_near(0.1),
       renderer_far(4),
@@ -51,7 +62,8 @@ namespace Recognition{
     cv::FileStorage inFile(lmSaveFile.string(), cv::FileStorage::READ);
     inFile["mesh_file_path"] >> mesh_file_path;
     _mesh.LoadMesh(mesh_file_path);
-    _detector->read(inFile.root());
+    inFile["detector_type"] >> _detectorType;
+    _detector=detectorByString(_detectorType);
     std::cout<<"\tNumber of templates:"<<_detector->numTemplates()<<"\n";
 
     /** Read the trained class ID for this object */
@@ -270,7 +282,7 @@ namespace Recognition{
 
     fs << "mesh_file_path" << mesh_file_path ;
 
-    _detector->write(fs);
+    fs << "detector_type" << _detectorType;
 
     assert(_detector->classIds().size()==1 && "Multiple classes into the same model");
     fs << "object" ;

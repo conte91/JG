@@ -26,6 +26,7 @@
 
 #include <Recognition/GLUTInit.h>
 #include <Recognition/Utils.h>
+#include <Recognition/ColorGradientPyramidFull.h>
 
 namespace Recognition{
 
@@ -36,7 +37,6 @@ namespace Recognition{
     allY.setTo(cv::Scalar{30,255,255});
     Mat allB(hsv_in.size(), CV_8UC3);
     allB.setTo(cv::Scalar{120,255,255});
-
     /** Turn black points to blue points and white points to yellow points*/
     cv::inRange(hsv_in, cv::Scalar{0,0,0}, cv::Scalar{255, 255, tv}, blackMask);
     cv::inRange(hsv_in, cv::Scalar{0,0,tv}, cv::Scalar{255, ts, 255}, whiteMask);
@@ -44,10 +44,9 @@ namespace Recognition{
     hsv_out=hsv_in.clone();
     allY.copyTo(hsv_out, whiteMask);
     allB.copyTo(hsv_out, blackMask);
-
   }
 
-  static double matchingHuePercentage(const cv::Mat& matchingTemplate, const cv::Mat& possibleMatch, const cv::Mat& mask, const cv::Size& matchSize, double cutPercentage, double acceptThreshold, double scaleFactor){
+  static double matchingHuePercentage(const cv::Mat& matchingTemplate, const cv::Mat& possibleMatch, const cv::Mat& mask, const cv::Size& matchSize, double cutPercentage, double acceptThreshold, double scaleFactor, size_t& matchingArea){
     using cv::Mat;
     using cv::Rect;
     using cv::Size;
@@ -80,11 +79,14 @@ namespace Recognition{
     cv::cvtColor(matchPart, hsvMatch, CV_BGR2HSV);
     //hsvTemplate.setTo(cv::Scalar{0,0,0}, ~maskPart);
     //hsvMatch.setTo(cv::Scalar{0,0,0}, ~maskPart);
-    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 6, 2);
-    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 6, 2);
+    turnBlackWhiteToBlueYellow(hsvTemplate, filteredTemplate, 5, 5);
+    turnBlackWhiteToBlueYellow(hsvMatch, filteredMatch, 20, 20);
 
-    int totalPoints=0, matchingPoints=0;
-    Mat scaledTemplate, scaledMatch, scaledMask;
+    size_t totalPoints=0;
+    matchingArea=0;
+    Mat scaledTemplate, scaledMatch, scaledMask, scaledHsvTemplate, scaledHsvMatch;
+    cv::resize(hsvTemplate, scaledHsvTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
+    cv::resize(hsvMatch, scaledHsvMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(filteredTemplate, scaledTemplate, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(filteredMatch, scaledMatch, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
     cv::resize(erodedMask, scaledMask, cv::Size(0,0), 1.0/scaleFactor, 1.0/scaleFactor);
@@ -100,8 +102,10 @@ namespace Recognition{
           cv::Vec3b tVec=scaledTemplate.at<cv::Vec3b>(i,j), mVec=scaledMatch.at<cv::Vec3b>(i,j);
           cv::Vec3b white{30,255,255};
           cv::Vec3b black{120,255,255};
-          if((tVec==white && mVec==white) || (tVec==black && mVec==black) || (fabs(scaledTemplate.at<cv::Vec3b>(i,j)[0]-scaledMatch.at<cv::Vec3b>(i,j)[0])<acceptThreshold)){
-            matchingPoints++;
+
+          cv::Vec3b tVecOrig=scaledHsvTemplate.at<cv::Vec3b>(i,j), mVecOrig=scaledHsvMatch.at<cv::Vec3b>(i,j);
+          if((fabs(tVecOrig[0]-mVecOrig[0])<acceptThreshold) || (tVec==white && mVec==white) || (tVec==black && mVec==black)){
+            matchingArea++;
             matchingDraw.at<unsigned char>(i,j)=255;
           }
           else{
@@ -111,13 +115,13 @@ namespace Recognition{
       }
     }
 
-    double percentage=(double) matchingPoints/(double) totalPoints;
+    double percentage=(double) matchingArea/(double) totalPoints;
     if(percentage > 0.6){
-      //imshow("Blue template", displayT);
-      //imshow("Blue match", displayM);
-      //while((cv::waitKey() & 0xFF)!= 'q');
+      imshow("Blue template", displayT);
+      imshow("Blue match", displayM);
+      while((cv::waitKey() & 0xFF)!= 'q');
     }
-    return (double) matchingPoints/(double) totalPoints;
+    return (double) matchingArea/(double) totalPoints;
   }
 
   bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
@@ -151,7 +155,7 @@ namespace Recognition{
     }
 
     /** Create LINE-MOD detector with templates built from the object */
-    cv::Ptr<Model::Detector> detector (new Model::Detector(*cv::linemod::getDefaultLINEMOD()));
+    cv::Ptr<Model::Detector> detector (new Model::Detector(*cv::linemod::getFullObjectLINEMOD()));
     for(auto& object_id_ : vect_objs_to_pick){
       _objectModels.at(object_id_).addAllTemplates(*detector);
     }
@@ -188,12 +192,14 @@ namespace Recognition{
       return false;
     }
 
+    size_t nDone=0;
     for(const auto& match : matches) {
 
       using Eigen::Affine3d;
 
+      nDone++;
       int tId=match.template_id;
-      std::cout << "Template # " << tId << " matches.\n";
+      std::cout << "Template # " << tId << " matches. (" << nDone << "/" << matches.size() << "\n";
       if(foundMatches.find(match)!=foundMatches.end()){
         std::cout << "(skipped)\n";
         continue;
@@ -218,28 +224,28 @@ namespace Recognition{
       //std::cout << "Distance: " << distanceToMoveBackward << "\n";
       Eigen::Matrix3d eRot;
       cv2eigen(obj.getR(tId), eRot);
-      int u=match.x+obj.getXc(tId);
-      int v=match.y+obj.getYc(tId);
-      double dAt=depth_mm.at<uint16_t>(u,v);
-      if(dAt!=dAt || dAt<0.1 || dAt>10){
+      //int u=match.x+obj.getXc(tId);
+      //int v=match.y+obj.getYc(tId);
+      //double dAt=depth_mm.at<uint16_t>(u,v);
+      //if(dAt!=dAt || dAt<0.1 || dAt>10){
         /** Fall back to known depth */
         obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
-        dAt=sticazzi.at<uint16_t>(obj.getYc(tId), obj.getXc(tId));
-      }
-      double d=(dAt/1000.0-obj.getZc(tId));
+        //dAt=sticazzi.at<uint16_t>(obj.getYc(tId), obj.getXc(tId));
+      //}
+      //double d=(dAt/1000.0-obj.getZc(tId));
 
-      std::cout << "Depth change: " << obj.getZc(tId);
-      Eigen::Vector3d position=obj.getCam().uvzToCameraFrame(u,v,d);
-      Eigen::Affine3d matchTrans;
-      matchTrans.translation() << position;
-      matchTrans.linear()=eRot;
-      mPose=matchTrans;
-      std::cout << "Next translation: \n" << mPose.matrix() << "\n";
+      ////std::cout << "Depth change: " << obj.getZc(tId);
+      //Eigen::Vector3d position=obj.getCam().uvzToCameraFrame(u,v,d);
+      //Eigen::Affine3d matchTrans;
+      //matchTrans.translation() << position;
+      //matchTrans.linear()=eRot;
+      //mPose=matchTrans;
+      //std::cout << "Next translation: \n" << mPose.matrix() << "\n";
 
 
-      obj.render(mPose, stimazzi, sticazzi, stimaski, stiretti);
+      //obj.render(mPose, stimazzi, sticazzi, stimaski, stiretti);
       if(stimazzi.empty()){
-        std::cout << "Empty image after movement\n";
+        //std::cout << "Empty image after movement\n";
         continue;
       }
       cv::Mat newFrame=const_rgb.clone();
@@ -248,7 +254,8 @@ namespace Recognition{
       //while((cv::waitKey() & 0xFF)!= 'Q');
       Mat matchingPart=const_rgb(stiretti);
       assert(matchingPart.size()==stimaski.size() && matchingPart.size()==stimaski.size());
-      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1.5);
+      size_t matchingArea;
+      double percentage=matchingHuePercentage(stimazzi, matchingPart, stimaski, stiretti.size(), 0.1,30,1, matchingArea);
 
       if(percentage < 0.6) {
         std::cout << "Object rejected (percentage=" << percentage << "). Trying another template...\n";
@@ -272,7 +279,7 @@ namespace Recognition{
     for(auto& x : found){
         Mat stimazzi, sticazzi, stimaski;
         Rect stiretti;
-        std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
+        //std::cout << "Object rendering pose:\n" << x.objPose.matrix() << "\n\n\n";
         const auto& obj=_objectModels.at(x.match.class_id);
         obj.render(x.objPose, stimazzi, sticazzi, stimaski, stiretti);
         assert(!stimazzi.empty());
@@ -494,9 +501,9 @@ namespace Recognition{
   RecognitionData::RecognitionData(const std::string& trainPath, const CameraModel& m)
     :
       _cameraModel(m),
-      px_match_min_(0.25f),
-      th_obj_dist_(0.04f),
       objsfolder_path(trainPath),
+      px_match_min_(0.05),
+      th_obj_dist_(0.04f), //"th_obj_dist", "Threshold on minimal distance between detected objects.", 0.04f);
       _threshold(91.0f)
   {
 

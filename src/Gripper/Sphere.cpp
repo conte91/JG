@@ -31,6 +31,22 @@ namespace Gripper{
     return V;
   }
 
+  pcl::PointCloud<pcl::PointXYZ>::Ptr Sphere::getPC() const{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr result(new pcl::PointCloud<pcl::PointXYZ>);
+    double R=_dimensions[0];
+    for(double r=0; r<(R*1.05); r+=R/10.0){
+      for(double lat=0; lat<2*M_PI; lat+=2*M_PI/20){
+        double z=r*cos(lat);
+        for(double lon=0; lon<2*M_PI; lon+=2*M_PI/20){
+          double x=r*sin(lat)*sin(lon);
+          double y=r*sin(lat)*cos(lon);
+          result->push_back(pcl::PointXYZ{x,y,z});
+        }
+      }
+    }
+    return result;
+  }
+
   Sphere::Sphere(const RelPose& pose, double R)
     :
       Shape(pose, {R})

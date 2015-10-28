@@ -1,3 +1,4 @@
+#include <iostream>
 #include <Recognition/GLUTInit.h>
 #include <GL/glut.h>
 
@@ -10,15 +11,28 @@ namespace Recognition{
       char** argv=nullptr;
       glutInit(&argc, argv);
       // By doing so, the window is not open
-      glutInitDisplayMode(GLUT_DOUBLE);
+      glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB|GLUT_MULTISAMPLE);
+      //glutInitDisplayMode(GLUT_DOUBLE);
       glutCreateWindow("Assimp renderer");
       // Initialize the environment
       glClearColor(0.f, 0.f, 0.f, 1.f);
 
       glEnable(GL_LIGHTING);
-      //glEnable(GL_LIGHT0); // Uses default lighting parameters
+      glEnable(GL_LIGHT0); // Uses default lighting parameters
 
       glEnable(GL_DEPTH_TEST);
+      GLint buf, sbuf;
+      glGetIntegerv(GL_SAMPLE_BUFFERS, &buf);
+      glGetIntegerv(GL_SAMPLES, &sbuf);
+      std::cout << "Number of sample buffers is " << buf;
+      std::cout << "Number of samples is " << sbuf;
+      glEnable(GL_MULTISAMPLE);
+
+      glEnable(GL_POLYGON_SMOOTH);
+      glEnable(GL_LINE_SMOOTH);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
       glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
       glEnable(GL_NORMALIZE);

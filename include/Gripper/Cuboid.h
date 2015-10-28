@@ -5,6 +5,7 @@ namespace Gripper{
   class Cuboid : public Shape {
     public:
       Cuboid(Eigen::Affine3d pose, double W, double H, double D);
+      virtual pcl::PointCloud<pcl::PointXYZ>::Ptr getPC() const;
     protected:
       virtual std::string getID() const override;
       virtual KnownIntersections getKnownIntersections() const override;

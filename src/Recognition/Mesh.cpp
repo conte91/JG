@@ -126,8 +126,17 @@ Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
         glGenTextures(1, &newTexture.hTexture);
 
         glBindTexture(GL_TEXTURE_2D, newTexture.hTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (GLvoid*) pixeles);
+        {
+          int err;
+          if(err=gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, w, h, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (GLvoid*) pixeles)){
+            std::cerr << "\n\n\n\n\n######\nError:\n("<<err<<")\n when building the mipmaps!!\n\n";
+          }
+        }
+        //glGenerateMipmap(GL_TEXTURE_2D);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, true);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

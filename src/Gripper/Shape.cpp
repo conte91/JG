@@ -1,4 +1,5 @@
 #include <Gripper/Shape.h>
+#include <pcl/point_types.h>
 
 namespace Gripper{
   bool Shape::knowsHowToIntersect(const Shape& s) const {
@@ -32,6 +33,11 @@ namespace Gripper{
   }
   const std::vector<double>& Shape::getDimensions() const {
     return _dimensions;
+  }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr Shape::getPC() const
+  {
+    assert(false && "Empty shape cannot be transformed into point clouds.. This is probably a bug in the shape building process");
   }
 
   Shape::Shape(const RelPose& pose, const std::vector<double>& dims)

@@ -39,6 +39,7 @@ namespace Recognition{
       template<typename T>
         inline std::vector<T> readSequence(const cv::FileNode& n);
       cv::Ptr<Detector> _detector;
+      std::string _detectorType;
       Renderer3d& _renderer;
       std::unordered_map<int, TrainingData> _myData;
 
@@ -54,7 +55,7 @@ namespace Recognition{
       Model(const std::string& id, const boost::filesystem::path& myDir);
 
       /** Builds an empty ICP model */
-      Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam);
+      Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam, const std::string& detectorType="LINEMOD");
 
       /** Gets all the templates matching a certain template ID */
       const std::vector<cv::linemod::Template> getTemplates(int templateID) const;

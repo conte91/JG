@@ -36,6 +36,15 @@ namespace Gripper{
     return cubePoints.transpose();
   }
 
+  pcl::PointCloud<pcl::PointXYZ>::Ptr Cuboid::getPC() const{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr result(new pcl::PointCloud<pcl::PointXYZ>);
+    auto x=getCubettiMatrix(_dimensions);
+    for(size_t i=0; i<x.cols(); ++i){
+      auto p=x.col(i);
+      result->push_back(pcl::PointXYZ{p[0],p[1],p[2]});
+    }
+    return result;
+  }
   double Cuboid::intersectionVolume(const Shape& s) const{
     auto id=s.getID();
     if(id=="Sphere"){

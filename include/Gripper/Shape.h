@@ -1,4 +1,6 @@
 #pragma once
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <Eigen/Geometry>
 
 namespace Gripper{
@@ -12,6 +14,7 @@ namespace Gripper{
       virtual double getIntersectionVolume(const Shape& s) const final;
       virtual RelPose getPose() const final;
       virtual const std::vector<double>& getDimensions() const final;
+      virtual pcl::PointCloud<pcl::PointXYZ>::Ptr getPC() const;
       virtual std::string getID() const;
 
 
