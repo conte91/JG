@@ -71,12 +71,22 @@ class Renderer3dImpl : public Renderer3dImplBase
     virtual void
       bind_buffers() const;
 
+    virtual void
+      bind_buffers_for_reading() const;
+
     /** The frame buffer object used for offline rendering */
     GLuint fbo_id_;
+
     /** The render buffer object used for offline depth rendering */
-    GLuint rbo_id_;
+    GLuint depth_rbo_id_;
     /** The render buffer object used for offline image rendering */
-    GLuint texture_id_;
+    GLuint color_rbo_id_;
+
+    /** Resolve multisample buffer: this is the final buffer in which the image will be plotted. */
+    GLuint fbo_resolve_id_;;
+    GLuint depth_rbo_resolve_id_;
+    GLuint color_rbo_resolve_id_;
+
 };
 
 #endif /* ORK_RENDERER_RENDERER3D_IMPL_GLUT_H_ */

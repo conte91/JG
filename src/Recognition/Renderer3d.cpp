@@ -51,6 +51,18 @@
 #include <Recognition/renderer3d_impl_glut.h>
 #include <highgui.h>
 
+#ifndef NDEBUG
+static inline void checkNoErrorCode(){
+  const GLubyte * errStr;
+  GLenum errorCode=glGetError();
+  errStr=gluErrorString(errorCode);
+  std::cout << "Error code: " << errorCode << errStr << "\n";
+  assert(errorCode==GL_NO_ERROR);
+}
+#else
+static inline void checkNoErrorCode(){
+}
+#endif
 namespace Recognition{
 Renderer3d::Renderer3d()
     :
@@ -85,7 +97,7 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
     return;
   }
   lastDrawer=id;
-  impl_->width_ = cam.getWidth();
+  impl_->width_ =  cam.getWidth();
   impl_->height_ = cam.getHeight();
 
   focal_length_x_ = cam.getFx();
@@ -158,7 +170,6 @@ Renderer3d::set_parameters(const Camera::CameraModel& cam, double near,
 void
 Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double upz)
 {
-  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -169,7 +180,6 @@ Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double 
 }
 
 void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
-  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -180,7 +190,6 @@ void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
 }
 
 void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
-  impl_->bind_buffers();
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -199,6 +208,7 @@ Renderer3d::render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv:
   cv::Mat_<float> depth(impl_->height_, impl_->width_);
   cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
 
+  impl_->bind_buffers();
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -214,14 +224,13 @@ Renderer3d::render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv:
   glFlush();
 
   // Get data from the depth/image buffers
-  impl_->bind_buffers();
+  impl_->bind_buffers_for_reading();
 
   // Deal with the RGB image
   glReadBuffer(GL_COLOR_ATTACHMENT0);
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
 
   // Deal with the depth image
-  glReadBuffer(GL_DEPTH_ATTACHMENT);
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
 
   float zNear = near_, zFar = far_;
@@ -286,6 +295,7 @@ Renderer3d::renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_
   cv::Mat_<float> depth(impl_->height_, impl_->width_);
   cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
 
+  impl_->bind_buffers();
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -303,11 +313,17 @@ Renderer3d::renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_
   scene_list_=0;
 
   // Get data from the OpenGL buffers
-  impl_->bind_buffers();
+  impl_->bind_buffers_for_reading();
 
   // Deal with the depth image
-  glReadBuffer(GL_DEPTH_ATTACHMENT);
+  checkNoErrorCode();
+  std::cout << "A\n";
+  //glReadBuffer(GL_DEPTH_ATTACHMENT);
+  std::cout << "B\n";
+  checkNoErrorCode();
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
+  std::cout << "C\n";
+  checkNoErrorCode();
 
   float zNear = near_, zFar = far_;
   cv::Mat_<float>::iterator it = depth.begin(), end = depth.end();
@@ -368,6 +384,7 @@ Renderer3d::renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect
   // Create images to copy the buffers to
   cv::Mat_ < cv::Vec3b > image(impl_->height_, impl_->width_);
 
+  impl_->bind_buffers();
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -385,11 +402,20 @@ Renderer3d::renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect
   scene_list_=0;
 
   // Get data from the OpenGL buffers
-  impl_->bind_buffers();
+  impl_->bind_buffers_for_reading();
 
   // Deal with the RGB image
+  std::cout << "M\n";
+  checkNoErrorCode();
+  std::cout << "M\n";
   glReadBuffer(GL_COLOR_ATTACHMENT0);
+  std::cout << "K\n";
+  checkNoErrorCode();
+  std::cout << "I\n";
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
+  std::cout << "N\n";
+  checkNoErrorCode();
+  std::cout << "O\n";
 
   if ((rect.width <=0) || (rect.height <= 0)) {
     image_out = cv::Mat();

@@ -28,12 +28,6 @@ namespace Recognition{
       std::cout << "Number of samples is " << sbuf;
       glEnable(GL_MULTISAMPLE);
 
-      glEnable(GL_POLYGON_SMOOTH);
-      glEnable(GL_LINE_SMOOTH);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-
       glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
       glEnable(GL_NORMALIZE);
       GLfloat LightAmbient[]= {1.0f, 1.0f, 1.0f, 1.0f};
