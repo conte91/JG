@@ -84,11 +84,19 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   cv::FileStorage modelFile (model_path.string(), cv::FileStorage::READ);
   std::string meshName;
   modelFile["mesh"] >> meshName;
+  std::string detType;
+  if(!(modelFile["detector"].empty())){
+    modelFile["detector"] >> detType;
+  }
+  else{
+    detType="LINEMOD";
+  }
+
 
   path mesh_path = p / path(meshName);
   std::cout<< "Mesh filename: " << mesh_path.string() << "\n";
 
-  Recognition::Model model(object_id_, mesh_path.string(), cam);
+  Recognition::Model model(object_id_, mesh_path.string(), cam, detType);
 
   auto myPts=Recognition::SphereSplitter(renderer_n_points_).points();
   /** Takes snapshots of the (ideal) object */
@@ -99,6 +107,7 @@ void trainObject(const boost::filesystem::path& trainDir, const std::string& obj
   long done=0;
   //std::unordered_set<long> tuanonna;
   
+  std::cout << "Training model with detector: " << detType << "\n";
   std::cout << "Requested UV sphere points: "<< renderer_n_points_ << ", total UV sphere points:" << myPts.size() << "\n";
   std::cout << "Loading images ";
   cv::Mat image2show(cam.getHeight(), cam.getWidth(), CV_8UC3);

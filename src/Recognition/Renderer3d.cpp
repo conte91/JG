@@ -171,7 +171,6 @@ void
 Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double upz)
 {
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -181,7 +180,6 @@ Renderer3d::lookAt(double x, double y, double z, double upx, double upy, double 
 
 void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -191,7 +189,6 @@ void Renderer3d::setObjectPose(const Eigen::Affine3d& pose){
 
 void Renderer3d::setCameraPose(const Eigen::Affine3d& pose){
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -207,8 +204,10 @@ Renderer3d::render(const Mesh& mesh, cv::Mat &image_out, cv::Mat &depth_out, cv:
   cv::Mat_ < cv::Vec3b > image(impl_->height_, impl_->width_);
   cv::Mat_<float> depth(impl_->height_, impl_->width_);
   cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
-
   impl_->bind_buffers();
+  glClear(GL_DEPTH_BUFFER_BIT);//(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -294,8 +293,10 @@ Renderer3d::renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_
   // Create images to copy the buffers to
   cv::Mat_<float> depth(impl_->height_, impl_->width_);
   cv::Mat_ < uchar > mask = cv::Mat_ < uchar > ::zeros(cv::Size(impl_->width_, impl_->height_));
-
   impl_->bind_buffers();
+  glClear(GL_DEPTH_BUFFER_BIT);//(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -316,14 +317,7 @@ Renderer3d::renderDepthOnly(const Mesh& mesh, cv::Mat &depth_out, cv::Mat &mask_
   impl_->bind_buffers_for_reading();
 
   // Deal with the depth image
-  checkNoErrorCode();
-  std::cout << "A\n";
-  //glReadBuffer(GL_DEPTH_ATTACHMENT);
-  std::cout << "B\n";
-  checkNoErrorCode();
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_DEPTH_COMPONENT, GL_FLOAT, depth.ptr());
-  std::cout << "C\n";
-  checkNoErrorCode();
 
   float zNear = near_, zFar = far_;
   cv::Mat_<float>::iterator it = depth.begin(), end = depth.end();
@@ -383,8 +377,10 @@ Renderer3d::renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect
 {
   // Create images to copy the buffers to
   cv::Mat_ < cv::Vec3b > image(impl_->height_, impl_->width_);
-
   impl_->bind_buffers();
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   if (scene_list_ == 0)
   {
     scene_list_ = glGenLists(1);
@@ -405,17 +401,8 @@ Renderer3d::renderImageOnly(const Mesh& mesh, cv::Mat &image_out, const cv::Rect
   impl_->bind_buffers_for_reading();
 
   // Deal with the RGB image
-  std::cout << "M\n";
-  checkNoErrorCode();
-  std::cout << "M\n";
   glReadBuffer(GL_COLOR_ATTACHMENT0);
-  std::cout << "K\n";
-  checkNoErrorCode();
-  std::cout << "I\n";
   glReadPixels(0, 0, impl_->width_, impl_->height_, GL_BGR, GL_UNSIGNED_BYTE, image.ptr());
-  std::cout << "N\n";
-  checkNoErrorCode();
-  std::cout << "O\n";
 
   if ((rect.width <=0) || (rect.height <= 0)) {
     image_out = cv::Mat();

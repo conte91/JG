@@ -134,8 +134,6 @@ Mesh::recursiveTextureLoad(const struct aiScene *sc, const aiNode* nd)
             std::cerr << "\n\n\n\n\n######\nError:\n("<<err<<")\n when building the mipmaps!!\n\n";
           }
         }
-        //glGenerateMipmap(GL_TEXTURE_2D);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, true);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

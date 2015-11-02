@@ -38,6 +38,7 @@ namespace Recognition{
     :
       _myId(id),
       mesh_file_path(meshFile),
+      _detectorType(detectorType),
       _detector(detectorByString(detectorType)),
       _camModel(cam),
       renderer_near(0.1),

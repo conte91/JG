@@ -64,7 +64,6 @@ Renderer3dImpl::Renderer3dImpl(int width, int height) :
 void
 Renderer3dImpl::clean_buffers()
 {
-  std::cout << "clean_buffers";
   if (color_rbo_id_)
     glDeleteRenderbuffers(1, &color_rbo_id_);
   color_rbo_id_ = 0;
@@ -94,114 +93,72 @@ void
 Renderer3dImpl::set_parameters_low_level()
 {
 
-  std::cout << "set_parameters\n";
-  glGetError();
   /* create a framebuffer object on which the multisampled image will be drawn */
   glGenFramebuffers(1, &fbo_id_);
-  checkNoErrorCode();
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_);
-  checkNoErrorCode();
 
   /** Create the rendering area for colour and depth information (Renderbuffers) */
   /* Colour */
   glGenRenderbuffers(1, &color_rbo_id_);
-  checkNoErrorCode();
   glBindRenderbuffer(GL_RENDERBUFFER, color_rbo_id_);
-  checkNoErrorCode();
-  //glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, width_, height_);
-  glRenderbufferStorage(GL_RENDERBUFFER,GL_RGBA8,width_,height_);
-  checkNoErrorCode();
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, width_, height_);
+  //glRenderbufferStorage(GL_RENDERBUFFER,GL_RGBA8,width_,height_);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color_rbo_id_);
-  checkNoErrorCode();
   /* Depth */
   glGenRenderbuffers(1, &depth_rbo_id_);
-  checkNoErrorCode();
   glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_);
-  checkNoErrorCode();
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
-  checkNoErrorCode();
+  glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, width_, height_);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_);
-  checkNoErrorCode();
 
   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER) ;
-  checkNoErrorCode();
-  assert(status == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
+  if(!(status == GL_FRAMEBUFFER_COMPLETE)){
+    std::cout << "GL_FRAMEBUFFER " << status << "\n#" << gluErrorString(status) << "#Failed to make complete framebuffer object!\n" << std::endl;
+    assert(false);
+  }
 
   /* Create the resolve framebuffer object */
   glGenFramebuffers(1, &fbo_resolve_id_);
-  checkNoErrorCode();
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_resolve_id_);
-  checkNoErrorCode();
 
   /* create the resolve renderbuffer object for depth and colour */
   glGenRenderbuffers(1, &depth_rbo_resolve_id_);
-  checkNoErrorCode();
   glGenRenderbuffers(1, &color_rbo_resolve_id_);
-  checkNoErrorCode();
 
   /** Bind depth resolve buffer to resolve frame buffer */
   glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_resolve_id_);
-  checkNoErrorCode();
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width_, height_);
-  checkNoErrorCode();
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_resolve_id_);
-  checkNoErrorCode();
 
   /** Bind colour resolve buffer to resolve frame buffer */
   glBindRenderbuffer(GL_RENDERBUFFER, color_rbo_resolve_id_);
-  checkNoErrorCode();
   glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width_, height_);
-  checkNoErrorCode();
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color_rbo_resolve_id_);
-  checkNoErrorCode();
 
   status = glCheckFramebufferStatus(GL_FRAMEBUFFER) ;
-  checkNoErrorCode();
 
-  assert(status == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
+  if(!(status == GL_FRAMEBUFFER_COMPLETE)){
+    std::cout << "GL_FRAMEBUFFER " << status << "\n#" << gluErrorString(status) << "#Failed to make complete framebuffer object!\n" << std::endl;
+    assert(false);
+  }
 
 }
 
 void
 Renderer3dImpl::bind_buffers() const
 {
-  checkNoErrorCode();
-  std::cout << "bind\n";
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_id_);
-  checkNoErrorCode();
-  std::cout << "end\n";
-  glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_);
+  glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 void
 Renderer3dImpl::bind_buffers_for_reading() const
 {
-  checkNoErrorCode();
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-  std::cout <<"bind_read\n";
-  assert(fbo_id_ && fbo_resolve_id_);
-  checkNoErrorCode();
-  assert(glIsFramebuffer(fbo_id_)==GL_TRUE);
-  checkNoErrorCode();
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_id_);
-  checkNoErrorCode();
-  assert(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_resolve_id_);
-  checkNoErrorCode();
-  assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
-  checkNoErrorCode();
   glReadBuffer(GL_COLOR_ATTACHMENT0);
-  checkNoErrorCode();
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
-  checkNoErrorCode();
-  assert(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
-  assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE || "Failed to make complete framebuffer object!");
   glBlitFramebuffer(0, 0, width_, height_, 0, 0, width_, height_, GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-  checkNoErrorCode();
   glBindFramebuffer(GL_FRAMEBUFFER, fbo_resolve_id_);
-  checkNoErrorCode();
-  std::cout << "end read\n";
 }
 
 Renderer3dImpl::~Renderer3dImpl(){
