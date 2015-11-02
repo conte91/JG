@@ -9,76 +9,107 @@ namespace Gripper{
     return {"Cuboid", "Sphere"};
   }
 
-  Eigen::Matrix<double, 4, Eigen::Dynamic> Cuboid::getCubettiMatrix(std::vector<double> dimensions) {
-    assert(dimensions.size()==3 && "Cubetti from something which is not a cube");
+  double Cuboid::getVolume() const{
+    return _dimensions[0]*_dimensions[1]*_dimensions[2];
+    return 0;
+  }
 
-    double W=dimensions[0];
-    double H=dimensions[1];
-    double D=dimensions[2];
-    /** Get an approximation using points of this cube size 1/100 */
-    double stepX=W/NCUT;
-    double stepY=H/NCUT;
-    double stepZ=D/NCUT;
+  Cuboid::PointsMatrix Cuboid::getCubettiSurface(size_t level) const {
+    double W=_dimensions[0];
+    double H=_dimensions[1];
+    double D=_dimensions[2];
+
+    /** Get an approximation using points of this cube size 1/level */
+    double stepX=W/level;
+    double stepY=H/level;
+    double stepZ=D/level;
+
+    const size_t expectedPts=6*level*level+2;
+    Eigen::Matrix<double, Eigen::Dynamic, 4> cubePoints(expectedPts, 4);
+
+    size_t pos=0;
+
+    /** Work on Z axis, we will add caps later */
+    for(size_t i=0; i<=level; ++i){
+      double zCoord=i*stepZ;
+
+      /** Left and right borders */
+      for(size_t j=0; j<=level; ++j){
+        double yCoord=j*stepY;
+        cubePoints.row(pos++)=Eigen::Vector4d{0, yCoord, zCoord , 1}.transpose();
+        cubePoints.row(pos++)=Eigen::Vector4d{W, yCoord, zCoord , 1}.transpose();
+      }
+
+      /** Up and down borders */
+      for(size_t j=1; j<level; ++j){
+        double xCoord=j*stepX;
+        cubePoints.row(pos++)=Eigen::Vector4d{xCoord, 0, zCoord , 1}.transpose();
+        cubePoints.row(pos++)=Eigen::Vector4d{xCoord, H, zCoord , 1}.transpose();
+      }
+    }
+
+    /** Now add caps */
+    for(size_t i=1; i<level; ++i){
+      for(size_t j=1; j<level; ++j){
+        double xCoord=i*stepX;
+        double yCoord=j*stepY;
+        cubePoints.row(pos++)=Eigen::Vector4d{xCoord, yCoord, 0, 1}.transpose();
+        cubePoints.row(pos++)=Eigen::Vector4d{xCoord, yCoord, D, 1}.transpose();
+      }
+    }
+    assert(pos==(expectedPts));
+    return (_pose*cubePoints.transpose());
+  }
+
+  Cuboid::PointsMatrix Cuboid::getCubettiVolume(size_t level) const {
+    double W=_dimensions[0];
+    double H=_dimensions[1];
+    double D=_dimensions[2];
+
+    /** Get an approximation using points of this cube size 1/level */
+    double stepX=W/level;
+    double stepY=H/level;
+    double stepZ=D/level;
     double startX=stepX/2.0;
     double startY=stepY/2.0;
     double startZ=stepZ/2.0;
 
-    Eigen::Matrix<double, Eigen::Dynamic, 4> cubePoints(NCUT*NCUT*NCUT, 4);
+    Eigen::Matrix<double, Eigen::Dynamic, 4> cubePoints(level*level*level, 4);
 
     size_t pos=0;
-    for(size_t i=0; i<NCUT; ++i){
-      for(size_t j=0; j<NCUT; ++j){
-        for(size_t k=0; k<NCUT; ++k){
+    for(size_t i=0; i<level; ++i){
+      for(size_t j=0; j<level; ++j){
+        for(size_t k=0; k<level; ++k){
           cubePoints.row(pos++)=Eigen::Vector4d{startX+i*stepX, startY+j*stepY, startZ+k*stepZ, 1}.transpose();
         }
       }
     }
-    return cubePoints.transpose();
+    return (_pose*cubePoints.transpose());
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr Cuboid::getPC() const{
-    pcl::PointCloud<pcl::PointXYZ>::Ptr result(new pcl::PointCloud<pcl::PointXYZ>);
-    auto x=getCubettiMatrix(_dimensions);
-    for(size_t i=0; i<x.cols(); ++i){
-      auto p=x.col(i);
-      result->push_back(pcl::PointXYZ{p[0],p[1],p[2]});
-    }
-    return result;
-  }
-  double Cuboid::intersectionVolume(const Shape& s) const{
+  /*
+  double Cuboid::intersectionVolume(const Shape& s, size_t level) const{
     auto id=s.getID();
     if(id=="Sphere"){
       auto cubePoints=getCubettiMatrix(_dimensions);
       auto realCubePoints=_pose.matrix().topRows<3>()*cubePoints;
-      auto distances=Eigen::Vector3d{1,1,1}.transpose()*((realCubePoints-s.getPose().translation().rowwise().replicate(NCUT*NCUT*NCUT)).cwiseAbs2());
+      auto distances=Eigen::Vector3d{1,1,1}.transpose()*((realCubePoints-s.getPose().translation().rowwise().replicate(level*level*level)).cwiseAbs2());
 
       double R=s.getDimensions()[0];
       auto bom=R*R-distances.array();
-      double V=(bom > 0.0).count()*(W()*H()*D()/(NCUT*NCUT*NCUT));
+      double V=(bom > 0.0).count()*(W()*H()*D()/(level*level*level));
       return V;
     }
     assert(id=="Cuboid");
-    using std::min;
-    using std::max;
+    return Shape::intersectionVolume(s,level);
+  }*/
 
-    double myVol=W()*H()*D();
-    auto d2=s.getDimensions();
-    double vol2=d2[0]*d2[1]*d2[2];
-
-    const Shape& base=(myVol > vol2) ? *this : s;
-    const Shape& other=(myVol > vol2) ? s : *this;
-    double otherVol=(myVol > vol2) ? vol2 : myVol;
-
-    auto otherPoints=getCubettiMatrix(other.getDimensions());
-    auto relPose=base.getPose().inverse()*other.getPose();
-    auto realOtherPoints=(relPose.matrix().topRows<3>()*otherPoints).array();
-
-    auto baseD=base.getDimensions();
-
-    auto ltdPoints=(realOtherPoints.row(0) < baseD[0]) && (realOtherPoints.row(1) < baseD[1]) && (realOtherPoints.row(2) < baseD[2]);
+  size_t Cuboid::countContainedPoints(const Cuboid::PointsMatrix& pt) const{
+    auto realOtherPoints=(_pose.inverse().matrix().topRows<3>()*pt).array();
+    auto d=_dimensions;
+    auto ltdPoints=(realOtherPoints.row(0) < d[0]) && (realOtherPoints.row(1) < d[1]) && (realOtherPoints.row(2) < d[2]);
     auto greatPoints=(realOtherPoints.row(0) > 0) && (realOtherPoints.row(1) > 0) && (realOtherPoints.row(2) > 0);
-    double V=( ltdPoints && greatPoints).count() *otherVol/(NCUT*NCUT*NCUT);
-    return V;
+    return (ltdPoints && greatPoints).count();
   }
 
   double Cuboid::W() const {
@@ -93,8 +124,10 @@ namespace Gripper{
   Cuboid::Cuboid(Eigen::Affine3d pose, double W, double H, double D)
     :
       Shape(pose, {W,H,D})
-    {
-    }
+  {
+  }
 
+  Cuboid::~Cuboid(){
+  }
 }
 

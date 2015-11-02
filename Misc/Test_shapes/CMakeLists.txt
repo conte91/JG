@@ -1,3 +1,5 @@
 add_executable(test_shape_intersections test_shape_intersections.cpp)
+add_executable(test_shape_approximation test_shape_approximation.cpp)
 
 target_link_libraries(test_shape_intersections shapes)
+target_link_libraries(test_shape_approximation shapes ${PCL_LIBRARIES})

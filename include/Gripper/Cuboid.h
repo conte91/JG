@@ -5,16 +5,18 @@ namespace Gripper{
   class Cuboid : public Shape {
     public:
       Cuboid(Eigen::Affine3d pose, double W, double H, double D);
-      virtual pcl::PointCloud<pcl::PointXYZ>::Ptr getPC() const;
+      virtual ~Cuboid();
     protected:
       virtual std::string getID() const override;
       virtual KnownIntersections getKnownIntersections() const override;
-      virtual double intersectionVolume(const Shape& s) const override;
+      virtual PointsMatrix getCubettiSurface(size_t level) const override;
+      virtual PointsMatrix getCubettiVolume(size_t level) const override;
+      virtual double getVolume() const override;
+      virtual size_t countContainedPoints(const Cuboid::PointsMatrix& pt) const override;
+
     private:
       double W() const ;
       double H() const ;
       double D() const ;
-      static constexpr size_t NCUT=20;
-      static Eigen::Matrix<double, 4, Eigen::Dynamic> getCubettiMatrix(std::vector<double> dimensions);
   };
 }
