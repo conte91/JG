@@ -6,11 +6,7 @@
 #include <vector>
 #include <Eigen/Geometry>
 #include <Gripper/Shape.h>
-#include <Gripper/Sphere.h>
-#include <Gripper/Cuboid.h>
-#include <Gripper/ComposedShape.h>
-#include <Gripper/Cylinder.h>
-
+#include <Gripper/ShapeBuilder.h>
 
 void mostra(const Gripper::Shape& sp){
   using Eigen::Translation3d;
@@ -18,8 +14,6 @@ void mostra(const Gripper::Shape& sp){
   using Eigen::Affine3d;
   using Eigen::AngleAxisd;
   using Gripper::Shape;
-  using Gripper::Cuboid;
-  using Gripper::Sphere;
   using std::vector;
   typedef pcl::visualization::PointCloudColorHandlerCustom<Shape::PointType> ColorHandler;
 
@@ -106,36 +100,20 @@ void mostra(const Gripper::Shape& sp){
   }
 }
 
-int main(){
+int main(int argc, char** argv){
 
-  using Eigen::Translation3d;
-  using Eigen::Vector3d;
-  using Eigen::Affine3d;
-  using Eigen::AngleAxisd;
+  using cv::FileStorage;
   using Gripper::Shape;
-  using Gripper::Cuboid;
-  using Gripper::Sphere;
-  using Gripper::Cylinder;
-  using Gripper::ComposedShape;
-  using std::vector;
-  using std::make_shared;
+  if(argc!=2){
+    std::cerr << "Usage: " << argv[0] << " shape_file\n";
+    return -1;
+  }
 
-  std::cout << "Approximating a cube's and a sphere's surface and volume using point clouds\n";
+  FileStorage fs(argv[1], FileStorage::READ);
+  std::unique_ptr<Shape> result;
+  fs["shape"] >> result;
 
-  Sphere sp{Affine3d{Translation3d{0,0,2}}, 3};
-
-  Cuboid c{Affine3d{Translation3d{0,0,-1}*AngleAxisd(50*M_PI/180.0, Vector3d{44,89,13}.normalized())}, 1, 1.4, 3};
-
-  Cylinder cy{Affine3d{Translation3d{0,2,0}*AngleAxisd(M_PI/2, Vector3d{0,1,0})}, 0.5, 1.5};
-  std::vector<std::shared_ptr<const Shape> > components{make_shared<decltype(sp)>(sp), make_shared<decltype(c)>(c)};
-  ComposedShape comp{Affine3d{Translation3d{0,-1,0}*AngleAxisd(45*M_PI/180.0, Vector3d{10,11,0}.normalized())}, components};
-  mostra(sp);
-  mostra(c);
-  mostra(cy);
-  mostra(comp);
-
-
-
+  mostra(*result);
 
   return 0;
 }

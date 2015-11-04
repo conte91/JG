@@ -2,6 +2,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <Eigen/Geometry>
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/operations.hpp>
 
 namespace Gripper{
   /** Empty shape */
@@ -24,6 +26,7 @@ namespace Gripper{
       virtual PointsPtr getPCVolume(size_t level) const final;
       virtual std::string getID() const;
       virtual double getVolume() const;
+      virtual void writeTo(cv::FileStorage& fs) const;
 
       virtual ~Shape();
 
@@ -41,4 +44,9 @@ namespace Gripper{
 
   Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
 
+}
+
+namespace cv{
+  void write( cv::FileStorage& fs, const std::string& name, const std::unique_ptr<Gripper::Shape>& model);
+  void read(const cv::FileNode& node, std::unique_ptr<Gripper::Shape>& x, const std::unique_ptr<Gripper::Shape>& default_value = std::unique_ptr<Gripper::Shape>());
 }

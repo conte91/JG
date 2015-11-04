@@ -1,4 +1,6 @@
 #include <Gripper/ComposedShape.h>
+#include <Gripper/ShapeBuilder.h>
+#include <Utils/Eigen2CV.h>
 
 namespace Gripper{
   std::string ComposedShape::getID() const {
@@ -41,6 +43,19 @@ namespace Gripper{
       result.rightCols(partial.cols())=partial;
     }
     return _pose*result;
+  }
+
+  void ComposedShape::writeTo(cv::FileStorage& fs) const{
+    fs << "{";
+    fs << "name" << getID();
+    fs << "dimensions" << getDimensions();
+    fs << "pose" << getPose().matrix();
+    fs << "shapes" << "[";
+    for(const auto& x : _components){
+      fs << *x;
+    }
+    fs << "]";
+    fs << "}";
   }
 
   ComposedShape::~ComposedShape(){

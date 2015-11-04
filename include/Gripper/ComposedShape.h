@@ -5,10 +5,12 @@
 namespace Gripper{
   class ComposedShape : public Shape {
     public:
-      typedef std::vector<std::shared_ptr<Shape> > Components;
+      typedef std::vector<std::shared_ptr<const Shape> > Components;
       ComposedShape(const Eigen::Affine3d& pose, const Components& comp);
       virtual PointsMatrix getCubettiVolume(size_t level) const override;
       virtual PointsMatrix getCubettiSurface(size_t level) const override;
+
+      virtual void writeTo(cv::FileStorage& fs) const;
      
       virtual ~ComposedShape();
     protected:
@@ -18,4 +20,4 @@ namespace Gripper{
       
       Components _components;
   };
-};
+}

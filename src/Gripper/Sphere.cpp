@@ -66,7 +66,6 @@ namespace Gripper{
       0, 0, 0, 1;
 
 
-    std::cout << "Points: \n" << cubePoints << "\n";
     return (_pose*mySize*cubePoints.transpose());
 
   }

@@ -1,4 +1,5 @@
 #include <Gripper/Shape.h>
+#include <Utils/Eigen2CV.h>
 #include <pcl/point_types.h>
 
 namespace Gripper{
@@ -105,5 +106,13 @@ namespace Gripper{
     Shape result=rhs;
     result._pose=lhs*rhs._pose;
     return result;
+  }
+
+  void Shape::writeTo(cv::FileStorage& fs) const{
+    fs << "{";
+    fs << "name" << getID();
+    fs << "dimensions" << getDimensions();
+    fs << "pose" << getPose().matrix();
+    fs << "}";
   }
 }
