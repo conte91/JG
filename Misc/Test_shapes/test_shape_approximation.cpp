@@ -9,6 +9,7 @@
 #include <Gripper/Sphere.h>
 #include <Gripper/Cuboid.h>
 #include <Gripper/ComposedShape.h>
+#include <Gripper/Cylinder.h>
 
 
 void mostra(const Gripper::Shape& sp){
@@ -114,10 +115,10 @@ int main(){
   using Gripper::Shape;
   using Gripper::Cuboid;
   using Gripper::Sphere;
+  using Gripper::Cylinder;
   using Gripper::ComposedShape;
   using std::vector;
   using std::make_shared;
-  //TODO cube
 
   std::cout << "Approximating a cube's and a sphere's surface and volume using point clouds\n";
 
@@ -129,6 +130,7 @@ int main(){
   ComposedShape comp{Affine3d{Translation3d{0,-1,0}*AngleAxisd(45*M_PI/180.0, Vector3d{10,11,0}.normalized())}, components};
   mostra(sp);
   mostra(c);
+  mostra(cy);
   mostra(comp);
 
 
