@@ -61,7 +61,8 @@ namespace Recognition{
        */
       RecognitionData(const std::string& trainPath, const CameraModel& m);
 
-      PCloud::Ptr objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const;
+      PCloud::ConstPtr objectPointCloud(const std::string& objectID) const;
+      PCloud::ConstPtr objectPointCloud(const std::string& objectID, const Eigen::Affine3d& pose) const;
 
       const Model& getModel(const std::string& name) const;
 
