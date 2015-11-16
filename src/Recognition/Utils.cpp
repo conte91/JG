@@ -2,6 +2,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Recognition/Utils.h>
+#include <Camera/CameraModel.h>
+#include <Img/ImageWMask.h>
 
 namespace Recognition{
 
@@ -33,4 +35,20 @@ Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen:
     return Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())*tUpToOpenGLWorldTransform(t,up);
 }
 
+Img::ImageWMask imageFromRender(const cv::Mat& rgb_in, const cv::Mat& depth_in, const cv::Mat& maskIn, const cv::Rect& rect_in, const Camera::CameraModel& cam){
+  assert(rgb_in.type()==CV_8UC3);
+  assert(maskIn.type()==CV_8UC1);
+  cv::Mat rgb(cam.getHeight(), cam.getWidth(), rgb_in.type());
+  cv::Mat depth(cam.getHeight(), cam.getWidth(), depth_in.type());
+  cv::Mat mask(cam.getHeight(), cam.getWidth(), maskIn.type());
+  rgb.setTo(cv::Scalar{0,0,0});
+  depth.setTo(cv::Scalar{0});
+  mask.setTo(cv::Scalar{0});
+
+  rgb_in.copyTo(rgb(rect_in));
+  depth_in.copyTo(depth(rect_in));
+  maskIn.copyTo(mask(rect_in));
+
+  return Img::ImageWMask{depth, rgb, mask};
+}
 }

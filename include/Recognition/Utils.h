@@ -1,5 +1,7 @@
 #pragma once
 #include <opencv2/objdetect/objdetect.hpp>
+#include <Camera/CameraModel.h>
+#include <Img/ImageWMask.h>
 
 /** Function that normalizes a vector
  * @param x the x component of the vector
@@ -30,6 +32,17 @@ Eigen::Affine3d tUpToOpenGLWorldTransform(const Eigen::Vector3d& t, const Eigen:
  * @returns Object transformation wrt to fixed camera frame (camera is in the origin, looking through positive Z axis
  */
 Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up);
+
+/** Take the result of a render (rgb, depth, mask, rectangle), convert it back to a full scene in order to do something with it (e.g. point cloud) 
+ * @param rgb_in rgb image returned by the render
+ * @param depth_in depth image returned by the render
+ * @parm maskIn depth-mask image returned by the render
+ * @param rect_in rectangle which the images refer to
+ * @param cam camera which the render comes from
+ * @returns ImageWMask with the full scene and depth-masks
+ *
+ **/
+Img::ImageWMask imageFromRender(const cv::Mat& rgb_in, const cv::Mat& depth_in, const cv::Mat& maskIn, const cv::Rect& rect_in, const Camera::CameraModel& cam);
 }
 
 template <class T>
