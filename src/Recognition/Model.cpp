@@ -80,7 +80,6 @@ namespace Recognition{
       sideMasks[i].copyTo(sceneMask(sideRect[i]));
       auto awayCloud=_camModel.sceneToCameraPointCloud(scene, sceneDepth, sceneMask);
       decltype(awayCloud) localCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-      //localCloud=awayCloud;
       pcl::transformPointCloud(*awayCloud, *localCloud, sideTransformations[i].inverse());
       *_myCloud+=*localCloud;
       *_myCloud+=*awayCloud;
