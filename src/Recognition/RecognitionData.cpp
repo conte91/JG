@@ -229,7 +229,7 @@ namespace Recognition{
       //double dAt=depth_mm.at<uint16_t>(u,v);
       //if(dAt!=dAt || dAt<0.1 || dAt>10){
         /** Fall back to known depth */
-        obj.renderMatch(match, stimazzi, sticazzi, stimaski, stiretti);
+        obj.render(mPose, stimazzi, sticazzi, stimaski, stiretti);
         //dAt=sticazzi.at<uint16_t>(obj.getYc(tId), obj.getXc(tId));
       //}
       //double d=(dAt/1000.0-obj.getZc(tId));
@@ -291,7 +291,7 @@ namespace Recognition{
 
     std::vector<Match> refound;
 
-#if 0
+#if 1
     /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
     for(const auto& x:found){
       using cv::Rect;
@@ -304,42 +304,53 @@ namespace Recognition{
       typedef pcl::PointCloud<FPFHSignature33> FeatureCloud;
       typedef pcl::PointCloud<PointNormal> CloudXYZ;
 
+      /** Obtain the match's original image */
+      const auto& obj=_objectModels.at(x.match.class_id);
+      auto matchImage=imageFromRender(x.rgb, x.depth, x.mask, x.rect, obj.getCam());
+
       /** Take the corresponding parts of the match into the main image */
       Rect imgRect=x.rect;
-      imgRect.x-=x.rect.width*0.05;
-      imgRect.y-=x.rect.height*0.05;
-      imgRect.width*=1.1;
-      imgRect.height*=1.1;
-      if(imgRect.x<0){
-        imgRect.width+=imgRect.x;
-        imgRect.x=0;
-      }
-      if(imgRect.y<0){
-        imgRect.height+=imgRect.y;
-        imgRect.y=0;
-      }
-      int diff=imgRect.width+imgRect.x-const_rgb.cols;
-      if(diff>0){
-        imgRect.width-=diff;
-      }
-      diff=imgRect.height+imgRect.y-const_rgb.rows;
-      if(diff>0){
-        imgRect.height-=diff;
+      {
+        /** Enlarge your penis */
+        imgRect.x-=x.rect.width*0.05;
+        imgRect.y-=x.rect.height*0.05;
+        imgRect.width*=1.1;
+        imgRect.height*=1.1;
+        if(imgRect.x<0){
+          imgRect.width+=imgRect.x;
+          imgRect.x=0;
+        }
+        if(imgRect.y<0){
+          imgRect.height+=imgRect.y;
+          imgRect.y=0;
+        }
+        int diff=imgRect.width+imgRect.x-const_rgb.cols;
+        if(diff>0){
+          imgRect.width-=diff;
+        }
+        diff=imgRect.height+imgRect.y-const_rgb.rows;
+        if(diff>0){
+          imgRect.height-=diff;
+        }
       }
 
-      Mat matchingPart=const_rgb(imgRect);
-      Mat matchingDepth=depth_m(imgRect);
+
+      Mat matchingPart=const_rgb;
+      Mat matchingMask(const_rgb.size(), CV_8UC1, cv::Scalar{0});
+      matchingMask(imgRect)=cv::Scalar{255};
+      Mat matchingDepth=depth_m;
       assert(depth_m.type()==CV_32FC1);
-      Mat x_d_m;
-      x.depth.convertTo(x_d_m, CV_32FC1, 1.0/1000.0);
+
 
       /** Obtain the PCs relative to the parts to be aligned */
-      const auto& obj=_objectModels.at(x.match.class_id);
-      auto templatePC=obj.getCam().sceneToCameraPointCloud(x.rgb, x_d_m, x.mask);
+      auto templatePC=obj.getCam().sceneToCameraPointCloud(matchImage.rgb, matchImage.depth, matchImage.mask);
       templatePC->is_dense=true;
-      auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth);
+      auto scenePC=obj.getCam().sceneToCameraPointCloud(matchingPart, matchingDepth, matchingMask);
       scenePC->is_dense=true;
 
+      std::vector<int> dumbIgnoredValue;
+      pcl::removeNaNFromPointCloud(*templatePC, *templatePC, dumbIgnoredValue);
+      pcl::removeNaNFromPointCloud(*scenePC, *scenePC, dumbIgnoredValue);
       /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
       pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
       CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
@@ -394,9 +405,8 @@ namespace Recognition{
 
       CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
       Eigen::Matrix4d finalTransformationMatrix;
-      finalTransformationMatrix  = align.getFinalTransformation().cast<double>().inverse();
+      finalTransformationMatrix  = align.getFinalTransformation().cast<double>();
       std::cout << "Transform (align):" << finalTransformationMatrix << "\n";
-      std::cout << "Inverse (align):" << finalTransformationMatrix << "\n";
       auto middlePose = finalTransformationMatrix*x.objPose.matrix();
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
       std::cout << "Middle pose: " << middlePose.matrix() << "\n";
@@ -414,9 +424,8 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      finalTransformationMatrix  = icp.getFinalTransformation().cast<double>().inverse();
+      finalTransformationMatrix  = icp.getFinalTransformation().cast<double>();
       std::cout << "Transform (icp):" << finalTransformationMatrix << "\n";
-      std::cout << "Inverse (icp):" << finalTransformationMatrix.inverse() << "\n";
       auto finalPose = finalTransformationMatrix*middlePose;
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
       std::cout << "Final pose: " << finalPose << "\n";
@@ -572,9 +581,14 @@ namespace Recognition{
     return result;
   }
 
-  RecognitionData::PCloud::Ptr RecognitionData::objectPointCloud(const std::string& objectID, const C5G::Pose& pose) const {
+  RecognitionData::PCloud::ConstPtr RecognitionData::objectPointCloud(const std::string& objectID, const Eigen::Affine3d& pose) const {
     const Model& m = _objectModels.at(objectID);
     return m.getPointCloud(pose);
+  }
+
+  RecognitionData::PCloud::ConstPtr RecognitionData::objectPointCloud(const std::string& objectID) const {
+    const Model& m = _objectModels.at(objectID);
+    return m.getPointCloud();
   }
 
   C5G::Pose RecognitionData::matrixToPose(cv::Mat m){
