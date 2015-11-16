@@ -4,6 +4,7 @@
 int main(int argc, char** argv){
   if(argc!=3){
     std::cerr << "Usage: " << argv[0] << " train/path camera/model\n";
+    return -1;
   }
 
   cv::FileStorage fs(argv[2], cv::FileStorage::READ);
@@ -11,33 +12,8 @@ int main(int argc, char** argv){
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr axis(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-  for(double i=0; i<0.5; i+=0.02){
-    pcl::PointXYZRGB x,y,z;
-    x.x=i;
-    x.y=0;
-    x.z=0;
-    x.r=255;
-    x.g=0;
-    x.b=0;
-
-    y.x=0;
-    y.y=i;
-    y.z=0;
-    y.r=0;
-    y.g=255;
-    y.b=0;
-    z.x=0;
-    z.y=0;
-    z.z=i;
-    z.r=0;
-    z.g=0;
-    z.b=255;
-    axis->push_back(x);
-    axis->push_back(y);
-    axis->push_back(z);
-  }
   pcl::visualization::PCLVisualizer viewer("Object");
-  viewer.addPointCloud<pcl::PointXYZRGB> (axis, "axis");
+  viewer.addCoordinateSystem(1.0);
   while(1){
     viewer.spinOnce(100);
     std::cout << "Which object wanna draw? ";
@@ -50,8 +26,12 @@ int main(int argc, char** argv){
     double x,y,z,a,b,g;
     std::cout << "Enter x y z a b g: ";
     std::cin  >> x >> y >> z >> a >> b >> g;
-    auto result=mySister.objectPointCloud(name,C5G::Pose::poseToTransform({x,y,z,a,b,g}));
+    auto result=mySister.objectPointCloud(name);//,C5G::Pose::poseToTransform({x,y,z,a,b,g}));
     viewer.addPointCloud<pcl::PointXYZRGB>(result, "lol");
+    while(!viewer.wasStopped()){
+      viewer.spinOnce(100);
+    }
+
   }
   return 0;
 }

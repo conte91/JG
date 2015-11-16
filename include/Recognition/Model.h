@@ -97,8 +97,12 @@ namespace Recognition{
       int getXc(int templateID) const;
       int getYc(int templateID) const;
       double getZc(int templateID) const;
+      void initializeMyPCL();
       int numTemplates() const;
-      pcl::PointCloud<pcl::PointXYZRGB>::Ptr getPointCloud(const C5G::Pose& pose) const;
+      pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr getPointCloud() const;
+      pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr getPointCloud(const Eigen::Affine3d& pose) const;
+      pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr getWholePointCloud(const C5G::Pose& pose) const;
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr _myCloud;
       Camera::CameraModel _camModel;
 
   };

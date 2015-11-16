@@ -12,6 +12,7 @@
 #include <Recognition/DetectorWMasks.h>
 #include <Recognition/Utils.h>
 #include <Recognition/ColorGradientPyramidFull.h>
+#include <pcl/common/transforms.h>
 
 namespace Recognition{
   Model::Model(const std::string& id, const boost::filesystem::path& trainDir)
@@ -48,8 +49,44 @@ namespace Recognition{
   {
     _mesh.LoadMesh(meshFile);
     _renderer.set_parameters(cam, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
+    initializeMyPCL();
   }
 
+  void Model::initializeMyPCL(){
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr movedCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    std::array<cv::Mat, 6> sideViews, sideDepth, sideDepthM, sideMasks;
+    std::array<cv::Rect, 6> sideRect;
+    std::array<Eigen::Affine3d, 6> sideTransformations;
+
+    sideTransformations[0]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d{1,0,0});
+    sideTransformations[1]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d{0,1,0});
+    sideTransformations[2]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d{0,0,1});
+    sideTransformations[3]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d{1,0,0});
+    sideTransformations[4]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d{0,1,0});
+    sideTransformations[5]=Eigen::Translation3d{0,0,1}*Eigen::AngleAxisd(-M_PI/2, Eigen::Vector3d{0,0,1});
+
+    _myCloud=decltype(_myCloud)(new pcl::PointCloud<pcl::PointXYZRGB>);
+    cv::Mat scene(_camModel.getWidth(), _camModel.getHeight(), CV_8UC3);
+    cv::Mat sceneDepth(_camModel.getWidth(), _camModel.getHeight(), CV_32FC1);
+    cv::Mat sceneMask(_camModel.getWidth(), _camModel.getHeight(), CV_8UC1);
+    for(size_t i=0; i<6; ++i){
+      scene.setTo(cv::Scalar{0,0,0});
+      sceneDepth.setTo(cv::Scalar{0});
+      sceneMask.setTo(cv::Scalar{0});
+      render(sideTransformations[i], sideViews[i], sideDepth[i], sideMasks[i], sideRect[i]);
+      sideDepth[i].convertTo(sideDepthM[i], CV_32FC1, 1.0/1000.0);
+      sideViews[i].copyTo(scene(sideRect[i]));
+      sideDepthM[i].copyTo(sceneDepth(sideRect[i]));
+      sideMasks[i].copyTo(sceneMask(sideRect[i]));
+      auto awayCloud=_camModel.sceneToCameraPointCloud(scene, sceneDepth, sceneMask);
+      decltype(awayCloud) localCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+      //localCloud=awayCloud;
+      pcl::transformPointCloud(*awayCloud, *localCloud, sideTransformations[i].inverse());
+      *_myCloud+=*localCloud;
+      *_myCloud+=*awayCloud;
+    }
+
+  }
 
   void Model::readFrom(const std::string& id, const boost::filesystem::path& trainDir)
   {
@@ -79,6 +116,7 @@ namespace Recognition{
     inFile["rendering"]["renderer_far"] >> renderer_far;
     _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
 
+    initializeMyPCL();
     _myData={};
     const cv::FileNode& n=inFile["trainData"];
     /** Reads the camera models: can't use readSequence! */
@@ -157,9 +195,19 @@ namespace Recognition{
     _renderer.renderDepthOnly(_mesh, depth_out, mask_out, rect_out);
   }
 
-  //TODO pcl::PointCloud<pcl::PointXYZRGB> Model::getPointCloud(cv::Vec3d T, cv::Vec3d up, const Camera::CameraModel& cam ){
-  //TODO   cv::Matrix
-  //TODO }
+  pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr Model::getWholePointCloud(const C5G::Pose& pose) const {
+    return _myCloud;
+  }
+
+  pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr Model::getPointCloud() const {
+    return _myCloud;
+  }
+
+  pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr Model::getPointCloud(const Eigen::Affine3d& pose) const {
+    decltype(_myCloud) result(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::transformPointCloud(*_myCloud, *result, pose);
+    return result;
+  }
 
   Renderer3d& Model::getRenderer() const {
     return _renderer;
@@ -317,7 +365,7 @@ namespace Recognition{
 
   void Model::render(const Eigen::Affine3d& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {
     constexpr double PI  =3.141592653589793238463;
-    auto newPose=Eigen::AngleAxisd(PI, Eigen::Vector3d::UnitX())*pose;
+    auto newPose=Eigen::AngleAxisd(-PI, Eigen::Vector3d::UnitX())*pose;
 
     _renderer.set_parameters(_camModel, renderer_near, renderer_far, std::string("Model")+mesh_file_path);
     _renderer.setObjectPose(newPose);
@@ -328,46 +376,6 @@ namespace Recognition{
   void Model::render(const C5G::Pose& pose, cv::Mat& rgb_out, cv::Mat& depth_out, cv::Mat& mask_out, cv::Rect& rect_out) const {
     /** Gets the T and UP vector from the Pose object */
     render(C5G::Pose::poseToTransform(pose), rgb_out, depth_out, mask_out, rect_out);
-  }
-
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr Model::getPointCloud(const C5G::Pose& pose) const {
-    cv::Mat image_out, depth_out, mask_out;
-    cv::Rect rect_out;
-
-    /** Gets the T and UP vector from the Pose object */
-    Eigen::Affine3d objTransformation=C5G::Pose::poseToTransform(pose);
-    cv::Mat t;
-    eigen2cv(Eigen::Vector3d(objTransformation.translation()), t);
-    Eigen::Matrix3d R_temp(objTransformation.rotation());
-    R_temp=R_temp.inverse();
-    cv::Vec3d u (-R_temp(0,1), -R_temp(1,1), -R_temp(2,1));
-    std::cout << "Up vector: " << u(0) << ","<< u(1) << ","<< u(2) << "\n";
-
-    render(t, u, image_out, depth_out, mask_out, rect_out);
-
-    cv::Mat_<cv::Vec3f> pointsXYZ;
-    cv::rgbd::depthTo3d(depth_out, _camModel.getIntrinsic(), pointsXYZ);
-    /** Fills model and reference pointClouds with points taken from (X,Y,Z) coordinates */
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    /** Model PointCloud*/
-    int mySize = pointsXYZ.rows*pointsXYZ.cols;
-    modelCloudPtr->resize(mySize);
-    modelCloudPtr->height = 1;
-    modelCloudPtr->is_dense = true;
-
-    for(int i=0; i<pointsXYZ.rows; ++i)
-    {
-      for(int j=0; j<pointsXYZ.cols; ++j){
-        modelCloudPtr->points[i*pointsXYZ.cols+j].x=pointsXYZ[i][j][0];
-        modelCloudPtr->points[i*pointsXYZ.cols+j].y=pointsXYZ[i][j][1];
-        modelCloudPtr->points[i*pointsXYZ.cols+j].z=pointsXYZ[i][j][2];
-        modelCloudPtr->points[i*pointsXYZ.cols+j].r=0;
-        modelCloudPtr->points[i*pointsXYZ.cols+j].g=255;
-        modelCloudPtr->points[i*pointsXYZ.cols+j].b=0;
-      }
-    }
-    return modelCloudPtr;
   }
 
   Eigen::Affine3d Model::matchToObjectPose(const cv::linemod::Match& match) const {
