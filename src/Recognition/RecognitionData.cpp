@@ -298,11 +298,6 @@ namespace Recognition{
       using cv::Mat;
       typedef pcl::PointXYZRGB PointType;
       typedef pcl::PointCloud<PointType> Cloud;
-      using pcl::PointXYZ;
-      using pcl::PointNormal;
-      using pcl::FPFHSignature33;
-      typedef pcl::PointCloud<FPFHSignature33> FeatureCloud;
-      typedef pcl::PointCloud<PointNormal> CloudXYZ;
 
       /** Obtain the match's original image */
       const auto& obj=_objectModels.at(x.match.class_id);
@@ -352,8 +347,8 @@ namespace Recognition{
       pcl::removeNaNFromPointCloud(*templatePC, *templatePC, dumbIgnoredValue);
       pcl::removeNaNFromPointCloud(*scenePC, *scenePC, dumbIgnoredValue);
       /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
-      pcl::VoxelGrid<PointNormal> templateVox, sceneVox;
-      CloudXYZ::Ptr templatePCDownsampled(new CloudXYZ), scenePCDownsampled(new CloudXYZ), templatePCXYZ(new CloudXYZ), scenePCXYZ(new CloudXYZ);
+      pcl::VoxelGrid<PointType> templateVox, sceneVox;
+      Cloud::Ptr templatePCDownsampled(new Cloud), scenePCDownsampled(new Cloud), templatePCXYZ(new Cloud), scenePCXYZ(new Cloud), finalModelCloudPtr(new Cloud);
       pcl::copyPointCloud(*templatePC, *templatePCXYZ);
       pcl::copyPointCloud(*scenePC, *scenePCXYZ);
 
@@ -363,57 +358,11 @@ namespace Recognition{
       sceneVox.setInputCloud (scenePCXYZ);
       sceneVox.setLeafSize (0.005f, 0.005f, 0.005f);
       sceneVox.filter (*scenePCDownsampled);
-      /* Estimate normals for clouds */
-      pcl::console::print_highlight ("Estimating scene normals...\n");
-      pcl::NormalEstimationOMP<PointNormal, PointNormal> nest;
-      nest.setRadiusSearch (0.02);
-      nest.setInputCloud (templatePCDownsampled);
-      nest.compute (*templatePCDownsampled);
-      nest.setInputCloud (scenePCDownsampled);
-      nest.compute (*scenePCDownsampled);
-      FeatureCloud::Ptr template_features(new FeatureCloud), scene_features(new FeatureCloud);
-      pcl::FPFHEstimationOMP<PointNormal, PointNormal, pcl::FPFHSignature33> fest;
-      fest.setRadiusSearch (0.05);
-      fest.setInputCloud (templatePCDownsampled);
-      fest.setInputNormals (templatePCDownsampled);
-      fest.compute (*template_features);
-      fest.setInputCloud (scenePCDownsampled);
-      fest.setInputNormals (scenePCDownsampled);
-      fest.compute (*scene_features);
 
-      /* Perform alignment */
-      pcl::SampleConsensusPrerejective<PointNormal, PointNormal, FPFHSignature33> align;
-      //pcl::SampleConsensusInitialAlignment<PointNormal, PointNormal, FPFHSignature33> align;
-      align.setInputSource (templatePCDownsampled  );
-      align.setSourceFeatures (template_features);
-      align.setInputTarget (scenePCDownsampled);
-      align.setTargetFeatures (scene_features);
-      //align.setMaximumIterations (1000); // Number of RANSAC iterations
-      align.setMaximumIterations (20000); // Number of RANSAC iterations
-      align.setNumberOfSamples (5); // Number of points to sample for generating/prerejecting a pose
-      align.setCorrespondenceRandomness (20); // Number of nearest features to use
-      align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
-      align.setMaxCorrespondenceDistance (2.5f * 0.005f); // Inlier threshold
-      align.setInlierFraction (0.25f); // Required inlier fraction for accepting a pose hypothesis
-      CloudXYZ::Ptr alignModelCloudPtr (new CloudXYZ);
-      align.align (*alignModelCloudPtr);
-
-      if(!align.hasConverged()){
-        std::cout << "Align did not converge\n";
-        continue;
-      }
-
-      CloudXYZ::Ptr finalModelCloudPtr(new CloudXYZ);
-      Eigen::Matrix4d finalTransformationMatrix;
-      finalTransformationMatrix  = align.getFinalTransformation().cast<double>();
-      std::cout << "Transform (align):" << finalTransformationMatrix << "\n";
-      auto middlePose = finalTransformationMatrix*x.objPose.matrix();
-      std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
-      std::cout << "Middle pose: " << middlePose.matrix() << "\n";
       /** Use ICP to refine the pose estimation of the object */
-      pcl::IterativeClosestPoint<PointNormal, PointNormal> icp;
+      pcl::IterativeClosestPoint<PointType, PointType> icp;
       icp.setMaximumIterations (100);
-      icp.setInputSource (alignModelCloudPtr);//Model
+      icp.setInputSource (templatePCDownsampled);//Model
       icp.setInputTarget (scenePCDownsampled);//Ref scene
       icp.align (*finalModelCloudPtr);
       if(!icp.hasConverged()){
@@ -424,9 +373,9 @@ namespace Recognition{
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      finalTransformationMatrix  = icp.getFinalTransformation().cast<double>();
+      Eigen::Matrix4d finalTransformationMatrix  = icp.getFinalTransformation().cast<double>();
       std::cout << "Transform (icp):" << finalTransformationMatrix << "\n";
-      auto finalPose = finalTransformationMatrix*middlePose;
+      auto finalPose = finalTransformationMatrix*x.objPose.matrix();
       std::cout << "ObjPose: " << x.objPose.matrix() << "\n";
       std::cout << "Final pose: " << finalPose << "\n";
       refound.push_back({icp.getFitnessScore(), Eigen::Affine3d{finalPose}});
@@ -462,8 +411,6 @@ namespace Recognition{
       }
       auto newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
-      //imshow("Wow!", newFrame);
-      //while((cv::waitKey() & 0xFF)!= 'q');
       obj.render(Eigen::Affine3d{finalPose}, stimazzi, sticazzi, stimaski, stiretti);
       if(stimazzi.empty()){
         std::cout << "Image is empty!!!\n";
@@ -471,8 +418,8 @@ namespace Recognition{
       }
       newFrame=const_rgb.clone();
       stimazzi.copyTo(newFrame(stiretti));
-      //imshow("Wow!", newFrame);
-      //while((cv::waitKey() & 0xFF)!= 'q');
+      imshow("Wow!", newFrame);
+      while((cv::waitKey() & 0xFF)!= 'Q');
     }
 
     if(refound.size()==0){
