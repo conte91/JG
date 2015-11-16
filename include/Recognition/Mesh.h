@@ -80,9 +80,9 @@ public:
 
   Mesh(const std::string& file_path);
   Mesh();
-  ~Mesh();
+  virtual ~Mesh();
 
-  void
+  virtual void
   Draw() const;
 
   void
