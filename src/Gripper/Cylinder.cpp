@@ -60,7 +60,7 @@ namespace Gripper{
     double stepZ=1.0/level;
     double startX=-1.0+stepX/2.0;
     double startY=-1.0+stepY/2.0;
-    double startZ=-1.0+stepZ/2.0;
+    double startZ=stepZ/2.0;
 
     Eigen::Matrix<double, Eigen::Dynamic, 4> cubePoints(level*level*level, 4);
 
