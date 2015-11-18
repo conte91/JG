@@ -2,6 +2,7 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <Camera/CameraModel.h>
 #include <Img/ImageWMask.h>
+#include <C5G/Pose.h>
 
 /** Function that normalizes a vector
  * @param x the x component of the vector
@@ -24,14 +25,14 @@ namespace Recognition{
  * @param up Camera UP vector in _object_ coordinates
  * @returns Object transformation wrt to fixed camera frame (camera is in the origin, looking through negative Z axis
  */
-Eigen::Affine3d tUpToOpenGLWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up);
+  Eigen::Affine3d tUpToOpenGLWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up);
 /** We know camera's T and UP vectors in object's coordinates (i.e. X right, Y forward, Z up),
  * we want to have object's transformations wrt OpenCV Camera reference frame (i.e. X right, Y down, Z forward)
  * @param t Camera position in _object_ coordinates
  * @param up Camera UP vector in _object_ coordinates
  * @returns Object transformation wrt to fixed camera frame (camera is in the origin, looking through positive Z axis
  */
-Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up);
+  Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up);
 
 /** Take the result of a render (rgb, depth, mask, rectangle), convert it back to a full scene in order to do something with it (e.g. point cloud) 
  * @param rgb_in rgb image returned by the render
@@ -42,26 +43,33 @@ Eigen::Affine3d tUpToCameraWorldTransform(const Eigen::Vector3d& t, const Eigen:
  * @returns ImageWMask with the full scene and depth-masks
  *
  **/
-Img::ImageWMask imageFromRender(const cv::Mat& rgb_in, const cv::Mat& depth_in, const cv::Mat& maskIn, const cv::Rect& rect_in, const Camera::CameraModel& cam);
+  Img::ImageWMask imageFromRender(const cv::Mat& rgb_in, const cv::Mat& depth_in, const cv::Mat& maskIn, const cv::Rect& rect_in, const Camera::CameraModel& cam);
+
+  /** Implements the refined algorithm from extracting euler angles from rotation matrix
+   * see Mike Day, Insomniac Games, "Extracting Euler Angles from a Rotation Matrix"
+   */
+#if 0
+  C5G::Pose matrixToPose(const Eigen::Affine3d& m);
+#endif
 }
 
 template <class T>
 static inline void hash_combine(std::size_t& seed, const T& v)
 {
-    std::hash<T> hasher;
-    seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
 
 namespace std{
   template<>
     struct hash<cv::linemod::Match>{
-     std::size_t operator()(const cv::linemod::Match& x) const{
-       size_t result=0;
-       hash_combine(result, x.x);
-       hash_combine(result, x.y);
-       hash_combine(result, x.template_id);
-       hash_combine(result, x.class_id);
-       return result;
-     }
-    };
+    std::size_t operator()(const cv::linemod::Match& x) const{
+      size_t result=0;
+      hash_combine(result, x.x);
+      hash_combine(result, x.y);
+      hash_combine(result, x.template_id);
+      hash_combine(result, x.class_id);
+      return result;
+    }
+  };
 }

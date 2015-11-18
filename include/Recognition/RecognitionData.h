@@ -22,8 +22,16 @@ namespace Recognition{
 
       typedef std::map<std::string, std::vector<Match> > ObjectMatches;
     private:
+      struct FirstPassFoundItems{
+        cv::linemod::Match match;
+        Eigen::Affine3d objPose;
+        cv::Mat rgb;
+        cv::Mat depth;
+        cv::Mat mask;
+        cv::Rect rect;
+        double matchPercentage;
+      };
 
-      static C5G::Pose matrixToPose(cv::Mat m);
       typedef Camera::CameraModel CameraModel;
       typedef pcl::PointCloud<pcl::PointXYZRGB> PCloud;
 
@@ -53,7 +61,7 @@ namespace Recognition{
       ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const;
 
     public:
-      RecognitionData::ObjectMatches recognize(const Img::ImageWMask& frame, std::string what);
+      RecognitionData::ObjectMatches recognize(const Img::ImageWMask& frame,const std::vector<std::string>& what);
 
       /**
        * @param trainPath path to the trained models data
@@ -65,6 +73,9 @@ namespace Recognition{
       PCloud::ConstPtr objectPointCloud(const std::string& objectID, const Eigen::Affine3d& pose) const;
 
       const Model& getModel(const std::string& name) const;
+
+      std::vector<FirstPassFoundItems> makeAFirstPassRecognition(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
+                                                                 const std::vector<std::string>& whatToSee) const ;
 
   };
 }

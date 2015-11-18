@@ -55,20 +55,20 @@ int main(int argc, char** argv){
   bool haveFinished=false;
   while(!haveFinished){
 
-    std::string s;
+    std::vector<std::string> s(1);
     Img::Image x=camera->getFrame();
 
     Img::Manipulation::ClickIndexTaker taker(x);
     Img::ImageWMask finalFrame(x, Img::Manipulation::getMask(x, taker.getX1(), taker.getY1(), taker.getX2(), taker.getY2()));
 
     std::cout << "Which object do you want to recognize?\n";
-    std::cin >> s;
+    std::cin >> s[0];
     try{
       auto result=mySister.recognize(finalFrame, s);
-      std::cout << "I think the object is @pose " << result[s][0].pose.matrix() << "\n";
+      std::cout << "I think the object is @pose " << result[s[0]][0].pose.matrix() << "\n";
       Eigen::Affine3d extr;
       extr.matrix()=cam.getExtrinsic().matrix().cast<double>();
-      auto globalPose=extr.inverse()*result[s][0].pose;
+      auto globalPose=extr.inverse()*result[s[0]][0].pose;
       std::cout << "Global pose: \n" << globalPose.matrix() << "\n";
     }
     catch (std::string e){
@@ -77,8 +77,8 @@ int main(int argc, char** argv){
 
     std::cout << "Do it again? (y/n) ";
     while((cv::waitKey(100) & 0xFF) != 'q');
-    std::cin >> s;
-    if(s=="n"){
+    std::cin >> s[0];
+    if(s[0]=="n"){
       haveFinished=true;
     }
 
