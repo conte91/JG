@@ -1,4 +1,5 @@
 #include <APC/Robot.h>
+#include <stdexcept>
 #include <APC/Shelf.h>
 #include <Camera/ImageProvider.h>
 namespace APC{
@@ -17,7 +18,7 @@ namespace APC{
         return this->_provider->getFrame();
       }
       else{
-        throw std::string("Taking a photo from the right camera is not supported, sorry!\n");
+        throw std::runtime_error("Taking a photo from the right camera is not supported, sorry!\n");
       }
     }
 

@@ -12,6 +12,7 @@
 #include <pcl/visualization/point_cloud_color_handlers.h>
 #include <pcl/registration/icp.h>
 #include <Img/Image.h>
+#include <Recognition/Utils.h>
 
 int main(int argc, char** argv){
   if(argc<8){
@@ -50,7 +51,6 @@ int main(int argc, char** argv){
   const cv::Mat& d=img.depth;
   for(int v=0; v<d.rows; ++v){
     for(int u=0; u<d.cols; ++u){
-      
       /** Project back the point to XYZ space */
       {
         float z= d.at<float>(v,u);
@@ -154,6 +154,15 @@ int main(int argc, char** argv){
     extrinsics.translation()=t;
   }
 
+  std::cout << "Computed extrinsics matrix: \n" << extrinsics.matrix() << "\n\n";
+  std::cout << "Recomputing everything using the library algorithm..\n";
+  auto e2=Recognition::extrinsicFromChessboard(square_size, width, height, img, cam);
+  std::cout << "New matrix: " << e2.matrix() << "\n\n";
+  if(!(e2.matrix().isApprox(extrinsics.matrix()))){
+    std::cerr << "Wrong extrinsics implementation!\n";
+    return -1;
+  }
+  
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorChessboard (pChessBoard, 0, 255, 0);
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> colorRefChessboard (refChessBoard, 255, 0, 0);
   pcl::PointCloud<pcl::PointXYZ>::Ptr aligendIdealCB(new pcl::PointCloud<pcl::PointXYZ>);

@@ -1,12 +1,91 @@
 #include <cmath>
+#include <stdexcept>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
 #include <Recognition/Utils.h>
 #include <Camera/CameraModel.h>
 #include <C5G/Pose.h>
 #include <Img/ImageWMask.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
 
 namespace Recognition{
+
+  Eigen::Affine3f extrinsicFromChessboard(double squareSize, int width, int height, const Img::Image& img, const Camera::CameraModel& cam){
+
+    std::vector<cv::Point2f> cornerPoints;
+    if(!cv::findChessboardCorners(img.rgb, cv::Size(width, height), cornerPoints)){
+      throw std::runtime_error( "Couldn't locate chessboard corners, sry");
+
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pChessBoard(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr refChessBoard(new pcl::PointCloud<pcl::PointXYZ>);
+
+    const cv::Mat& d=img.depth;
+    int i=0;
+    for(auto& pt : cornerPoints){
+      /** Project back the point to XYZ space */
+      int v{pt.y};
+      int u{pt.x};
+      float z= d.at<float>(v,u);
+
+      Eigen::Vector3d foundPt=cam.uvzToCameraFrame(u,v,z);
+      pcl::PointXYZ p, refP;
+      p.x=foundPt[0];
+      p.y=foundPt[1];
+      p.z=foundPt[2];
+      /** Remember that points will be stored into cornerPoints into row-order, starting with the point closest to the top-left corner of the image. In our case, we want to align the system so that this is the point (0,yMax) and the opposite corner is (xMax, 0) - z points upwards */
+      refP.y=squareSize*(height-1-i/width);
+      refP.x=squareSize*(i%width);
+      refP.z=0;
+      pChessBoard->push_back(p);
+      refChessBoard->push_back(refP);
+      i++;
+    }
+    assert(refChessBoard->size()==pChessBoard->size());
+    Eigen::Affine3f extrinsics=Eigen::Affine3f::Identity();
+    /** Computes the transformation between the reference point cloud and the as-seen-by-the-camera point cloud, i.e. the extrinsics matrix of the camera :) */
+    {
+      Eigen::Vector4f cIdeal, cCB;
+      Eigen::Vector3f t;
+      pcl::compute3DCentroid(*refChessBoard, cIdeal);
+      pcl::compute3DCentroid(*pChessBoard, cCB);
+      std::cout << "cIdeal: " << cIdeal << "\ncCB: " << cCB << "\n";
+
+      /** Translate the two clouds so that the centroid is on the origin */
+      Eigen::Affine3f cTIdeal=Eigen::Affine3f::Identity(), cTCB=Eigen::Affine3f::Identity();
+      cTIdeal.translation() = -cIdeal.topRows<3>();
+      cTCB.translation() = -cCB.topRows<3>();
+
+      pcl::PointCloud<pcl::PointXYZ> centeredIdeal, centeredCB;
+      pcl::transformPointCloud(*refChessBoard, centeredIdeal, cTIdeal);
+      pcl::transformPointCloud(*pChessBoard, centeredCB, cTCB);
+
+      /** Use SVD to find the rotation between the two centered clouds */
+      Eigen::Matrix3f H=Eigen::Matrix3f::Zero();
+      for(size_t i=0; i<refChessBoard->size(); ++i){
+        Eigen::Vector3f pCB{(*pChessBoard)[i].x, (*pChessBoard)[i].y, (*pChessBoard)[i].z};
+        Eigen::Vector3f pId{(*refChessBoard)[i].x, (*refChessBoard)[i].y, (*refChessBoard)[i].z};
+        H+=(pId-cIdeal.topRows<3>())*((pCB-cCB.topRows<3>()).transpose());
+      }
+      Eigen::JacobiSVD<Eigen::Matrix3f> decomposition(H,Eigen::ComputeFullU | Eigen::ComputeFullV);
+      Eigen::Matrix3f R=decomposition.matrixV()*decomposition.matrixU().transpose();
+      if(R.determinant()<0){
+        /** Reflection case: Invert 3rd column */
+        R.col(2)*=-1;
+      }
+      assert(R.determinant()>0);
+      t = -R*cIdeal.topRows<3>()+cCB.topRows<3>();
+      extrinsics.linear()=R;
+      extrinsics.translation()=t;
+    }
+    return extrinsics;
+          
+  }
 
   Eigen::Affine3d tUpToOpenGLWorldTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& up){
     /** Camera is at position T with up vector U, and is looking at the origin */

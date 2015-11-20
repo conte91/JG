@@ -1,4 +1,5 @@
 #include <C5G/C5G_socket.h>
+#include <stdexcept>
 #include <sstream>
 
 namespace C5G{

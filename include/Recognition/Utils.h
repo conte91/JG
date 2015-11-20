@@ -45,6 +45,8 @@ namespace Recognition{
  **/
   Img::ImageWMask imageFromRender(const cv::Mat& rgb_in, const cv::Mat& depth_in, const cv::Mat& maskIn, const cv::Rect& rect_in, const Camera::CameraModel& cam);
 
+  Eigen::Affine3f extrinsicFromChessboard(double squareSize, int width, int height, const Img::Image& img, const Camera::CameraModel& cam);
+  
   /** Implements the refined algorithm from extracting euler angles from rotation matrix
    * see Mike Day, Insomniac Games, "Extracting Euler Angles from a Rotation Matrix"
    */

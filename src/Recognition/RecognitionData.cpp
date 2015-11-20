@@ -117,11 +117,6 @@ namespace Recognition{
     }
 
     double percentage=(double) matchingArea/(double) totalPoints;
-    if(percentage > 0.6){
-      imshow("Blue template", displayT);
-      imshow("Blue match", displayM);
-      while((cv::waitKey() & 0xFF)!= 'q');
-    }
     return (double) matchingArea/(double) totalPoints;
   }
 
