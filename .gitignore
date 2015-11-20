@@ -1,5 +1,6 @@
 #temp files
 *~
+\#*#
 
 #Papers
 refs/
@@ -81,3 +82,7 @@ nonGitTestBed/
 *.fcstd1
 
 *.blend1
+
+#Misc config files
+.projectile
+.dir_locals.el

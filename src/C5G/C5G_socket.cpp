@@ -27,7 +27,7 @@ namespace C5G{
     std::string s;
     _connectionToRobot >> s;
     if(s!="ACK"){
-      throw std::string("No ACK received\n");
+      throw std::runtime_error("No ACK received\n");
     }
     std::cout << "Movement ended.\n";
   }
@@ -46,7 +46,7 @@ namespace C5G{
     std::cout << "Connecting to " << _ip << " on port " << CONNECTION_PORT << "..\n";
     _connectionToRobot.connect(_ip, CONNECTION_PORT);
     if(!_connectionToRobot){
-      throw std::string("Could not connect to robot!\n");
+      throw std::runtime_error("Could not connect to robot!\n");
     }
     std::cout << "Done.\n";
   }
