@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include <cmath>
 #include <Eigen/Core>
 #include <Recognition/Model.h>
@@ -32,7 +33,7 @@ namespace Recognition{
     if(name=="FULL_OBJECT"){
       return cv::linemod::getFullObjectLINEMOD();
     }
-    throw std::string("Invalid linemod detector string");
+    throw std::runtime_error("Invalid linemod detector string");
     return cv::Ptr<cv::linemod::Detector>(nullptr);
   }
   Model::Model(const std::string& id, const std::string& meshFile, const Camera::CameraModel& cam, const std::string& detectorType)

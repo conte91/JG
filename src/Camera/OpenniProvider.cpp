@@ -1,4 +1,5 @@
 #include <Img/Image.h>
+#include <stdexcept>
 #include <Camera/OpenniProvider.h>
 #include <Camera/Openni1Provider.h>
 #include <Camera/Openni2Provider.h>
@@ -29,7 +30,7 @@ namespace Camera{
             }
           }
           else{
-            throw std::string("No valid OpenNI version provided!");
+            throw std::runtime_error("No valid OpenNI version provided!");
           }
         } ()
        )

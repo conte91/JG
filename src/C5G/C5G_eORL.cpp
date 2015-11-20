@@ -1,4 +1,5 @@
 #include <boost/thread.hpp>
+#include <stdexcept>
 #include <boost/chrono.hpp>
 #include <C5G/C5G.h>
 #include <C5G/userCallback.h>
@@ -51,7 +52,7 @@ namespace C5G{
     if( (ret=ORL_inverse_kinematics(&target_pos, &temp_joints, ORL_SILENT, ORL_CNTRL01, ORL_ARM1) )!= 0 )
     {
       std::cerr << ret << "\n";
-      throw std::string("--! Inverse Kinematics fails! Check joint values...\n");
+      throw std::runtime_error("--! Inverse Kinematics fails! Check joint values...\n");
     }
     ORL_set_move_parameters(ORL_NO_FLY, ORL_WAIT, ORL_FLY_NORMAL, ORL_TRCARLIN /* CARTESIAN - LINEAR */, &target_pos, NULL, ORL_SILENT, ORL_CNTRL01, ORL_ARM1);
     mask_moving_arms = mask_moving_arms | (1<<ORL_ARM1);
@@ -114,7 +115,7 @@ namespace C5G{
 
     if( (ORLOPEN_initialize_controller(STRING_IP_CNTRL.c_str(),STRING_SYS_ID.c_str(),ORL_SILENT,ORL_CNTRL01)) != 0 )
     {
-      throw std::string("Error in ORL_initialize_robot\n");
+      throw std::runtime_error("Error in ORL_initialize_robot\n");
     }
     else{
       std::cout << STRING_IP_CNTRL << ": " << STRING_SYS_ID << ".c5g OK\n";

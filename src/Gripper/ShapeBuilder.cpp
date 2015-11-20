@@ -1,4 +1,5 @@
 #include <opencv2/core/core.hpp>
+#include <stdexcept>
 #include <Gripper/Shape.h>
 #include <Gripper/Cuboid.h>
 #include <Gripper/Sphere.h>
@@ -50,7 +51,7 @@ namespace cv{
       res= std::unique_ptr<Gripper::Shape>{new Gripper::ComposedShape(Affine3d{poseE}, stuff)};
       return;
     }
-    throw std::string("Invalid shape type!!\n");
+    throw std::runtime_error("Invalid shape type!!\n");
   }
 
 }

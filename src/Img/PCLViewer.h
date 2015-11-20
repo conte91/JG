@@ -1,4 +1,5 @@
 #include <Img/PCLViewer.h>
+#include <stdexcept>
 
 namespace Img{
 
@@ -11,7 +12,7 @@ namespace Img{
 
   void PCLViewer::addSource(PCloud::Ptr src, const std::string& id, bool visualize=true){
     if(_clouds.find(id)!=_clouds.end()){
-      throw std::string("Cloud is already present!");
+      throw std::runtime_error("Cloud is already present!");
     }
     _clouds[id]=src;
     if(visualize){

@@ -1,4 +1,5 @@
 #include <pcl/point_types.h>
+#include <stdexcept>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/point_cloud_color_handlers.h>
 #include <Camera/ImageProvider.h>
@@ -29,7 +30,7 @@ int main(int argc, char** argv){
         case 'D':
           return new Camera::DummyProvider();
         default:
-          throw std::string("No valid provider model specified");
+          throw std::runtime_error("No valid provider model specified");
       }
     }
     catch(std::string s){

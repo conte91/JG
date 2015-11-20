@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <APC/APC.h>
 #include <C5G/C5G.h>
 
@@ -18,6 +19,6 @@ int main(int argc, char** argv){
 	      std::cerr << ex << "\n";
 	      return -2;
 	    }
-	throw std::string("Mia nonna");
+	throw std::runtime_error("Mia nonna");
 	return 0;
 }

@@ -1,4 +1,5 @@
 #include <boost/program_options.hpp>
+#include <stdexcept>
 
 #include <APC/APC.h>
 #include <APC/Robot.h>
@@ -121,7 +122,7 @@ namespace APC{
         orderBin.pop();
         std::cout << "Best order: " << x << "----------\n";
         if(x.grasp.score < Order::MIN_SCORE_WE_CAN_MANAGE){
-          throw std::string("Remaining items are too much difficult to take!");
+          throw std::runtime_error("Remaining items are too much difficult to take!");
         }
         std::cout << "Trying to grasp item: " << x.object << std::endl;
         Grasp todoGrasp=x.grasp;

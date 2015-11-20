@@ -1,4 +1,5 @@
 #include <Img/Image.h>
+#include <stdexcept>
 #include <Camera/Openni2Provider.h>
 #include <opencv2/opencv.hpp>
 
@@ -10,7 +11,7 @@ namespace Camera{
   {
       _capture.open();
       if(!_capture.isOpen()){
-        throw std::string("couldn't open the capture device");
+        throw std::runtime_error("couldn't open the capture device");
       }
   }
 

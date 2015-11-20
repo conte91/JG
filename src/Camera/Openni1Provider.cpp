@@ -1,4 +1,5 @@
 #include <Img/Image.h>
+#include <stdexcept>
 #include <Camera/Openni1Provider.h>
 #include <opencv2/opencv.hpp>
 
@@ -11,13 +12,13 @@ namespace Camera{
   //  if(!_capture.isOpened()){
   //    _capture.open(cv::CV_CAP_OPENNI2);
       if(!_capture.isOpened()){
-        throw std::string("couldn't open the capture device");
+        throw std::runtime_error("couldn't open the capture device");
       }
       if(!_capture.get( CV_CAP_PROP_OPENNI_REGISTRATION ) ){
         std::cout << "Setting OPENNI registration flag,,\n";
         _capture.set(CV_CAP_PROP_OPENNI_REGISTRATION,1);
         if(!_capture.get( CV_CAP_PROP_OPENNI_REGISTRATION ) ){
-          throw std::string("couldn't set registration flag");
+          throw std::runtime_error("couldn't set registration flag");
         }
       }
 

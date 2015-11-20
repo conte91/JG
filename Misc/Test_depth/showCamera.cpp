@@ -1,4 +1,5 @@
 #include <sstream>
+#include <stdexcept>
 #include <Camera/ImageProvider.h>
 #include <Camera/OpenniProvider.h>
 #include <Camera/DummyProvider.h>
@@ -29,7 +30,7 @@ int main(int argc, char** argv){
         case 'D':
           return new Camera::DummyProvider();
         default:
-          throw std::string("No valid provider model specified");
+          throw std::runtime_error("No valid provider model specified");
       }
     }
     catch(std::string s){

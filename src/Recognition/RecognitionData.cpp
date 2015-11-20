@@ -1,4 +1,5 @@
 #include <unordered_set>
+#include <stdexcept>
 #include <cmath>
 #include <Recognition/RecognitionData.h>
 #include <Eigen/Core>
@@ -325,7 +326,7 @@ namespace Recognition{
     /*** Init Process at Start-Up: only Once !!! ***/
     fs::path objNamesPath=fs::path(objsfolder_path) / fs::path("names.txt");
     if(!fs::exists(objNamesPath) || !fs::is_regular_file(objNamesPath)){
-      throw objNamesPath.string() + " does not exist";
+      throw std::runtime_error(objNamesPath.string() + " does not exist");
     }
     std::set<std::string> objNames;
     std::cout << "Reading model names from " << objNamesPath << "..\n";
@@ -344,7 +345,7 @@ namespace Recognition{
         objNames.insert(s);
       }
       if(!names.eof()){
-        throw std::string("Could not read model names.");
+        throw std::runtime_error("Could not read model names.");
       }
     }
 
@@ -374,7 +375,7 @@ namespace Recognition{
 
     ObjectMatches result;
     if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, result, what)){
-      throw std::string("Could not match anything :(");
+      throw std::runtime_error("Could not match anything :(");
     }
     return result;
   }

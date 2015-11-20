@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include <boost/property_tree/json_parser.hpp>
 #include <Img/Manipulation/GridIndexTaker.h>
 
@@ -31,7 +32,7 @@ namespace Img{
       std::vector<double> qH=readVector<double>(grid, "qH");
       std::vector<double> qV=readVector<double>(grid, "qV");
       if(mH.size()!=(height+1) || qH.size()!=(height+1) || mV.size()!=(width+1) || qV.size()!=(width+1)){
-        throw std::string("Bad save file: "+filename);
+        throw std::runtime_error("Bad save file: "+filename);
       }
       return GridIndexTaker(width, height, mH, qH, mV, qV);
     }
