@@ -65,7 +65,7 @@ int main(int argc, char** argv){
     std::cout << "Which object do you want to recognize?\n";
     std::cin >> s[0];
     try{
-      auto result=mySister.recognize(finalFrame, s);
+      auto result=mySister.recognize(finalFrame, finalFrame, cam, s);
       std::cout << "I think the object is @pose " << result[s[0]][0].pose.matrix() << "\n";
       Eigen::Affine3d extr;
       extr.matrix()=cam.getExtrinsic().matrix().cast<double>();

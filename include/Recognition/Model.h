@@ -105,6 +105,9 @@ namespace Recognition{
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr _myCloud;
       Camera::CameraModel _camModel;
 
+      const Mesh& getMesh() const;
+
+
   };
 }
 

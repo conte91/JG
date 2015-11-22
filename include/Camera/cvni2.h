@@ -57,6 +57,7 @@ namespace Camera{
       bool _isOpen;
       openni::Device _device;
       openni::VideoStream _depth_stream,_color_stream;
+      bool _mustUseIR;
       bool _isColorReady,_isDepthReady;
       openni::VideoFrameRef _depth_frame , _color_frame;
   };
@@ -93,12 +94,18 @@ namespace Camera{
     if ( _depth_stream.create ( _device, openni::SENSOR_DEPTH ) != openni::STATUS_OK )
       throw cv::Exception ( -1,std::string ( "OpenNI Couldn't create depth stream:" ) +openni::OpenNI::getExtendedError() ,__func__,__FILE__,__LINE__ );
 
-    //CHECK THAT THERE IS COLOR SENSOR
-    if ( _device.getSensorInfo ( openni::SENSOR_COLOR ) == NULL )
-      throw cv::Exception ( -1,"OpenNI Couldn't find color sensor" ,__func__,__FILE__,__LINE__ );
+    //CHECK THAT THERE IS COLOR SENSOR, if not found use grayscale IR sensor instead
+    _mustUseIR=false;
+    if ( _device.getSensorInfo ( openni::SENSOR_COLOR ) == NULL ){
+    _mustUseIR=true;
+        if(_device.getSensorInfo(openni::SENSOR_IR)==NULL){
+        throw cv::Exception ( -1,"OpenNI Couldn't find color sensor" ,__func__,__FILE__,__LINE__ );
+        }
+    }
     //OPEN COLOR SENSOR
-    if ( _color_stream.create ( _device, openni::SENSOR_COLOR ) != openni::STATUS_OK )
+  if ( _color_stream.create ( _device, (_mustUseIR ? openni::SENSOR_IR : openni::SENSOR_COLOR )) != openni::STATUS_OK ){
       throw cv::Exception ( -1,std::string ( "OpenNI Couldn't create color stream:" ) +openni::OpenNI::getExtendedError() ,__func__,__FILE__,__LINE__ );
+  }
 
 
     //Set depth registration, this is optional in many applications
@@ -190,7 +197,12 @@ namespace Camera{
       throw cv::Exception ( -1,"Not opened ",__func__,__FILE__,__LINE__ );
     if ( ! ( _isDepthReady&_isColorReady ) )
       throw cv::Exception ( -1,"Data is not ready  ",__func__,__FILE__,__LINE__ );
-    cv::Mat colorImage ( _color_frame.getHeight() ,_color_frame.getWidth() ,CV_8UC3, ( void* ) _color_frame.getData() );
+    cv::Mat colorImage (_color_frame.getHeight(), _color_frame.getWidth(), (_mustUseIR ? CV_8UC3 : CV_8UC3), ((void*) _color_frame.getData()));
+    /*if(_mustUseIR){
+      cv::cvtColor(colorImage, color, CV_GRAY2BGR);
+    }
+    else{
+        }*/
     cv::cvtColor ( colorImage,color,CV_RGB2BGR );
     depth.create ( _depth_frame.getHeight(),_depth_frame.getWidth(),CV_16UC1 );
     memcpy ( depth.ptr<char> ( 0 ),_depth_frame.getData(),_depth_frame.getWidth() *_depth_frame.getHeight() *2 );

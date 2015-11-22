@@ -57,11 +57,10 @@ namespace Recognition{
        */
       bool pclICP(const std::vector<cv::Vec3f>& pointsFromModel, const std::vector<cv::Vec3f>& pointsFromReference, Eigen::Matrix4f& finalTransformationMatrix, std::array< PCloud::Ptr , 3 >& resultPointClouds) const;
 
-      bool updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
-      ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const;
+      bool updateGiorgio(const Img::ImageWMask& sceneImg, const Img::ImageWMask& precisionImg, const Camera::CameraModel& depthCam,                                ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const;
 
     public:
-      RecognitionData::ObjectMatches recognize(const Img::ImageWMask& frame,const std::vector<std::string>& what);
+      RecognitionData::ObjectMatches recognize(const Img::ImageWMask& frame, const Img::ImageWMask& depthFrame, const Camera::CameraModel& depthCam, const std::vector<std::string>& what);
 
       /**
        * @param trainPath path to the trained models data
@@ -74,7 +73,7 @@ namespace Recognition{
 
       const Model& getModel(const std::string& name) const;
 
-      std::vector<FirstPassFoundItems> makeAFirstPassRecognition(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
+      std::vector<FirstPassFoundItems> makeAFirstPassRecognition(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask,  
                                                                  const std::vector<std::string>& whatToSee) const ;
 
   };

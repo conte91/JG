@@ -196,7 +196,6 @@ namespace Camera{
     }
     pointsUVDRGB.conservativeResize(Eigen::NoChange, countV+1);
     
-    std::cout << "Resized\n";
     Eigen::Matrix<double, 6, 6> toMul=Eigen::Matrix<double,6,6>::Identity();
     Eigen::Matrix3f k;
     Eigen::Matrix3d kInv;
@@ -208,7 +207,6 @@ namespace Camera{
 
     /** Eigen storage is row-major, so it is IMPORTANT to scan matrices in row order, otherwise cache misses -> HUNDREDS of times moar to execute (from 0.1s to >15min :| )*/
     Eigen::Matrix<double, Eigen::Dynamic, 6> pT=pointsXYZRGB.transpose();
-    std::cout << "Mianonna\n";
     /** Fills cloud with points taken from (X,Y,Z) coordinates */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr modelCloudPtr (new pcl::PointCloud<pcl::PointXYZRGB>);
     modelCloudPtr->resize(pointsXYZRGB.cols());
@@ -220,7 +218,6 @@ namespace Camera{
       pt.z=vec[2];
       modelCloudPtr->push_back(pt);
     }
-    std::cout << "Tuanonna\n";
     return modelCloudPtr;
   }
   Eigen::Vector3d CameraModel::uvzToCameraFrame(double u, double v, double z) const{

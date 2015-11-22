@@ -410,6 +410,10 @@ namespace Recognition{
     rect_out.y=match.y;
     //render(matchToObjectPose(match), image_out, depth_out, mask_out, rect_out);
   }
+
+  const Mesh& Model::getMesh() const{
+    return _mesh;
+  }
 }
 namespace cv{
   void write( FileStorage& fs, const std::string& name, const Recognition::Model::TrainingData& data){

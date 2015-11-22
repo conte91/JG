@@ -32,6 +32,9 @@ int main(int argc, char** argv){
   Camera::CameraModel cam=Camera::CameraModel::readFrom(camFs["camera_model"]);
   camFs.release();
 
+  cv::imshow("Image", img.rgb);
+  while((cv::waitKey()&0xFF)!='q');
+
   std::vector<cv::Point2f> cornerPoints;
   if(!cv::findChessboardCorners(img.rgb, cv::Size(width, height), cornerPoints)){
     std::cerr << "Couldn't locate chessboard corners, sry\n";

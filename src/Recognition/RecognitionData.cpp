@@ -116,7 +116,6 @@ namespace Recognition{
       }
     }
 
-    double percentage=(double) matchingArea/(double) totalPoints;
     return (double) matchingArea/(double) totalPoints;
   }
 
@@ -181,14 +180,11 @@ namespace Recognition{
       for(auto& object_id_ : whatToSee){
         _objectModels.at(object_id_).addAllTemplates(*detector);
       }
-      std::cout << "#Templates: " << detector->numTemplates() << "\n";
 
       /** Search for every object now */
       size_t nDone=0;
-      std::cout<<"Matching with threshold " << currentThreshold << "..."<<"\n";
       std::vector<cv::linemod::Match> matches;
       detector->match(sources, currentThreshold, matches,whatToSee, cv::noArray(), theMasks);
-      std::cout<<"Done: matches.size(): "<<matches.size()<<"\n";
 
       /** Now, filter until something good is found for every object */
       for(const auto& match : matches) {
@@ -196,7 +192,6 @@ namespace Recognition{
         using Eigen::Affine3d;
 
         /** Skip already evaluated matches */
-        int tId=match.template_id;
         if(foundMatches.find(match)!=foundMatches.end()){
           continue;
         }
@@ -227,8 +222,7 @@ namespace Recognition{
     return found;
   }
 
-  bool RecognitionData::updateGiorgio(const cv::Mat& const_rgb, const cv::Mat& depth_m, const cv::Mat& filter_mask, 
-                                      ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const
+  bool RecognitionData::updateGiorgio(const Img::ImageWMask& sceneImg, const Img::ImageWMask& precisionImg, const Camera::CameraModel& depthCam,                                ObjectMatches& result, const std::vector<std::string>& vect_objs_to_pick) const
   {
 
     using cv::Rect;
@@ -238,11 +232,9 @@ namespace Recognition{
     assert(vect_objs_to_pick.size()==1);
 
     /** First of all, we match with decreasing thresholds until at least 1 not-so-badly-matching templates has been found for each object */
-    auto found=makeAFirstPassRecognition(const_rgb, depth_m, filter_mask, vect_objs_to_pick);
+    auto found=makeAFirstPassRecognition(sceneImg.rgb, sceneImg.depth, sceneImg.mask, vect_objs_to_pick);
 
     /** Now we will construct, for each match, the corresponding point cloud. We then apply ICP in order to refine the pose estimation and drop other false positives */
-
-
     result=ObjectMatches{};
     /** Scan each item and align it */
     for(const auto& x:found){
@@ -251,9 +243,10 @@ namespace Recognition{
       /** First, build the PC of the whole scene on which the template must be aligned */
       typedef pcl::PointXYZRGB PointType;
       typedef pcl::PointCloud<PointType> Cloud;
+      /** This Pointcloud is built in global coordinates using the informations from the depth camera */
       Cloud::Ptr scenePC(new Cloud);
       {
-        auto scenePCNotRegular=obj.getCam().sceneToCameraPointCloud(const_rgb, depth_m, filter_mask);
+        auto scenePCNotRegular=depthCam.sceneToCameraPointCloud(precisionImg.rgb, precisionImg.depth, precisionImg.mask);
         scenePCNotRegular->is_dense=true;
         std::vector<int> dumbIgnoredValue;
         pcl::removeNaNFromPointCloud(*scenePCNotRegular, *scenePCNotRegular, dumbIgnoredValue);
@@ -262,15 +255,45 @@ namespace Recognition{
         sceneVox.setLeafSize (0.005f, 0.005f, 0.005f);
         sceneVox.filter (*scenePC);
       }
-      auto matchImage=imageFromRender(x.rgb, x.depth, x.mask, x.rect, obj.getCam());
+
+      
+      /** Render the match as it would be if seen by the depth camera */
+      Mat rgb, d,  m;
+      Rect section;
+      auto objGlobalPose=obj.matchToObjectPose(x.match);
+      Eigen::Affine3d templateGlobalPose;
+      {
+        std::cout << "Object pose in first camera frame: \n" << objGlobalPose.matrix() << "\n";
+        objGlobalPose=obj.getCam().getExtrinsic().inverse().cast<double>()*objGlobalPose;
+        templateGlobalPose=objGlobalPose.cast<double>();
+        std::cout << "Object pose in global frame: \n" << templateGlobalPose.matrix() << "\n";
+        objGlobalPose=depthCam.getExtrinsic().cast<double>()*objGlobalPose;
+
+        std::cout << "Object pose in camera frame: \n" << objGlobalPose.matrix() << "\n";
+        /*** TODO REMOVE ME when everything is merged correctly */
+        {
+          objGlobalPose=Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX())*objGlobalPose;
+        }
+        std::cout << "Object pose in OpenGL frame: \n" << objGlobalPose.matrix() << "\n";
+        auto& renderer=Renderer3d::globalRenderer();
+        renderer.set_parameters(depthCam, 0.1, 2.5, "Renderrrringdepth");
+        renderer.setObjectPose(objGlobalPose);
+        renderer.renderDepthOnly(obj.getMesh(), d, m, section);
+        renderer.renderImageOnly(obj.getMesh(), rgb, section);
+      }
+      auto matchImage=imageFromRender(rgb,d,m,section,depthCam);
+      cv::imshow("Depth theoretical rendering", rgb);
+      while((cv::waitKey(100) & 0xFF)!='q');
       /** Obtain the PCs relative to the parts to be aligned */
       Cloud::Ptr templatePC(new Cloud);
       {
-        auto templatePCNotRegular=obj.getCam().sceneToCameraPointCloud(matchImage.rgb, matchImage.depth, matchImage.mask);
-        templatePCNotRegular->is_dense=true;
+        auto templatePCNotRegular=depthCam.sceneToCameraPointCloud(matchImage.rgb, matchImage.depth, matchImage.mask);
         templatePCNotRegular->is_dense=true;
         std::vector<int> dumbIgnoredValue;
         pcl::removeNaNFromPointCloud(*templatePCNotRegular, *templatePCNotRegular, dumbIgnoredValue);
+
+        Cloud templatePCGlobal;
+        pcl::transformPointCloud(*templatePCNotRegular, templatePCGlobal, depthCam.getExtrinsic().inverse());
         /* Create the filtering object: downsample the dataset using a leaf size of 1cm */
         pcl::VoxelGrid<PointType> templateVox;
         templateVox.setInputCloud (templatePCNotRegular);
@@ -287,13 +310,12 @@ namespace Recognition{
       if(!icp.hasConverged()){
         continue;
       }
-      std::cout << "Score: " << icp.getFitnessScore() << "\n";
       if(icp.getFitnessScore()>0.001){
         continue;
       }
-      Eigen::Matrix4d finalTransformationMatrix  = icp.getFinalTransformation().cast<double>();
-      auto finalPose = finalTransformationMatrix*x.objPose.matrix();
-      result[x.match.class_id].push_back({icp.getFitnessScore(), Eigen::Affine3d{finalPose}});
+      Eigen::Affine3d finalTransformationMatrix{icp.getFinalTransformation().cast<double>()};
+      auto finalPose = finalTransformationMatrix*templateGlobalPose;
+      result[x.match.class_id].push_back({icp.getFitnessScore(), finalPose});
     }
 
     for(auto& x : vect_objs_to_pick){
@@ -366,10 +388,10 @@ namespace Recognition{
     }
   }
 
-  RecognitionData::ObjectMatches RecognitionData::recognize(const Img::ImageWMask& frame, const std::vector<std::string>& what){
+  RecognitionData::ObjectMatches RecognitionData::recognize(const Img::ImageWMask& frame, const Img::ImageWMask& depthFrame, const Camera::CameraModel& depthCam, const std::vector<std::string>& what){
 
     ObjectMatches result;
-    if(!updateGiorgio(frame.rgb, frame.depth, frame.mask, result, what)){
+    if(!updateGiorgio(frame, depthFrame, depthCam, result, what)){
       throw std::runtime_error("Could not match anything :(");
     }
     return result;

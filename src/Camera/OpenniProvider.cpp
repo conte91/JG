@@ -15,8 +15,8 @@ namespace Camera{
             try{
               return new OpenNI1Provider();
             }
-            catch(std::string s){
-              std::cout << "Couldn't find any OpenNI v1 enabled device (" << s << "), trying with v2..\n";
+            catch(std::runtime_error s){
+              std::cout << "Couldn't find any OpenNI v1 enabled device (" << s.what() << "), trying with v2..\n";
               return new OpenNI2Provider();
             }
           }
@@ -24,8 +24,8 @@ namespace Camera{
             try{
               return new OpenNI2Provider();
             }
-            catch(std::string){
-              std::cout << "Couldn't find any OpenNI v2 enabled device, trying with v1..\n";
+            catch(std::runtime_error  s){
+              std::cout << "Couldn't find any OpenNI v2 enabled device (" << s.what() << "), trying with v1..\n";
               return new OpenNI1Provider();
             }
           }
