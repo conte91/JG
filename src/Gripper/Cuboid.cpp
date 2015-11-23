@@ -2,13 +2,10 @@
 #include <Gripper/Cuboid.h>
 
 namespace Gripper{
+
   std::string Cuboid::getID() const {
     return "Cuboid";
   }
-  auto Cuboid::getKnownIntersections() const -> KnownIntersections{
-    return {"Cuboid", "Sphere"};
-  }
-
   double Cuboid::getVolume() const{
     return _dimensions[0]*_dimensions[1]*_dimensions[2];
     return 0;
@@ -105,10 +102,10 @@ namespace Gripper{
   }*/
 
   size_t Cuboid::countContainedPoints(const Cuboid::PointsMatrix& pt) const{
-    auto realOtherPoints=(_pose.inverse().matrix().topRows<3>()*pt).array();
+    Eigen::Array<double, 3, Eigen::Dynamic> realOtherPoints=(_pose.inverse().matrix().topRows<3>()*pt).array();
     auto d=_dimensions;
-    auto ltdPoints=(realOtherPoints.row(0) < d[0]) && (realOtherPoints.row(1) < d[1]) && (realOtherPoints.row(2) < d[2]);
-    auto greatPoints=(realOtherPoints.row(0) > 0) && (realOtherPoints.row(1) > 0) && (realOtherPoints.row(2) > 0);
+    Eigen::Array<bool, 1, Eigen::Dynamic> ltdPoints=(realOtherPoints.row(0) < d[0]) && (realOtherPoints.row(1) < d[1]) && (realOtherPoints.row(2) < d[2]);
+    Eigen::Array<bool, 1, Eigen::Dynamic> greatPoints=(realOtherPoints.row(0) > 0) && (realOtherPoints.row(1) > 0) && (realOtherPoints.row(2) > 0);
     return (ltdPoints && greatPoints).count();
   }
 

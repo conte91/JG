@@ -9,6 +9,7 @@ namespace Gripper{
       ComposedShape(const Eigen::Affine3d& pose, const Components& comp);
       virtual PointsMatrix getCubettiVolume(size_t level) const override;
       virtual PointsMatrix getCubettiSurface(size_t level) const override;
+      virtual double getIntersectionVolume(Shape& s) const;
 
       virtual void writeTo(cv::FileStorage& fs) const;
      
@@ -16,7 +17,6 @@ namespace Gripper{
     protected:
       virtual std::string getID() const;
       virtual KnownIntersections getKnownIntersections() const;
-      virtual double intersectionVolume(Shape& s) const;
       
       Components _components;
   };

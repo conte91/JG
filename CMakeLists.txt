@@ -4,7 +4,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g3 -gdwarf-2")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -gdwarf-2")
-ADD_DEFINITIONS("-std=c++11 -Wall -Wno-deprecated-declarations -Wno-reorder -pipe")
+ADD_DEFINITIONS("-std=c++11 -Wall -Wno-deprecated-declarations -Wno-reorder -pipe -g3")
 IF( NOT(DEFINED NO_EORL))
   IF( CMAKE_SIZEOF_VOID_P MATCHES 8 )
     MESSAGE("Sorry, only 32 bit architectures are supported :( Try again in a few years..")

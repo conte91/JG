@@ -96,14 +96,6 @@ namespace Gripper{
     return r*r*M_PI*h;
   }
 
-  double Cylinder::intersectionVolume(const Shape& s, size_t level) const {
-    return Shape::intersectionVolume(s,level);
-  }
-
-  Cylinder::KnownIntersections Cylinder::getKnownIntersections() const {
-    return {"Anything"};
-  }
-
   size_t Cylinder::countContainedPoints(const PointsMatrix& pt) const {
     auto myFramePts=(_pose.inverse().matrix()*pt).topRows<3>().array();
     auto d=_dimensions;

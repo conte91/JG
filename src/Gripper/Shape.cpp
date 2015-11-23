@@ -3,45 +3,68 @@
 #include <pcl/point_types.h>
 
 namespace Gripper{
-  bool Shape::knowsHowToIntersect(const Shape& s) const {
-    for(const auto& x: getKnownIntersections()){
-      if(x==s.getID() || x=="Anything"){
-        return true;
-      }
-    }
-    return false;
+
+  double Shape::intersectionVolumeHeuristic(const Shape& s) const{
+    throw std::logic_error("Asking for intersection heuristic to a shape which doesn't know any!");
+    return 0;
   }
 
-
-  auto Shape::getKnownIntersections() const -> KnownIntersections {
+  double Shape::haveNoIntersection(const Shape& s) const{
+    throw std::logic_error("Asking for noIntersection heuristic to a shape which doesn't know any!");
+    return 0;
+  }
+ 
+  Shape::ShapeList Shape::intersectionHeuristic() const {
     return {};
   }
+
+  Shape::ShapeList Shape::noIntersectionHeuristic() const {
+    return {};
+  }
+
 
   std::string Shape::getID() const {
     return "Generic";
   }
 
   double Shape::getIntersectionVolume(const Shape& s) const {
-    if(knowsHowToIntersect(s)){
-      return intersectionVolume(s, BASE_APPROX_LEVEL);
+    if(s.getID() == "Composed"){
+      return s.getIntersectionVolume(*this);
     }
-    assert(s.knowsHowToIntersect(*this) && "No valid intersections found between me and the other shape!!");
-    return s.intersectionVolume(*this, BASE_APPROX_LEVEL);
-  }
-  double Shape::intersectionVolume(const Shape& s, size_t level) const {
-    double myVol=getVolume();
-    double otherVol=s.getVolume();
 
-    if(myVol > otherVol){
-      auto cubes=s.getCubettiVolume(BASE_APPROX_LEVEL);
-      return (countContainedPoints(cubes)*otherVol)/cubes.cols();
+    if(haveNoIntersectionHeuristic(s) && haveNoIntersection(s)){
+      return 0;
     }
-    else{
-      auto cubes=getCubettiVolume(BASE_APPROX_LEVEL);
-      return (s.countContainedPoints(cubes)*myVol)/cubes.cols();
+    if(s.haveNoIntersectionHeuristic(*this) && s.haveNoIntersection(*this)){
+      return 0;
     }
-    return -1;
+
+    if(haveIntersectionHeuristic(s)){
+      return intersectionVolumeHeuristic(s);
+    }
+    if(s.haveIntersectionHeuristic(*this)){
+      return s.intersectionVolumeHeuristic(*this);
+    }
+    
+    const Shape& smaller=(getVolume() > s.getVolume() ? *this : s);
+    const Shape& bigger=(getVolume() > s.getVolume() ? s : *this);
+
+    for(size_t surfLevel=10; surfLevel<100; ++surfLevel){
+      auto surfApprox=smaller.getCubettiSurface(surfLevel);
+      size_t countSurf=bigger.countContainedPoints(surfApprox);
+      if(countSurf){
+        if(countSurf==surfApprox.cols()){
+          return smaller.getVolume();
+        }
+        else{
+          auto cubes=smaller.getCubettiVolume(BASE_APPROX_LEVEL);
+          return (bigger.countContainedPoints(cubes)*smaller.getVolume())/cubes.cols();
+        }
+      }
+    }
+    return 0;
   }
+
   const std::vector<double>& Shape::getDimensions() const {
     return _dimensions;
   }
@@ -106,6 +129,24 @@ namespace Gripper{
     Shape result=rhs;
     result._pose=lhs*rhs._pose;
     return result;
+  }
+
+  bool Shape::haveIntersectionHeuristic(const Shape& s) const {
+    for(const auto& x: intersectionHeuristic()){
+      if(x==s.getID() || x=="Anything"){
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  bool Shape::haveNoIntersectionHeuristic(const Shape& s) const {
+    for(const auto& x: noIntersectionHeuristic()){
+      if(x==s.getID() || x=="Anything"){
+        return true;
+      }
+    }
+    return false;
   }
 
   void Shape::writeTo(cv::FileStorage& fs) const{

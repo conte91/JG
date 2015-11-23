@@ -7,9 +7,15 @@ namespace Gripper{
       Sphere(const RelPose& pose, double R);
       virtual std::string getID() const override;
     protected:
-      virtual KnownIntersections getKnownIntersections() const override;
-      virtual double intersectionVolume(const Shape& s, size_t level) const override;
+      virtual double haveNoIntersection(const Shape& s) const override;
+      virtual double intersectionVolumeHeuristic(const Shape& s) const override;
       virtual PointsMatrix getCubettiSurface(size_t level) const override;
       virtual Eigen::Matrix<double, 4, Eigen::Dynamic>  getCubettiVolume(size_t level) const override;
+      virtual double getVolume() const override;
+
+      virtual ShapeList intersectionHeuristic() const override;
+      virtual ShapeList noIntersectionHeuristic() const override;
+
+      virtual size_t countContainedPoints(const Shape::PointsMatrix& pt) const override;
   };
 };

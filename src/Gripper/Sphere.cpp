@@ -2,16 +2,14 @@
 #include <Gripper/Sphere.h>
 
 namespace Gripper{
-  std::string Sphere::getID() const {
-    return "Sphere";
+  double Sphere::getVolume() const {
+    return _dimensions[0]*_dimensions[0]*_dimensions[0]*M_PI*4.0/3.0;
   }
-  auto Sphere::getKnownIntersections() const -> KnownIntersections{
-    return {"Sphere"};
-  }
-  double Sphere::intersectionVolume(const Shape& s, size_t level) const{
+
+  double Sphere::intersectionVolumeHeuristic(const Shape& s) const{
     using std::max;
     using std::min;
-    assert(s.getID()=="Sphere");
+    assert(s.getID()=="Sphere" && "Don't know heuristic");
     double r1=_dimensions[0];
     double r2=s.getDimensions()[0];
     double R=max(r1, r2);
@@ -29,6 +27,37 @@ namespace Gripper{
     }
     double V=M_PI*pow(R+r-d, 2)*(d*d+2*d*r-3*r*r+2*d*R+6*r*R-3*R*R)/(12*d);
     return V;
+  }
+
+  size_t Sphere::countContainedPoints(const Shape::PointsMatrix& pt) const {
+    auto distanceFromS=pt.topRows<3>()-_pose.translation().replicate(1,pt.cols());;
+    return (distanceFromS.cwiseAbs2().colwise().sum().array() < _dimensions[0]).count();
+  }
+  
+  double Sphere::haveNoIntersection(const Shape& s) const{
+    assert(s.getID()=="Sphere" && "don't know noIntersection heuristic");
+    using std::max;
+    using std::min;
+    double r1=_dimensions[0];
+    double r2=s.getDimensions()[0];
+    double R=max(r1, r2);
+    double r=min(r1, r2);
+    Eigen::Vector3d center1=_pose.translation();
+    Eigen::Vector3d center2=s.getPose().translation();
+    double d=(center1-center2).norm();
+
+    return (d>R+r);
+  }
+
+  auto Sphere::noIntersectionHeuristic() const -> ShapeList {
+    return {"Sphere"};
+  }
+  auto Sphere::intersectionHeuristic() const -> ShapeList {
+    return {"Sphere"};
+  }
+
+  std::string Sphere::getID() const {
+    return "Sphere";
   }
 
   Eigen::Matrix<double, 4, Eigen::Dynamic> Sphere::getCubettiVolume(size_t level) const {
@@ -80,7 +109,6 @@ namespace Gripper{
     /** No equal  density is required, let's go with UV coordinates */
     double stepLat=2*M_PI/level;
     double stepLon=2*M_PI/level;
-    std::cout << "steplon: " << stepLon << " stepLat: " << stepLat << "\n";
  
     double r=_dimensions[0];
 
@@ -89,12 +117,9 @@ namespace Gripper{
     for(size_t i=1; i<level; ++i){
       double lat=stepLat*i;
       double z=r*cos(lat);
-      std::cout << "z " << z << "\n";
       for(size_t j=0; j<level; ++j){
         double lon=stepLon*j;
-        std::cout << "Lat " << lat << " lon " << lon << "\n";
         double x=r*sin(lat)*cos(lon), y=r*sin(lat)*sin(lon);
-        std::cout << "X: " << x << " Y: " << y << "\n";
         result.col(pos++)=Eigen::Vector4d{x,y,z,1};
       }
     }

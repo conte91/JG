@@ -15,8 +15,6 @@ namespace Gripper{
       virtual double getVolume() const override;
 
     protected:
-      virtual double intersectionVolume(const Shape& s, size_t level) const override;
-      virtual KnownIntersections getKnownIntersections() const override;
       friend Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
       virtual size_t countContainedPoints(const PointsMatrix& pt) const override;
   };

@@ -19,7 +19,7 @@ namespace Gripper{
 
       virtual PointsMatrix getCubettiSurface(size_t level) const;
       virtual PointsMatrix getCubettiVolume(size_t level) const;
-      virtual double getIntersectionVolume(const Shape& s) const final;
+      virtual double getIntersectionVolume(const Shape& s) const;
       virtual RelPose getPose() const final;
       virtual const std::vector<double>& getDimensions() const final;
       virtual PointsPtr getPCSurface(size_t level) const final;
@@ -32,13 +32,21 @@ namespace Gripper{
 
     protected:
       typedef std::vector<std::string> KnownIntersections;
-      virtual double intersectionVolume(const Shape& s, size_t level) const;
-      virtual KnownIntersections getKnownIntersections() const;
-      virtual bool knowsHowToIntersect(const Shape& s) const final;
+      typedef std::vector<std::string> ShapeList;
       std::vector<double> _dimensions;
       Eigen::Affine3d _pose;
       friend Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
       virtual size_t countContainedPoints(const PointsMatrix& pt) const;
+
+      virtual ShapeList intersectionHeuristic() const ;
+      virtual ShapeList noIntersectionHeuristic() const ;
+
+      virtual bool haveIntersectionHeuristic(const Shape& s) const final;
+      virtual bool haveNoIntersectionHeuristic(const Shape& s) const final;
+
+      virtual double intersectionVolumeHeuristic(const Shape& s) const;
+      virtual double haveNoIntersection(const Shape& s) const;
+
       static constexpr size_t BASE_APPROX_LEVEL=100;
   };
 
