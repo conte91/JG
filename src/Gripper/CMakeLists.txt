@@ -13,3 +13,14 @@ COPY_TO_LIB(transformations.py)
 add_library(shapes SHARED Shape.cpp Sphere.cpp Cuboid.cpp ComposedShape.cpp Cylinder.cpp ShapeBuilder.cpp)
 SET_TARGET_PROPERTIES( shapes PROPERTIES COMPILE_FLAGS "-fPIC" )
 target_link_libraries(shapes ${OpenCV_LIBRARIES})
+
+add_library(grasping SHARED GraspPose.cpp)
+SET_TARGET_PROPERTIES( grasping PROPERTIES COMPILE_FLAGS "-fPIC" )
+
+add_library(gripper SHARED GripperModel.cpp )
+SET_TARGET_PROPERTIES(gripper PROPERTIES COMPILE_FLAGS "-fPIC")
+target_link_libraries(gripper shapes grasping)
+
+add_library(graspFactory SHARED PoseFactory.cpp)
+SET_TARGET_PROPERTIES( graspFactory PROPERTIES COMPILE_FLAGS "-fPIC" )
+target_link_libraries(graspFactory grasping)
