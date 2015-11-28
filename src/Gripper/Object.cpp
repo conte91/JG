@@ -80,11 +80,11 @@ namespace Gripper{
         data["height"] >> height;
         data["depth"] >> depth;
         data["level"] >> level;
-        auto newPoses=PoseFactory::generatePosesOnCuboid(toolN, Eigen::Affine3d{pose}, width, height, depth, toolN);
+        auto newPoses=PoseFactory::generatePosesOnCuboid(level, Eigen::Affine3d{pose}, width, height, depth, toolN);
         g.insert(g.end(), newPoses.begin(), newPoses.end());
       }
-      return Object{s,g};
     }
+    return Object{s,g};
 
   }
 }

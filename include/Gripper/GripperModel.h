@@ -1,11 +1,13 @@
 #pragma once
+
+#include "Types.h"
 #include "GraspPose.h"
 #include "Grasper.h"
 
 namespace Gripper{
   class GripperModel{
     public:
-      GraspPose getBestGrasp(const std::string& name, const ObjectsScene& scene, const GraspDatabase& possibleGrasps, const ShapeDatabase& shapes);
+        GraspPose getBestGrasp(const std::string& name, const ObjectsScene& scene, const ObjectDB& objects);
 
     private:
       struct ScoreParams{

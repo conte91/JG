@@ -66,16 +66,16 @@ namespace Gripper{
 
       /** Bottom and top face */
       srcs[0]=generatePosesOnPlane(level, origin+xMargin+yMargin, xSideRed, ySideRed, toolNumber);
-      srcs[1]=generatePosesOnPlane(level, origin+zSide-xMargin-yMargin, ySideRed, xSideRed, toolNumber);
+      srcs[1]=generatePosesOnPlane(level, origin+zSide+xMargin+yMargin, ySideRed, xSideRed, toolNumber);
 
 
       /** Left and right face */
       srcs[2]=generatePosesOnPlane(level, origin+yMargin+zMargin, ySideRed, zSideRed, toolNumber);
-      srcs[3]=generatePosesOnPlane(level, origin+xSide-yMargin-zMargin, zSideRed, ySideRed, toolNumber);
+      srcs[3]=generatePosesOnPlane(level, origin+xSide+yMargin+zMargin, zSideRed, ySideRed, toolNumber);
 
       /** Front and rear */
       srcs[4]=generatePosesOnPlane(level, origin+xMargin+zMargin, zSideRed, xSideRed, toolNumber);
-      srcs[5]=generatePosesOnPlane(level, origin+ySide-xMargin-zMargin, xSideRed, zSideRed, toolNumber);
+      srcs[5]=generatePosesOnPlane(level, origin+ySide+xMargin+zMargin, xSideRed, zSideRed, toolNumber);
 
       /** Sums them all (well, moves them all) */
       for(const auto& x : srcs){

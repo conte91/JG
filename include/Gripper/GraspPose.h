@@ -33,7 +33,7 @@ namespace Gripper{
 
     bool operator<(const GraspPose& other);
 
-    void drawToViewer(pcl::visualization::PCLVisualizer& viewer) const;
+    void drawToViewer(pcl::visualization::PCLVisualizer& viewer, double scale) const;
 
   };
 }

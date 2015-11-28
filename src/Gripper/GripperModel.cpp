@@ -18,8 +18,8 @@ namespace Gripper{
     }
     return ALPHA*vInt/VEASY;
   }
-  GraspPose GripperModel::getBestGrasp(const std::string& name, const ObjectsScene& scene, const GraspDatabase& possibleGrasps, const ShapeDatabase& shapes){
-    auto poses=possibleGrasps.at(name);
+  GraspPose GripperModel::getBestGrasp(const std::string& name, const ObjectsScene& scene, const ObjectDB& objects){
+    auto poses=objects.at(name).myGrasps;
     std::sort(poses.begin(), poses.end());
 
     double currentBestScore=std::numeric_limits<double>::max();

@@ -28,32 +28,33 @@ namespace Gripper{
   {
   }
   
-  void GraspPose::drawToViewer(pcl::visualization::PCLVisualizer& viewer) const{
+  void GraspPose::drawToViewer(pcl::visualization::PCLVisualizer& viewer, double length) const{
     assert(constraints[2] && "Not constrained over Z axis :|");
+    /** Notice that p2 and p1 are exchanged because arrow is attached to the START point of lines */
     {
       std::stringstream myTitle;
       myTitle << "Grasp Z from " << pickPose[0] << "," << pickPose[1] << "," << pickPose[2] << " with axis " << axis[2][0] << "," << axis[2][1] << "," << axis[2][2];
       pcl::PointXYZ p1, p2;
-      p1.getVector3fMap()=pickPose.cast<float>();
-      p2.getVector3fMap()=(pickPose+axis[2]).cast<float>();
-      viewer.addArrow(p1,p2,0,0,255,myTitle.str());
+      p2.getVector3fMap()=pickPose.cast<float>();
+      p1.getVector3fMap()=(pickPose+axis[2]*length).cast<float>();
+      viewer.addArrow(p1,p2,0,0,1.0,false,myTitle.str());
     }
 
     if(constraints[0]){
       std::stringstream myTitle;
       myTitle << "Grasp X from " << pickPose[0] << "," << pickPose[1] << "," << pickPose[2] << " with axis " << axis[0][0] << "," << axis[0][1] << "," << axis[0][0];
       pcl::PointXYZ p1, p2;
-      p1.getVector3fMap()=pickPose.cast<float>();
-      p2.getVector3fMap()=(pickPose+axis[0]).cast<float>();
-      viewer.addArrow(p1,p2,255,0,0,myTitle.str());
+      p2.getVector3fMap()=pickPose.cast<float>();
+      p1.getVector3fMap()=(pickPose+axis[0]*length).cast<float>();
+      viewer.addArrow(p1,p2,1.0,0,0,false,myTitle.str());
     }
     if(constraints[1]){
       std::stringstream myTitle;
       myTitle << "Grasp Y from " << pickPose[0] << "," << pickPose[1] << "," << pickPose[2] << " with axis " << axis[1][0] << "," << axis[1][1] << "," << axis[1][0];
       pcl::PointXYZ p1, p2;
-      p1.getVector3fMap()=pickPose.cast<float>();
-      p2.getVector3fMap()=(pickPose+axis[1]).cast<float>();
-      viewer.addArrow(p1,p2,0,255,0,myTitle.str());
+      p2.getVector3fMap()=pickPose.cast<float>();
+      p1.getVector3fMap()=(pickPose+axis[1]*length).cast<float>();
+      viewer.addArrow(p1,p2,0,1.0,0,false,myTitle.str());
     }
   }
 }

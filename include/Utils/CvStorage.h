@@ -29,6 +29,20 @@ namespace cv{
     fs << "]";
   }
 
+  template<typename Value>
+  void read(const FileNode& node, std::map<std::string,Value>& x, const std::map<std::string,Value>& default_value=std::map<std::string,Value>{} ) {
+    if(node.empty()){
+      x=default_value;
+      return;
+    }
+    else{
+      for(const auto& data:node){
+        std::string k=data.name();
+        data >> x[k];
+      }
+    }
+  }
+
   template<typename Key, typename Value>
   void read(const FileNode& node, std::map<Key,Value>& x, const std::map<Key,Value>& default_value=std::map<Key,Value>{} ) {
     if(node.empty()){
