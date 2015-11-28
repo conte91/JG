@@ -1,10 +1,14 @@
 #pragma once
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/operations.hpp>
+
+#include <pcl/visualization/pcl_visualizer.h>
+
 #include <Eigen/Geometry>
 #include <array>
 #include <functional>
 #include <Eigen/Core>
-#include <opencv2/core/operations.hpp>
 
 namespace Gripper{
   struct GraspPose{
@@ -29,10 +33,12 @@ namespace Gripper{
 
     bool operator<(const GraspPose& other);
 
+    void drawToViewer(pcl::visualization::PCLVisualizer& viewer) const;
+
   };
 }
 
 namespace cv{
-  void write( FileStorage& fs, const std::string& name, const GraspPose& pose);
-  void read(const FileNode& node, GraspPose& x, const GraspPose& default_value = GrapPose{} );
+  void write( FileStorage& fs, const std::string& name, const Gripper::GraspPose& pose);
+  void read(const FileNode& node, Gripper::GraspPose& x, const Gripper::GraspPose& default_value = Gripper::GraspPose{} );
 }

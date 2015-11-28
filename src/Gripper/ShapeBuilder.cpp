@@ -9,10 +9,14 @@
 #include <Utils/Eigen2CV.h>
 
 namespace cv{
+  void write( FileStorage& fs, const std::string& name, const Gripper::Shape* const model){
+    model->writeTo(fs);
+  }
+
   void write( FileStorage& fs, const std::string& name, const Gripper::Shape& model){
     model.writeTo(fs);
   }
-  void read(const FileNode& node, std::unique_ptr<Gripper::Shape>& res, const std::unique_ptr<Gripper::Shape>& default_value ){
+  void read(const FileNode& node, std::shared_ptr<const Gripper::Shape>& res, const std::shared_ptr<const Gripper::Shape>& default_value ){
     using Eigen::Affine3d;
     using Gripper::Shape;
 
@@ -27,28 +31,28 @@ namespace cv{
 
     if(name=="Cuboid"){
       assert(dimensions.size()==3);
-      res= std::unique_ptr<Gripper::Shape>{new Gripper::Cuboid(Affine3d{poseE}, dimensions[0], dimensions[1], dimensions[2])};
+      res= std::shared_ptr<Gripper::Shape>{new Gripper::Cuboid(Affine3d{poseE}, dimensions[0], dimensions[1], dimensions[2])};
       return;
     }
     else if(name=="Sphere"){
       assert(dimensions.size()==1);
-      res= std::unique_ptr<Gripper::Shape>{new Gripper::Sphere(Affine3d{poseE}, dimensions[0])};
+      res= std::shared_ptr<Gripper::Shape>{new Gripper::Sphere(Affine3d{poseE}, dimensions[0])};
       return;
     }
     else if(name=="Cylinder"){
       assert(dimensions.size()==2);
-      res= std::unique_ptr<Gripper::Shape>{new Gripper::Cylinder(Affine3d{poseE}, dimensions[0], dimensions[1])};
+      res= std::shared_ptr<Gripper::Shape>{new Gripper::Cylinder(Affine3d{poseE}, dimensions[0], dimensions[1])};
       return;
     }
     else if(name=="Composed"){
       std::vector<std::shared_ptr<const Shape> > stuff;
       const auto& fn=node["shapes"];
       for(const auto& x : fn){
-        std::unique_ptr<Shape> elem;
+        std::shared_ptr<const Shape> elem;
         x >> elem;
         stuff.emplace_back(std::move(elem));
       }
-      res= std::unique_ptr<Gripper::Shape>{new Gripper::ComposedShape(Affine3d{poseE}, stuff)};
+      res= std::shared_ptr<Gripper::Shape>{new Gripper::ComposedShape(Affine3d{poseE}, stuff)};
       return;
     }
     throw std::runtime_error("Invalid shape type!!\n");

@@ -112,7 +112,7 @@ int main(int argc, char** argv){
 
   size_t level=::atoi(argv[2]);
   FileStorage fs(argv[1], FileStorage::READ);
-  std::unique_ptr<Shape> result;
+  std::shared_ptr<const Shape> result;
   fs["shape"] >> result;
 
   mostra(*result, level);

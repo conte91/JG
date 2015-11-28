@@ -20,7 +20,7 @@ namespace Gripper{
       /** This is the pose which we would like to align perfectly to the identity when constraining grasps */
       Eigen::Affine3d _basePose;
 
-      std::unique_ptr<Shape> _myShape;
+      std::shared_ptr<const Shape> _myShape;
       static double scoreFunction(double intVol);
   };
 }

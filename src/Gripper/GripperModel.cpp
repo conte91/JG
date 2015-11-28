@@ -81,7 +81,7 @@ namespace Gripper{
             Eigen::Vector3d axis = idealToolZAxis.cross(realToolZAxis);
             double angle = ::acos(idealToolZAxis.dot(realToolZAxis));
             /** Align the two axis */
-            currentPoseTransform=Eigen::AngleAxis3d(angle, axis)*idealToolZAxis;
+            currentPoseTransform=Eigen::AngleAxisd(angle, axis)*idealToolPose;
             assert((currentPoseTransform*idealToolZAxis).isApprox(realToolZAxis));
           }
         }
@@ -95,7 +95,7 @@ namespace Gripper{
         for(const auto& x : scene){
           /** Transform all the scene into objects' coordinate frames */
           Eigen::Affine3d otherObjectPose=thisObject.second.inverse()*x.second;
-          Shape otherObjectShape=otherObjectPose*shapes.at(x.first).first;
+          Shape otherObjectShape=otherObjectPose*(*(shapes.at(x.first).first));
 
           /** Compute intersection with an obejct of the scene and apply score function and mobility coefficient */
           score+=scoreFunction(myShapeInPose.getIntersectionVolume(otherObjectShape))*shapes.at(x.first).second;

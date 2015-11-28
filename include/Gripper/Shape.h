@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <Eigen/Geometry>
@@ -14,6 +15,7 @@ namespace Gripper{
       typedef pcl::PointCloud<PointType> Points;
       typedef Points::Ptr PointsPtr;
       typedef Eigen::Matrix<double, 4, Eigen::Dynamic> PointsMatrix;
+      typedef std::shared_ptr<const Shape> Ptr;
 
       Shape(const RelPose& pose, const std::vector<double>& dims);
 
@@ -55,6 +57,6 @@ namespace Gripper{
 }
 
 namespace cv{
-  void write( cv::FileStorage& fs, const std::string& name, const std::unique_ptr<Gripper::Shape>& model);
-  void read(const cv::FileNode& node, std::unique_ptr<Gripper::Shape>& x, const std::unique_ptr<Gripper::Shape>& default_value = std::unique_ptr<Gripper::Shape>());
+  void write( cv::FileStorage& fs, const std::string& name, const Gripper::Shape* const model);
+  void read(const cv::FileNode& node, std::shared_ptr<const Gripper::Shape>& x, const std::shared_ptr<const Gripper::Shape>& default_value = std::shared_ptr<const Gripper::Shape>());
 }

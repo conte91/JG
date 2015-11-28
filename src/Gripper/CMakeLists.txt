@@ -14,13 +14,10 @@ add_library(shapes SHARED Shape.cpp Sphere.cpp Cuboid.cpp ComposedShape.cpp Cyli
 SET_TARGET_PROPERTIES( shapes PROPERTIES COMPILE_FLAGS "-fPIC" )
 target_link_libraries(shapes ${OpenCV_LIBRARIES})
 
-add_library(grasping SHARED GraspPose.cpp)
-SET_TARGET_PROPERTIES( grasping PROPERTIES COMPILE_FLAGS "-fPIC" )
 
 add_library(gripper SHARED GripperModel.cpp )
 SET_TARGET_PROPERTIES(gripper PROPERTIES COMPILE_FLAGS "-fPIC")
 target_link_libraries(gripper shapes grasping)
 
-add_library(graspFactory SHARED PoseFactory.cpp)
-SET_TARGET_PROPERTIES( graspFactory PROPERTIES COMPILE_FLAGS "-fPIC" )
-target_link_libraries(graspFactory grasping)
+add_library(grasping SHARED GraspPose.cpp Object.cpp PoseFactory.cpp)
+SET_TARGET_PROPERTIES( grasping PROPERTIES COMPILE_FLAGS "-fPIC" )

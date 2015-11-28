@@ -6,7 +6,7 @@
 
 namespace Gripper{
 
-  typedef std::map<std::string, std::pair<Shape, double> > ShapeDatabase;
+  typedef std::map<std::string, std::pair<std::shared_ptr<const Shape>, double> > ShapeDatabase;
   typedef std::map<std::string, std::vector<GraspPose> > GraspDatabase;
   typedef std::pair<std::string,  Eigen::Affine3d> ObjWithPose;
 
