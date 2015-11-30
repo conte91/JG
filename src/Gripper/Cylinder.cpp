@@ -99,9 +99,12 @@ namespace Gripper{
   size_t Cylinder::countContainedPoints(const PointsMatrix& pt) const {
     auto myFramePts=(_pose.inverse().matrix()*pt).topRows<3>().array();
     auto d=_dimensions;
-    auto ltdPoints=(myFramePts.row(2) < d[2] ) && (myFramePts.row(2) > 0);
-    auto inCirclePoints=myFramePts.cwiseAbs2().colwise().sum() < d[0]*d[0];
+    Eigen::Array<bool,1,Eigen::Dynamic> ltdPoints=(myFramePts.row(2) < d[2] ) && (myFramePts.row(2) > 0);
+    Eigen::Array<bool,1,Eigen::Dynamic> inCirclePoints=myFramePts.cwiseAbs2().colwise().sum() < d[0]*d[0];
     return (ltdPoints && inCirclePoints).count();
+  }
+  Shape* Cylinder::clone() const {
+    return new Cylinder(*this);
   }
 
 }

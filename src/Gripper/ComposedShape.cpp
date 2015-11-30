@@ -10,7 +10,14 @@ namespace Gripper{
     return {"Anything"};
   }
 
-  double ComposedShape::getIntersectionVolume(Shape& s) const {
+  double ComposedShape::getVolume() const {
+    double result=0;
+    for(const auto& x : _components){
+      result+=x->getVolume();
+    }
+    return result;
+  }
+  double ComposedShape::getIntersectionVolume(const Shape& s) const {
     double result=0;
     for(const auto& x : _components){
       result+=x->getIntersectionVolume(s);
@@ -59,5 +66,8 @@ namespace Gripper{
   }
 
   ComposedShape::~ComposedShape(){
+  }
+  Shape* ComposedShape::clone() const {
+    return new ComposedShape(*this);
   }
 }

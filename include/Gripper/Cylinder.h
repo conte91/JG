@@ -14,8 +14,9 @@ namespace Gripper{
       virtual std::string getID() const override;
       virtual double getVolume() const override;
 
+      virtual Shape* clone() const override;
+
     protected:
-      friend Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
       virtual size_t countContainedPoints(const PointsMatrix& pt) const override;
   };
 }

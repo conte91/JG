@@ -8,10 +8,11 @@ namespace Gripper{
       typedef std::vector<GraspPose> GraspSet;
 
       Object();
-      Object(const std::shared_ptr<const Shape>&, const GraspSet&);
+      Object(const std::shared_ptr<const Shape>&, const GraspSet&, double);
 
       Shape::Ptr myShape;
       GraspSet myGrasps;
+      double myMobility;
       static Object readFrom(const cv::FileNode& fs);
 
   };

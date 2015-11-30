@@ -6,6 +6,7 @@ namespace Gripper{
     public:
       Cuboid(Eigen::Affine3d pose, double W, double H, double D);
       virtual ~Cuboid();
+      virtual Shape* clone() const override;
       
     protected:
       virtual std::string getID() const override;

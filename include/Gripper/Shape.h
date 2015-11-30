@@ -8,7 +8,7 @@
 
 namespace Gripper{
   /** Empty shape */
-  class Shape{
+  class Shape {
     public:
       typedef Eigen::Affine3d RelPose;
       typedef pcl::PointXYZ PointType;
@@ -19,16 +19,17 @@ namespace Gripper{
 
       Shape(const RelPose& pose, const std::vector<double>& dims);
 
-      virtual PointsMatrix getCubettiSurface(size_t level) const;
-      virtual PointsMatrix getCubettiVolume(size_t level) const;
+      virtual PointsMatrix getCubettiSurface(size_t level) const = 0;
+      virtual PointsMatrix getCubettiVolume(size_t level) const = 0;
       virtual double getIntersectionVolume(const Shape& s) const;
       virtual RelPose getPose() const final;
       virtual const std::vector<double>& getDimensions() const final;
       virtual PointsPtr getPCSurface(size_t level) const final;
       virtual PointsPtr getPCVolume(size_t level) const final;
       virtual std::string getID() const;
-      virtual double getVolume() const;
+      virtual double getVolume() const = 0;
       virtual void writeTo(cv::FileStorage& fs) const;
+      virtual Shape* clone() const = 0;
 
       virtual ~Shape();
 
@@ -37,8 +38,8 @@ namespace Gripper{
       typedef std::vector<std::string> ShapeList;
       std::vector<double> _dimensions;
       Eigen::Affine3d _pose;
-      friend Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
-      virtual size_t countContainedPoints(const PointsMatrix& pt) const;
+      friend Shape::Ptr operator*(const Eigen::Affine3d& lhs, const Shape::Ptr& rhs);
+      virtual size_t countContainedPoints(const PointsMatrix& pt) const ;
 
       virtual ShapeList intersectionHeuristic() const ;
       virtual ShapeList noIntersectionHeuristic() const ;
@@ -52,7 +53,7 @@ namespace Gripper{
       static constexpr size_t BASE_APPROX_LEVEL=100;
   };
 
-  Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs);
+  Shape::Ptr operator*(const Eigen::Affine3d& lhs, const Shape::Ptr& rhs);
 
 }
 

@@ -7,7 +7,7 @@ namespace Gripper{
   {
   }
 
-  Object::Object(const std::shared_ptr<const Shape>& shape, const GraspSet& grips)
+  Object::Object(const std::shared_ptr<const Shape>& shape, const GraspSet& grips, double mobility)
     :
       myShape(shape),
       myGrasps(grips)
@@ -19,11 +19,13 @@ namespace Gripper{
 
     Shape::Ptr s;
     GraspSet g;
+    double mob;
 
     bool autoPoses;
 
     fs["shape"] >> s;
     fs["autoPoses"] >> autoPoses;
+    fs["mobility"] >> mob;
 
     /** TODO  */
 #if 0
@@ -84,7 +86,7 @@ namespace Gripper{
         g.insert(g.end(), newPoses.begin(), newPoses.end());
       }
     }
-    return Object{s,g};
+    return Object{s,g,mob};
 
   }
 }

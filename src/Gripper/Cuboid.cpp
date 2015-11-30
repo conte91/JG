@@ -126,5 +126,8 @@ namespace Gripper{
 
   Cuboid::~Cuboid(){
   }
+  Shape* Cuboid::clone() const {
+    return new Cuboid(*this);
+  }
 }
 

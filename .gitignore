@@ -86,3 +86,6 @@ nonGitTestBed/
 #Misc config files
 .projectile
 .dir_locals.el
+.clang_complete
+.#*
+*.org

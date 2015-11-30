@@ -127,5 +127,8 @@ namespace Gripper{
     result.col(pos++)=Eigen::Vector4d{0,0,-r,1};
     return _pose*result;
   }
+  Shape* Sphere::clone() const {
+    return new Sphere(*this);
+  }
 
 }

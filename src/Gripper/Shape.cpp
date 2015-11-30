@@ -49,7 +49,8 @@ namespace Gripper{
     const Shape& smaller=(getVolume() > s.getVolume() ? *this : s);
     const Shape& bigger=(getVolume() > s.getVolume() ? s : *this);
 
-    for(size_t surfLevel=10; surfLevel<100; ++surfLevel){
+    std::array<size_t, 3> toTry={2,10,30};
+    for(size_t surfLevel : toTry){
       auto surfApprox=smaller.getCubettiSurface(surfLevel);
       size_t countSurf=bigger.countContainedPoints(surfApprox);
       if(countSurf){
@@ -67,16 +68,6 @@ namespace Gripper{
 
   const std::vector<double>& Shape::getDimensions() const {
     return _dimensions;
-  }
-
-  Eigen::Matrix<double, 4, Eigen::Dynamic> Shape::getCubettiVolume(size_t level) const {
-    assert(false && "Empty shape cannot be transformed into point clouds.. This is probably a bug in the shape building process");
-    return Eigen::Matrix<double, 4, Eigen::Dynamic>{};
-  }
-
-  Eigen::Matrix<double, 4, Eigen::Dynamic> Shape::getCubettiSurface(size_t level) const {
-    assert(false && "Empty shape cannot be transformed into point clouds.. This is probably a bug in the shape building process");
-    return Eigen::Matrix<double, 4, Eigen::Dynamic>{};
   }
 
   Shape::PointsPtr Shape::getPCVolume(size_t level) const 
@@ -117,18 +108,14 @@ namespace Gripper{
     return 0;
   }
 
-  double Shape::getVolume() const{
-    assert(false && "Empty shape volume called.. This is probably a bug in your shape tree");
-    return 0;
-  }
 
   Shape::~Shape(){
   }
 
-  Shape operator*(const Eigen::Affine3d& lhs, const Shape& rhs){
-    Shape result=rhs;
-    result._pose=lhs*rhs._pose;
-    return result;
+  Shape::Ptr operator*(const Eigen::Affine3d& lhs, const Shape::Ptr& rhs){
+    std::shared_ptr<Shape> result{rhs->clone()};
+    result->_pose=lhs*rhs->_pose;
+    return Shape::Ptr{result};
   }
 
   bool Shape::haveIntersectionHeuristic(const Shape& s) const {
@@ -156,4 +143,5 @@ namespace Gripper{
     fs << "pose" << getPose().matrix();
     fs << "}";
   }
+
 }

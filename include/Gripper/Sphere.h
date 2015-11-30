@@ -17,5 +17,6 @@ namespace Gripper{
       virtual ShapeList noIntersectionHeuristic() const override;
 
       virtual size_t countContainedPoints(const Shape::PointsMatrix& pt) const override;
+      virtual Shape* clone() const override;
   };
 };
