@@ -68,7 +68,6 @@ namespace Gripper{
 
           /** Build rotation matrix in object's coordinates from the 3 axes */
           fittedToolPose.linear().matrix() << myConstraints[0], myConstraints[1], myConstraints[2];
-          fittedToolPose.linear().matrix() = fittedToolPose.linear().matrix().inverse();
           fittedToolPose.translation().matrix() << currentPose.pickPose;
         }
         else{
